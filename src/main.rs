@@ -46,8 +46,7 @@ fn main() {
     let url_label = app.add_statusbar_item();
 
     if let Err(error) = app.parse_config(config_path) {
-        // TODO: show the error in the status bar.
-        println!("{}", error);
+        app.error(error.description());
     }
     app.set_window_title(APP_NAME);
 
