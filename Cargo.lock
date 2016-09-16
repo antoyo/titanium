@@ -1,10 +1,10 @@
 [root]
-name = "reb"
+name = "titanium"
 version = "0.1.0"
 dependencies = [
  "gtk 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg 0.0.2-pre (git+https://github.com/antoyo/mg)",
- "mg-settings 0.0.2-pre (git+https://github.com/antoyo/mg-settings)",
+ "mg 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "webkit2 0.1.0 (git+https://github.com/antoyo/webkit2-rs)",
  "xdg 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -236,21 +236,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "mg"
-version = "0.0.2-pre"
-source = "git+https://github.com/antoyo/mg#1a4814bb59c72209ebd5b430bb109bc77041adbf"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gdk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gobject-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings 0.0.2-pre (git+https://github.com/antoyo/mg-settings)",
+ "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "mg-settings"
-version = "0.0.2-pre"
-source = "git+https://github.com/antoyo/mg-settings#c9a869b05257e14c1fb145d20ba70292b3daa7a5"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "pango"
@@ -376,8 +378,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum idna 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1053236e00ce4f668aeca4a769a09b3bf5a682d802abd6f3cb39374f6b162c11"
 "checksum libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)" = "408014cace30ee0f767b1c4517980646a573ec61a57957aeeabcac8ac0a02e8d"
 "checksum matches 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "15305656809ce5a4805b1ff2946892810992197ce1270ff79baded852187942e"
-"checksum mg 0.0.2-pre (git+https://github.com/antoyo/mg)" = "<none>"
-"checksum mg-settings 0.0.2-pre (git+https://github.com/antoyo/mg-settings)" = "<none>"
+"checksum mg 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a820b4998aef21aa0584f9aa221a94e2152edcb7667e353eae8586a51d683fee"
+"checksum mg-settings 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "eb496a1a8b3e664956fa50244b19f11a7a5665dd430a81b4a2afb069d023cfd0"
 "checksum pango 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9163a579a31a3a07023f8ac47a27b62d3f59fae058f37993ec2815afaeb6d4d9"
 "checksum pango-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d5d4e9d57dc8bb3a28b59d9339b13f67c456238921d82c3ae8eefd1ac815247b"
 "checksum pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "8cee804ecc7eaf201a4a207241472cc870e825206f6c031e3ee2a72fa425f2fa"

@@ -1,6 +1,23 @@
 /*
- * TODO: use a dark GTK+ theme for showing a black status bar.
+ * TODO: do not show an error when there is no config file.
+ * TODO: map O to open with the current url.
+ * TODO: only add space at the end when there is no argument (or don't add the space when there is
+ * an URL?).
+ * TODO: support modes (to avoid entering commands while typing in a text input).
+ * TODO: support new window.
+ * TODO: search (using FindController).
+ * TODO: follow link.
  * TODO: write a webkit2 plugin to support scrolling.
+ * TODO: cookie.
+ * TODO: download manager.
+ * TODO: open file (instead of download).
+ * TODO: support bookmarks with tags.
+ * TODO: adblock.
+ * TODO: command/open completions.
+ * TODO: copy/paste URLs.
+ * TODO: NoScript.
+ * TODO: open textarea in text editor.
+ * TODO: non-modal javascript alert, prompt and confirm.
  */
 
 extern crate gtk;
@@ -43,6 +60,7 @@ fn main() {
         .expect("cannot create configuration directory");
 
     let app = Application::new_with_config(config);
+    app.use_dark_theme();
     let url_label = app.add_statusbar_item();
 
     if let Err(error) = app.parse_config(config_path) {
