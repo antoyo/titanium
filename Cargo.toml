@@ -1,0 +1,21 @@
+[package]
+name = "reb"
+version = "0.1.0"
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
+
+[dependencies]
+gtk = "^0.1"
+url = "^1.2"
+xdg = "^2.0"
+
+[dependencies.mg]
+git = "https://github.com/antoyo/mg"
+version = "0.0.2-pre"
+
+[dependencies.mg-settings]
+git = "https://github.com/antoyo/mg-settings"
+version = "0.0.2-pre"
+
+[dependencies.webkit2]
+git = "https://github.com/antoyo/webkit2-rs"
+version = "^0.1"
