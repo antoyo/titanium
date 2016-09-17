@@ -26,8 +26,9 @@ use std::rc::Rc;
 
 use gtk;
 use mg::Application;
-use mg_settings::{self, Config};
+use mg_settings;
 use xdg::BaseDirectories;
+use webkit2::LoadEvent::Started;
 
 use self::AppCommand::*;
 use webview::WebView;
@@ -37,6 +38,8 @@ const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 commands!(AppCommand {
     Back,
     Forward,
+    Insert,
+    Normal,
     Open(String),
     Quit,
     Reload,
@@ -61,15 +64,13 @@ pub struct App {
 
 impl App {
     pub fn new(homepage: Option<String>) -> Rc<Self> {
-        let config = Config {
-            mapping_modes: vec!["n".to_string()],
-        };
-
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let config_path = xdg_dirs.place_config_file("config")
             .expect("cannot create configuration directory");
 
-        let mg_app = Application::new_with_config(config);
+        let mg_app = Application::new_with_config(hash! {
+            "i" => "insert",
+        });
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -91,7 +92,11 @@ impl App {
         {
             let app = app.clone();
             let webview = app.webview.clone();
-            webview.connect_load_changed(move |webview, _| {
+            webview.connect_load_changed(move |webview, load_event| {
+                if load_event == Started {
+                    app.app.set_mode("normal");
+                }
+
                 if let Some(url) = webview.get_uri() {
                     url_label.set_text(&url);
                 }
@@ -131,6 +136,8 @@ impl App {
         match command {
             Back => self.webview.go_back(),
             Forward => self.webview.go_forward(),
+            Insert => self.app.set_mode("insert"),
+            Normal => self.app.set_mode("normal"),
             Open(url) => self.webview.open(&url),
             Quit => gtk::main_quit(),
             Reload => self.webview.reload(),

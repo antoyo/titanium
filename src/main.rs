@@ -1,7 +1,4 @@
 /*
- * TODO: only add space at the end when there is no argument (or don't add the space when there is
- * an URL?).
- * TODO: support modes (to avoid entering commands while typing in a text input).
  * TODO: support new window.
  * TODO: support special commands.
  * TODO: search (using FindController).

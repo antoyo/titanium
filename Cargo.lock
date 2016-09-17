@@ -282,7 +282,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#d691810e09ca3892b3b53f43bb2df35fcc9b01f1"
+source = "git+https://github.com/antoyo/mg#dad1f2f1709cbb753925e31c87c9de1414eb3826"
 dependencies = [
  "gdk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
