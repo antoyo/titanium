@@ -111,22 +111,33 @@ impl App {
             let app = app.clone();
             let mg_app = app.app.clone();
             mg_app.connect_command(move |command| {
-                match command {
-                    Back => app.webview.go_back(),
-                    Forward => app.webview.go_forward(),
-                    Open(url) => {
-                        app.webview.open(&url);
-                    },
-                    Quit => gtk::main_quit(),
-                    Reload => app.webview.reload(),
-                    Reloadbypasscache => app.webview.reload_bypass_cache(),
-                    Stop => app.webview.stop_loading(),
-                    Winopen(url) => app.open_in_new_window(&url),
-                }
+                app.handle_command(command);
+            });
+        }
+
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
+            mg_app.add_variable("url", move || {
+                app.webview.get_uri().unwrap()
             });
         }
 
         app
+    }
+
+    /// Handle the command.
+    fn handle_command(&self, command: AppCommand) {
+        match command {
+            Back => self.webview.go_back(),
+            Forward => self.webview.go_forward(),
+            Open(url) => self.webview.open(&url),
+            Quit => gtk::main_quit(),
+            Reload => self.webview.reload(),
+            Reloadbypasscache => self.webview.reload_bypass_cache(),
+            Stop => self.webview.stop_loading(),
+            Winopen(url) => self.open_in_new_window(&url),
+        }
     }
 
     /// Open the given URL in a new window.

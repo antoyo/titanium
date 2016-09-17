@@ -1,9 +1,9 @@
 /*
- * TODO: map O to open with the current url.
  * TODO: only add space at the end when there is no argument (or don't add the space when there is
  * an URL?).
  * TODO: support modes (to avoid entering commands while typing in a text input).
  * TODO: support new window.
+ * TODO: support special commands.
  * TODO: search (using FindController).
  * TODO: follow link.
  * TODO: write a webkit2 plugin to support scrolling.
@@ -15,6 +15,7 @@
  * TODO: adblock.
  * TODO: command/open completions.
  * TODO: copy/paste URLs.
+ * TODO: handle network errors.
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: non-modal javascript alert, prompt and confirm.
