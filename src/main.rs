@@ -1,5 +1,4 @@
 /*
- * TODO: do not show an error when there is no config file.
  * TODO: map O to open with the current url.
  * TODO: only add space at the end when there is no argument (or don't add the space when there is
  * an URL?).
@@ -8,6 +7,7 @@
  * TODO: search (using FindController).
  * TODO: follow link.
  * TODO: write a webkit2 plugin to support scrolling.
+ * TODO: settings.
  * TODO: cookie.
  * TODO: download manager.
  * TODO: open file (instead of download).
@@ -18,6 +18,7 @@
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: non-modal javascript alert, prompt and confirm.
+ * TODO: add option to use light theme variant instead of dark variant.
  */
 
 extern crate gtk;
@@ -28,6 +29,8 @@ extern crate url;
 extern crate webkit2;
 extern crate xdg;
 
+use std::fs::OpenOptions;
+
 use mg::Application;
 use mg_settings::Config;
 use url::Url;
@@ -35,6 +38,14 @@ use webkit2::WebView;
 use xdg::BaseDirectories;
 
 use AppCommand::*;
+
+macro_rules! unwrap_or_show_error {
+    ($app:expr, $error:expr) => {
+        if let Err(error) = $error {
+            $app.error(&error.to_string());
+        }
+    };
+}
 
 commands!(AppCommand {
     Back,
@@ -63,9 +74,9 @@ fn main() {
     app.use_dark_theme();
     let url_label = app.add_statusbar_item();
 
-    if let Err(error) = app.parse_config(config_path) {
-        app.error(error.description());
-    }
+    unwrap_or_show_error!(app, OpenOptions::new().create(true).write(true).open(&config_path));
+    unwrap_or_show_error!(app, app.parse_config(config_path));
+
     app.set_window_title(APP_NAME);
 
     let webview = WebView::new();
