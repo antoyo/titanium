@@ -19,25 +19,33 @@
  * TODO: open textarea in text editor.
  * TODO: non-modal javascript alert, prompt and confirm.
  * TODO: add option to use light theme variant instead of dark variant.
+ * TODO: add content to the default config file.
  */
 
+extern crate docopt;
+extern crate glib;
 extern crate gtk;
+extern crate gtk_sys;
+#[macro_use]
 extern crate mg;
 #[macro_use]
 extern crate mg_settings;
+extern crate rustc_serialize;
 extern crate url;
 extern crate webkit2;
 extern crate xdg;
 
+mod webview;
+
 use std::fs::OpenOptions;
 
+use docopt::Docopt;
 use mg::Application;
 use mg_settings::Config;
-use url::Url;
-use webkit2::WebView;
 use xdg::BaseDirectories;
 
 use AppCommand::*;
+use webview::WebView;
 
 macro_rules! unwrap_or_show_error {
     ($app:expr, $error:expr) => {
@@ -58,9 +66,24 @@ commands!(AppCommand {
 });
 
 const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+const USAGE: &'static str = "
+Titanium web browser.
+
+Usage:
+    titanium [<url>]
+";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    arg_url: Option<String>,
+}
 
 fn main() {
     gtk::init().unwrap();
+
+    let args: Args = Docopt::new(USAGE)
+        .and_then(|decoder| decoder.decode())
+        .unwrap_or_else(|error| error.exit());
 
     let config = Config {
         mapping_modes: vec!["n".to_string()],
@@ -79,8 +102,10 @@ fn main() {
 
     app.set_window_title(APP_NAME);
 
+    let home_page = "https://duckduckgo.com/lite/".to_string();
+    let url = args.arg_url.unwrap_or(home_page);
     let webview = WebView::new();
-    webview.load_uri("https://duckduckgo.com/lite/");
+    webview.open(&url);
 
     {
         let app = app.clone();
@@ -105,12 +130,7 @@ fn main() {
             Back => webview.go_back(),
             Forward => webview.go_forward(),
             Open(url) => {
-                if let Ok(_) = Url::parse(&url) {
-                    webview.load_uri(&url);
-                }
-                else {
-                    webview.load_uri(&format!("http://{}", url));
-                }
+                webview.open(&url);
             },
             Quit => gtk::main_quit(),
             Reload => webview.reload(),
@@ -123,7 +143,7 @@ fn main() {
 }
 
 /// Set the title of the window as the progress and the web page title.
-fn set_title(app: &Application<AppCommand>, webview: &WebView) {
+fn set_title(app: &Application<AppCommand>, webview: &webkit2::WebView) {
     let progress = (webview.get_estimated_load_progress() * 100.0) as i32;
     if let Some(title) = webview.get_title() {
         if progress == 100 {
