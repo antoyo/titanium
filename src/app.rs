@@ -24,11 +24,14 @@ use std::fs::OpenOptions;
 use std::process::Command;
 use std::rc::Rc;
 
+use glib::object::Downcast;
 use gtk;
-use mg::Application;
+use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
+use webkit2::NavigationPolicyDecision;
 use webkit2::LoadEvent::Started;
+use webkit2::PolicyDecisionType::NewWindowAction;
 
 use self::AppCommand::*;
 use webview::WebView;
@@ -59,6 +62,7 @@ macro_rules! unwrap_or_show_error {
 /// Titanium application.
 pub struct App {
     app: Rc<Application<AppCommand>>,
+    url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
 
@@ -86,30 +90,26 @@ impl App {
 
         let app = Rc::new(App {
             app: mg_app,
+            url_label: url_label,
             webview: Rc::new(webview),
         });
 
         {
             let app = app.clone();
-            let webview = app.webview.clone();
-            webview.connect_load_changed(move |webview, load_event| {
-                if load_event == Started {
-                    app.app.set_mode("normal");
-                }
-
-                if let Some(url) = webview.get_uri() {
-                    url_label.set_text(&url);
-                }
-
-                app.set_title();
-            });
+            App::handle_load_changed(app);
         }
+
         {
             let app = app.clone();
             let webview = app.webview.clone();
             webview.connect_resource_load_started(move |_, _, _| {
                 app.set_title();
             });
+        }
+
+        {
+            let app = app.clone();
+            App::handle_decisions(app);
         }
 
         {
@@ -145,6 +145,47 @@ impl App {
             Stop => self.webview.stop_loading(),
             Winopen(url) => self.open_in_new_window(&url),
         }
+    }
+
+    /// Handle policy decisions like opening new windows.
+    fn handle_decisions(app: Rc<App>) {
+        let webview = app.webview.clone();
+        webview.connect_decide_policy(move |_, policy_decision, policy_decision_type| {
+            match policy_decision_type {
+                NewWindowAction => {
+                    let decision: Result<NavigationPolicyDecision, _> = policy_decision.clone().downcast();
+                    let url =
+                        decision.ok()
+                        .and_then(|decision| decision.get_request())
+                        .and_then(|request| request.get_uri());
+                    if let Some(url) = url {
+                        app.open_in_new_window(&url);
+                        return true;
+                    }
+                    false
+                },
+                _ => false,
+            }
+        });
+    }
+
+    /// Handle the load_changed event.
+    /// Show the URL.
+    /// Set the window title.
+    /// Go back to normal mode.
+    fn handle_load_changed(app: Rc<App>) {
+        let webview = app.webview.clone();
+        webview.connect_load_changed(move |webview, load_event| {
+            if load_event == Started {
+                app.app.set_mode("normal");
+            }
+
+            if let Some(url) = webview.get_uri() {
+                app.url_label.set_text(&url);
+            }
+
+            app.set_title();
+        });
     }
 
     /// Open the given URL in a new window.
