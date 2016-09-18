@@ -19,6 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::cell::Cell;
 use std::env;
 use std::fs::OpenOptions;
 use std::process::Command;
@@ -30,7 +31,7 @@ use gtk::{self, Inhibit, WidgetExt};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2::{FindController, NavigationPolicyDecision, WebViewExt, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2::{FindController, FindOptions, NavigationPolicyDecision, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use webkit2::LoadEvent::Started;
 use webkit2::PolicyDecisionType::NewWindowAction;
 
@@ -63,6 +64,7 @@ commands!(AppCommand {
 });
 
 special_commands!(SpecialCommand {
+    BackwardSearch('?', always),
     Search('/', always),
 });
 
@@ -78,6 +80,7 @@ macro_rules! unwrap_or_show_error {
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand>>,
     find_controller: FindController,
+    search_backwards: Cell<bool>,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
@@ -114,6 +117,7 @@ impl App {
         let app = Rc::new(App {
             app: mg_app,
             find_controller: find_controller,
+            search_backwards: Cell::new(false),
             url_label: url_label,
             webview: webview,
         });
@@ -254,13 +258,22 @@ impl App {
 
     /// Handle the special command.
     fn handle_special_command(&self, command: SpecialCommand) {
-        match command {
-            Search(input) => {
-                let options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
-                self.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-                self.find_controller.search(&input, options.bits(), ::std::u32::MAX);
-            },
-        }
+        let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
+        let (other_options, input) =
+            match command {
+                BackwardSearch(input) => {
+                    self.search_backwards.set(true);
+                    (FIND_OPTIONS_BACKWARDS, input)
+                },
+                Search(input) => {
+                    self.search_backwards.set(false);
+                    (FindOptions::empty(), input)
+                },
+            };
+        let options = default_options | other_options;
+
+        self.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.find_controller.search(&input, options.bits(), ::std::u32::MAX);
     }
 
     /// Open the given URL in a new window.
@@ -314,12 +327,22 @@ impl App {
 
     /// Search the next occurence of the search text.
     fn search_next(&self) {
-        self.find_controller.search_next();
+        if self.search_backwards.get() {
+            self.find_controller.search_previous();
+        }
+        else {
+            self.find_controller.search_next();
+        }
     }
 
     /// Search the previous occurence of the search text.
     fn search_previous(&self) {
-        self.find_controller.search_previous();
+        if self.search_backwards.get() {
+            self.find_controller.search_next();
+        }
+        else {
+            self.find_controller.search_previous();
+        }
     }
 
     /// Set the title of the window as the progress and the web page title.

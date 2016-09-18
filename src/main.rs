@@ -20,8 +20,7 @@
  */
 
 /*
- * TODO: show current scroll percentage.
- * TODO: support search backward.
+ * TODO: show current scroll percentage (using `window.scrollY / document.body.clientHeight * 100`).
  * TODO: follow link.
  * TODO: settings.
  * TODO: cookie.
