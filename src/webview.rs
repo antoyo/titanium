@@ -25,7 +25,7 @@ use std::ops::Deref;
 
 use gtk::WidgetExt;
 use url::Url;
-use webkit2::{self, FindController, FindOptions, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2::{self, FindController, FindOptions, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
@@ -39,7 +39,9 @@ pub struct WebView {
 impl WebView {
     /// Create a new web view.
     pub fn new() -> Self {
-        let webview = webkit2::WebView::new();
+        let context = WebContext::get_default().unwrap();
+        context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
+        let webview = webkit2::WebView::new_with_context(&context);
 
         let find_controller = {
             let webview = webview.clone();
