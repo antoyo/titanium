@@ -27,7 +27,7 @@
  * TODO: download manager.
  * TODO: open file (instead of download).
  * TODO: support bookmarks with tags.
- * TODO: adblock.
+ * TODO: adblock (use the web extension from epiphany first, then implement one in Rust).
  * TODO: command/open completions.
  * TODO: copy/paste URLs.
  * TODO: handle network errors.

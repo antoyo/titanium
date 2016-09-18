@@ -19,7 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::cell::Cell;
 use std::env;
 use std::fs::OpenOptions;
 use std::process::Command;
@@ -31,7 +30,7 @@ use gtk::{self, Inhibit, WidgetExt};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2::{FindController, FindOptions, NavigationPolicyDecision, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2::NavigationPolicyDecision;
 use webkit2::LoadEvent::Started;
 use webkit2::PolicyDecisionType::NewWindowAction;
 
@@ -40,7 +39,6 @@ use self::SpecialCommand::*;
 use webview::WebView;
 
 const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
-const SCROLL_LINE_VERTICAL: i32 = 40;
 
 commands!(AppCommand {
     Back,
@@ -51,9 +49,11 @@ commands!(AppCommand {
     Quit,
     Reload,
     Reloadbypasscache,
+    Scrollbottom,
     Scrolldown,
     Scrolldownhalf,
     Scrolldownline,
+    Scrolltop,
     Scrollup,
     Scrolluphalf,
     Scrollupline,
@@ -79,8 +79,6 @@ macro_rules! unwrap_or_show_error {
 /// Titanium application.
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand>>,
-    find_controller: FindController,
-    search_backwards: Cell<bool>,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
@@ -109,15 +107,8 @@ impl App {
 
         let webview = Rc::new(webview);
 
-        let find_controller = {
-            let webview = webview.clone();
-            webview.get_find_controller().unwrap()
-        };
-
         let app = Rc::new(App {
             app: mg_app,
-            find_controller: find_controller,
-            search_backwards: Cell::new(false),
             url_label: url_label,
             webview: webview,
         });
@@ -150,12 +141,13 @@ impl App {
 
         {
             let app = app.clone();
+            let webview = app.webview.clone();
             let mg_app = app.app.clone();
             let mg_app2 = app.app.clone();
             mg_app.window().connect_key_press_event(move |_, key| {
                 if key.get_keyval() == Escape && mg_app2.get_mode() == "normal" {
-                    app.finish_search();
-                    app.clear_selection();
+                    webview.finish_search();
+                    webview.clear_selection();
                 }
                 Inhibit(false)
             });
@@ -180,17 +172,6 @@ impl App {
         app
     }
 
-    /// Clear the selection.
-    fn clear_selection(&self) {
-        let webview = self.webview.clone();
-        webview.run_javascript("window.getSelection().empty();");
-    }
-
-    /// Clear the current search.
-    fn finish_search(&self) {
-        self.find_controller.search_finish();
-    }
-
     /// Handle the command.
     fn handle_command(&self, command: AppCommand) {
         match command {
@@ -202,14 +183,16 @@ impl App {
             Quit => gtk::main_quit(),
             Reload => self.webview.reload(),
             Reloadbypasscache => self.webview.reload_bypass_cache(),
-            Scrolldown => self.scroll_down_page(),
-            Scrolldownhalf => self.scroll_down_half_page(),
-            Scrolldownline => self.scroll_down_line(),
-            Scrollup => self.scroll_up_page(),
-            Scrolluphalf => self.scroll_up_half_page(),
-            Scrollupline => self.scroll_up_line(),
-            Searchnext => self.search_next(),
-            Searchprevious => self.search_previous(),
+            Scrollbottom => self.webview.scroll_bottom(),
+            Scrolldown => self.webview.scroll_down_page(),
+            Scrolldownhalf => self.webview.scroll_down_half_page(),
+            Scrolldownline => self.webview.scroll_down_line(),
+            Scrolltop => self.webview.scroll_top(),
+            Scrollup => self.webview.scroll_up_page(),
+            Scrolluphalf => self.webview.scroll_up_half_page(),
+            Scrollupline => self.webview.scroll_up_line(),
+            Searchnext => self.webview.search_next(),
+            Searchprevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
             Winopen(url) => self.open_in_new_window(&url),
         }
@@ -258,22 +241,16 @@ impl App {
 
     /// Handle the special command.
     fn handle_special_command(&self, command: SpecialCommand) {
-        let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
-        let (other_options, input) =
-            match command {
-                BackwardSearch(input) => {
-                    self.search_backwards.set(true);
-                    (FIND_OPTIONS_BACKWARDS, input)
-                },
-                Search(input) => {
-                    self.search_backwards.set(false);
-                    (FindOptions::empty(), input)
-                },
-            };
-        let options = default_options | other_options;
-
-        self.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.find_controller.search(&input, options.bits(), ::std::u32::MAX);
+        match command {
+            BackwardSearch(input) => {
+                self.webview.set_search_backward(true);
+                self.webview.search(&input);
+            },
+            Search(input) => {
+                self.webview.set_search_backward(false);
+                self.webview.search(&input);
+            },
+        }
     }
 
     /// Open the given URL in a new window.
@@ -284,65 +261,6 @@ impl App {
                 .arg(url)
                 .spawn()
         );
-    }
-
-    /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) {
-        self.webview.run_javascript(&format!("window.scrollBy(0, {});", pixels));
-    }
-
-    /// Scroll down by one line.
-    fn scroll_down_line(&self) {
-        self.scroll(SCROLL_LINE_VERTICAL);
-    }
-
-    /// Scroll down by one half of page.
-    fn scroll_down_half_page(&self) {
-        let allocation = self.webview.get_allocation();
-        self.scroll(allocation.height / 2);
-    }
-
-    /// Scroll down by one page.
-    fn scroll_down_page(&self) {
-        let allocation = self.webview.get_allocation();
-        self.scroll(allocation.height);
-    }
-
-    /// Scroll up by one line.
-    fn scroll_up_line(&self) {
-        self.scroll(-SCROLL_LINE_VERTICAL);
-    }
-
-    /// Scroll up by one half of page.
-    fn scroll_up_half_page(&self) {
-        let allocation = self.webview.get_allocation();
-        self.scroll(-allocation.height / 2);
-    }
-
-    /// Scroll up by one page.
-    fn scroll_up_page(&self) {
-        let allocation = self.webview.get_allocation();
-        self.scroll(-allocation.height);
-    }
-
-    /// Search the next occurence of the search text.
-    fn search_next(&self) {
-        if self.search_backwards.get() {
-            self.find_controller.search_previous();
-        }
-        else {
-            self.find_controller.search_next();
-        }
-    }
-
-    /// Search the previous occurence of the search text.
-    fn search_previous(&self) {
-        if self.search_backwards.get() {
-            self.find_controller.search_next();
-        }
-        else {
-            self.find_controller.search_previous();
-        }
     }
 
     /// Set the title of the window as the progress and the web page title.
