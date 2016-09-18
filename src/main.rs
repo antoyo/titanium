@@ -20,10 +20,9 @@
  */
 
 /*
+ * TODO: show current scroll percentage.
  * TODO: support search backward.
  * TODO: follow link.
- * TODO: write a webkit2 plugin to support scrolling.
- * TODO: show current scroll percentage.
  * TODO: settings.
  * TODO: cookie.
  * TODO: download manager.

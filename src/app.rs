@@ -39,6 +39,7 @@ use self::SpecialCommand::*;
 use webview::WebView;
 
 const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+const SCROLL_LINE_VERTICAL: i32 = 40;
 
 commands!(AppCommand {
     Back,
@@ -49,6 +50,12 @@ commands!(AppCommand {
     Quit,
     Reload,
     Reloadbypasscache,
+    Scrolldown,
+    Scrolldownhalf,
+    Scrolldownline,
+    Scrollup,
+    Scrolluphalf,
+    Scrollupline,
     Searchnext,
     Searchprevious,
     Stop,
@@ -191,6 +198,12 @@ impl App {
             Quit => gtk::main_quit(),
             Reload => self.webview.reload(),
             Reloadbypasscache => self.webview.reload_bypass_cache(),
+            Scrolldown => self.scroll_down_page(),
+            Scrolldownhalf => self.scroll_down_half_page(),
+            Scrolldownline => self.scroll_down_line(),
+            Scrollup => self.scroll_up_page(),
+            Scrolluphalf => self.scroll_up_half_page(),
+            Scrollupline => self.scroll_up_line(),
             Searchnext => self.search_next(),
             Searchprevious => self.search_previous(),
             Stop => self.webview.stop_loading(),
@@ -258,6 +271,45 @@ impl App {
                 .arg(url)
                 .spawn()
         );
+    }
+
+    /// Scroll by the specified number of pixels.
+    fn scroll(&self, pixels: i32) {
+        self.webview.run_javascript(&format!("window.scrollBy(0, {});", pixels));
+    }
+
+    /// Scroll down by one line.
+    fn scroll_down_line(&self) {
+        self.scroll(SCROLL_LINE_VERTICAL);
+    }
+
+    /// Scroll down by one half of page.
+    fn scroll_down_half_page(&self) {
+        let allocation = self.webview.get_allocation();
+        self.scroll(allocation.height / 2);
+    }
+
+    /// Scroll down by one page.
+    fn scroll_down_page(&self) {
+        let allocation = self.webview.get_allocation();
+        self.scroll(allocation.height);
+    }
+
+    /// Scroll up by one line.
+    fn scroll_up_line(&self) {
+        self.scroll(-SCROLL_LINE_VERTICAL);
+    }
+
+    /// Scroll up by one half of page.
+    fn scroll_up_half_page(&self) {
+        let allocation = self.webview.get_allocation();
+        self.scroll(-allocation.height / 2);
+    }
+
+    /// Scroll up by one page.
+    fn scroll_up_page(&self) {
+        let allocation = self.webview.get_allocation();
+        self.scroll(-allocation.height);
     }
 
     /// Search the next occurence of the search text.
