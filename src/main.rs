@@ -20,8 +20,7 @@
  */
 
 /*
- * TODO: support special commands.
- * TODO: search (using FindController).
+ * TODO: support search backward.
  * TODO: follow link.
  * TODO: write a webkit2 plugin to support scrolling.
  * TODO: show current scroll percentage.
@@ -42,6 +41,7 @@
  */
 
 extern crate docopt;
+extern crate gdk;
 extern crate glib;
 extern crate gtk;
 extern crate gtk_sys;

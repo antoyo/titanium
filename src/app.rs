@@ -24,16 +24,18 @@ use std::fs::OpenOptions;
 use std::process::Command;
 use std::rc::Rc;
 
+use gdk::enums::key::Escape;
 use glib::object::Downcast;
-use gtk;
+use gtk::{self, Inhibit, WidgetExt};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2::NavigationPolicyDecision;
+use webkit2::{FindController, NavigationPolicyDecision, WebViewExt, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use webkit2::LoadEvent::Started;
 use webkit2::PolicyDecisionType::NewWindowAction;
 
 use self::AppCommand::*;
+use self::SpecialCommand::*;
 use webview::WebView;
 
 const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -47,8 +49,14 @@ commands!(AppCommand {
     Quit,
     Reload,
     Reloadbypasscache,
+    Searchnext,
+    Searchprevious,
     Stop,
     Winopen(String),
+});
+
+special_commands!(SpecialCommand {
+    Search('/', always),
 });
 
 macro_rules! unwrap_or_show_error {
@@ -61,7 +69,8 @@ macro_rules! unwrap_or_show_error {
 
 /// Titanium application.
 pub struct App {
-    app: Rc<Application<AppCommand>>,
+    app: Rc<Application<SpecialCommand, AppCommand>>,
+    find_controller: FindController,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
@@ -88,10 +97,18 @@ impl App {
         webview.open(&url);
         mg_app.set_view(&webview);
 
+        let webview = Rc::new(webview);
+
+        let find_controller = {
+            let webview = webview.clone();
+            webview.get_find_controller().unwrap()
+        };
+
         let app = Rc::new(App {
             app: mg_app,
+            find_controller: find_controller,
             url_label: url_label,
-            webview: Rc::new(webview),
+            webview: webview,
         });
 
         {
@@ -123,12 +140,44 @@ impl App {
         {
             let app = app.clone();
             let mg_app = app.app.clone();
+            let mg_app2 = app.app.clone();
+            mg_app.window().connect_key_press_event(move |_, key| {
+                if key.get_keyval() == Escape && mg_app2.get_mode() == "normal" {
+                    app.finish_search();
+                    app.clear_selection();
+                }
+                Inhibit(false)
+            });
+        }
+
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
+            mg_app.connect_special_command(move |command| {
+                app.handle_special_command(command);
+            });
+        }
+
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
             mg_app.add_variable("url", move || {
                 app.webview.get_uri().unwrap()
             });
         }
 
         app
+    }
+
+    /// Clear the selection.
+    fn clear_selection(&self) {
+        let webview = self.webview.clone();
+        webview.run_javascript("window.getSelection().empty();");
+    }
+
+    /// Clear the current search.
+    fn finish_search(&self) {
+        self.find_controller.search_finish();
     }
 
     /// Handle the command.
@@ -142,6 +191,8 @@ impl App {
             Quit => gtk::main_quit(),
             Reload => self.webview.reload(),
             Reloadbypasscache => self.webview.reload_bypass_cache(),
+            Searchnext => self.search_next(),
+            Searchprevious => self.search_previous(),
             Stop => self.webview.stop_loading(),
             Winopen(url) => self.open_in_new_window(&url),
         }
@@ -188,6 +239,17 @@ impl App {
         });
     }
 
+    /// Handle the special command.
+    fn handle_special_command(&self, command: SpecialCommand) {
+        match command {
+            Search(input) => {
+                let options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
+                self.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+                self.find_controller.search(&input, options.bits(), ::std::u32::MAX);
+            },
+        }
+    }
+
     /// Open the given URL in a new window.
     fn open_in_new_window(&self, url: &str) {
         let program = env::args().next().unwrap();
@@ -196,6 +258,16 @@ impl App {
                 .arg(url)
                 .spawn()
         );
+    }
+
+    /// Search the next occurence of the search text.
+    fn search_next(&self) {
+        self.find_controller.search_next();
+    }
+
+    /// Search the previous occurence of the search text.
+    fn search_previous(&self) {
+        self.find_controller.search_previous();
     }
 
     /// Set the title of the window as the progress and the web page title.

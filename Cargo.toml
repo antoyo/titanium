@@ -6,6 +6,7 @@ authors = ["Antoni Boucher <bouanto@zoho.com>"]
 [dependencies]
 docopt = "^0.6"
 glib = "^0.1"
+gdk = "^0.5"
 gtk = "^0.1"
 gtk-sys = "^0.3"
 #mg = "^0.0.4"

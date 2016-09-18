@@ -3,6 +3,7 @@ name = "titanium"
 version = "0.1.0"
 dependencies = [
  "docopt 0.6.83 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gdk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -282,7 +283,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#0244fb89c8c1844e73cd0f4525762563c3865b65"
+source = "git+https://github.com/antoyo/mg#22024d8f4a134cb17c8162e10ca747ae855a4ae9"
 dependencies = [
  "gdk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -413,9 +414,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2-rs#683ac43c9d18dcb1b672784efbd9f4b2017b685d"
+source = "git+https://github.com/antoyo/webkit2-rs#60ea1895dc5fff5033d7ddd16b7239846dad94a7"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gio-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gobject-sys 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
