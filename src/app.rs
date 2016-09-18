@@ -38,7 +38,7 @@ use self::AppCommand::*;
 use self::SpecialCommand::*;
 use webview::WebView;
 
-const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 commands!(AppCommand {
     Back,

@@ -22,8 +22,7 @@
 /*
  * TODO: show current scroll percentage (using `window.scrollY / document.body.clientHeight * 100`).
  * TODO: follow link.
- * TODO: settings.
- * TODO: cookie.
+ * TODO: settings (third-party cookies).
  * TODO: download manager.
  * TODO: open file (instead of download).
  * TODO: support bookmarks with tags.

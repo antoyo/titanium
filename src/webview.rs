@@ -25,7 +25,10 @@ use std::ops::Deref;
 
 use gtk::WidgetExt;
 use url::Url;
-use webkit2::{self, FindController, FindOptions, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use xdg::BaseDirectories;
+
+use app::APP_NAME;
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
@@ -47,6 +50,12 @@ impl WebView {
             let webview = webview.clone();
             webview.get_find_controller().unwrap()
         };
+
+        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+        let cookie_path = xdg_dirs.place_data_file("cookies")
+            .expect("cannot create configuration directory");
+        let cookie_manager = context.get_cookie_manager().unwrap();
+        cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
 
         WebView {
             find_controller: find_controller,
