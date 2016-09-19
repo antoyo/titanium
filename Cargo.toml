@@ -5,15 +5,27 @@ authors = ["Antoni Boucher <bouanto@zoho.com>"]
 
 [dependencies]
 docopt = "^0.6"
-glib = "^0.1"
-gdk = "^0.5"
-gtk = "^0.1"
-gtk-sys = "^0.3"
 #mg = "^0.0.4"
 mg-settings = "^0.0.2"
 rustc-serialize = "^0.3"
 url = "^1.2"
 xdg = "^2.0"
+
+[dependencies.gdk]
+git = "https://github.com/gtk-rs/gdk"
+version = "0.5.0"
+
+[dependencies.glib]
+git = "https://github.com/gtk-rs/glib"
+version = "0.1.0"
+
+[dependencies.gtk]
+git = "https://github.com/gtk-rs/gtk"
+version = "0.1.0"
+
+[dependencies.gtk-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.1"
 
 [dependencies.mg]
 git = "https://github.com/antoyo/mg"

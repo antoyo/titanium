@@ -79,6 +79,7 @@ macro_rules! unwrap_or_show_error {
 /// Titanium application.
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand>>,
+    scroll_label: Rc<StatusBarItem>,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
@@ -95,6 +96,9 @@ impl App {
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
+        let scroll_label = Rc::new(mg_app.add_statusbar_item());
+        scroll_label.set_text("[top]");
+
         let url_label = mg_app.add_statusbar_item();
 
         unwrap_or_show_error!(mg_app, OpenOptions::new().create(true).write(true).open(&config_path));
@@ -103,12 +107,11 @@ impl App {
         let url = homepage.unwrap_or("https://duckduckgo.com/lite/".to_string());
         let webview = WebView::new();
         webview.open(&url);
-        mg_app.set_view(&webview);
-
-        let webview = Rc::new(webview);
+        mg_app.set_view(&*webview);
 
         let app = Rc::new(App {
             app: mg_app,
+            scroll_label: scroll_label,
             url_label: url_label,
             webview: webview,
         });
@@ -123,6 +126,21 @@ impl App {
             let webview = app.webview.clone();
             webview.connect_resource_load_started(move |_, _, _| {
                 app.set_title();
+            });
+        }
+
+        {
+            let app = app.clone();
+            let webview = app.webview.clone();
+            let scroll_label = app.scroll_label.clone();
+            webview.connect_scrolled(move |scroll_percentage| {
+                let text =
+                    match scroll_percentage {
+                        0 => "[top]".to_string(),
+                        100 => "[bot]".to_string(),
+                        _ => format!("[{}%]", scroll_percentage),
+                    };
+                scroll_label.set_text(&text);
             });
         }
 

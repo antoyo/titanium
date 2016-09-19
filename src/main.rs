@@ -20,16 +20,17 @@
  */
 
 /*
- * TODO: show current scroll percentage (using `window.scrollY / document.body.clientHeight * 100`).
  * TODO: follow link.
+ * TODO: support bookmarks with tags.
  * TODO: settings (third-party cookies).
  * TODO: download manager.
  * TODO: open file (instead of download).
- * TODO: support bookmarks with tags.
  * TODO: adblock.
  * TODO: command/open completions.
  * TODO: copy/paste URLs.
  * TODO: handle network errors.
+ * TODO: preferred languages.
+ * TODO: store cache.
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: non-modal javascript alert, prompt and confirm.
