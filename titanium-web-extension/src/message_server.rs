@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
  *
@@ -20,47 +19,40 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * TODO: switch from AtomicIsize to AtomicU64.
- */
-
-extern crate dbus;
-#[macro_use]
-extern crate dbus_macros;
-#[macro_use]
-extern crate webkit2gtk_webextension;
-
-mod dom;
-mod scroll;
-mod message_server;
-
 use std::sync::Arc;
 use std::sync::atomic::AtomicIsize;
 use std::sync::atomic::Ordering::Relaxed;
-use std::thread;
 
-use glib::variant::Variant;
+use dbus;
 use webkit2gtk_webextension::WebExtension;
 
-use message_server::MessageServer;
+use scroll::Scrollable;
 
-web_extension_init!();
-
-#[no_mangle]
-pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
-    let current_page_id = Arc::new(AtomicIsize::new(-1));
-
-    {
-        let current_page_id = current_page_id.clone();
-        extension.connect_page_created(move |_, page| {
-            current_page_id.store(page.get_id() as isize, Relaxed);
-        });
+dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize>, extension: WebExtension) {
+    fn get_scroll_percentage(&this) -> i64 {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            page.scroll_percentage()
+        }
+        else {
+            0
+        }
     }
 
-    let bus_name = user_data.get_str();
-    if let Some(bus_name) = bus_name {
-        let bus_name = bus_name.to_string();
-        let message_server = MessageServer::new(current_page_id, extension);
-        thread::spawn(move || message_server.run(&bus_name));
+    fn scroll_bottom(&this) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            page.scroll_bottom();
+        }
     }
-}
+
+    fn scroll_by(&this, pixels: i64) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            page.scroll_by(pixels);
+        }
+    }
+
+    fn scroll_top(&this) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            page.scroll_top();
+        }
+    }
+});

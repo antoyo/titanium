@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
  *
@@ -20,47 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * TODO: switch from AtomicIsize to AtomicU64.
- */
 
-extern crate dbus;
-#[macro_use]
-extern crate dbus_macros;
-#[macro_use]
-extern crate webkit2gtk_webextension;
+use webkit2gtk_webextension::{DOMDocumentExt, DOMElement, DOMHTMLElement, WebPage};
 
-mod dom;
-mod scroll;
-mod message_server;
+/// Get the body element of the web page.
+pub fn get_body(page: &WebPage) -> Option<DOMHTMLElement> {
+    page.get_dom_document().and_then(|document|
+        document.get_body()
+    )
+}
 
-use std::sync::Arc;
-use std::sync::atomic::AtomicIsize;
-use std::sync::atomic::Ordering::Relaxed;
-use std::thread;
-
-use glib::variant::Variant;
-use webkit2gtk_webextension::WebExtension;
-
-use message_server::MessageServer;
-
-web_extension_init!();
-
-#[no_mangle]
-pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
-    let current_page_id = Arc::new(AtomicIsize::new(-1));
-
-    {
-        let current_page_id = current_page_id.clone();
-        extension.connect_page_created(move |_, page| {
-            current_page_id.store(page.get_id() as isize, Relaxed);
-        });
-    }
-
-    let bus_name = user_data.get_str();
-    if let Some(bus_name) = bus_name {
-        let bus_name = bus_name.to_string();
-        let message_server = MessageServer::new(current_page_id, extension);
-        thread::spawn(move || message_server.run(&bus_name));
-    }
+/// Get the document element of the web page.
+pub fn get_document(page: &WebPage) -> Option<DOMElement> {
+    page.get_dom_document().and_then(|document|
+        document.get_document_element()
+    )
 }

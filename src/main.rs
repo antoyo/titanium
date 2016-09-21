@@ -20,6 +20,7 @@
  */
 
 /*
+ * TODO: clear search (Searchnext still works after hitting Escape).
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
  * TODO: show error if communication is not working.
@@ -65,6 +66,7 @@ extern crate webkit2;
 extern crate xdg;
 
 mod app;
+mod message_server;
 mod webview;
 
 use docopt::Docopt;

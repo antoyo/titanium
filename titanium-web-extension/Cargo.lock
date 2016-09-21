@@ -3,7 +3,7 @@ name = "titanium-web-extension"
 version = "0.1.0"
 dependencies = [
  "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "dbus-macros 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "webkit2gtk-webextension 0.1.0 (git+https://github.com/antoyo/webkit2gtk-webextension-rs)",
@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "dbus-macros"
-version = "0.0.4"
+version = "0.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -304,7 +304,7 @@ dependencies = [
 "checksum cairo-rs 0.1.0 (git+https://github.com/gtk-rs/cairo)" = "<none>"
 "checksum cairo-sys-rs 0.3.1 (git+https://github.com/gtk-rs/cairo)" = "<none>"
 "checksum dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "07dffec4516468a6f7c207a89aefa133d80459fac2548a625b5518af99658ecc"
-"checksum dbus-macros 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b51bee6d0122e23d9da30520f3447a67542ad2b03e3d19aa90746e6a0da14af0"
+"checksum dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d09a38f73e4bc8e89c06a6fd87ce9a9e0c8622f2165e5cec44f37a5b14ead6b4"
 "checksum gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)" = "<none>"
 "checksum gdk-pixbuf 0.1.0 (git+https://github.com/gtk-rs/gdk-pixbuf)" = "<none>"
 "checksum gdk-pixbuf-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"

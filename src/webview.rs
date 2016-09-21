@@ -32,16 +32,9 @@ use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebCon
 use xdg::BaseDirectories;
 
 use app::APP_NAME;
+use message_server::MessageServer;
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
-
-dbus_interface!("com.titanium.client", interface MessageServer {
-    fn get_scroll_percentage() -> i64;
-    fn scroll_bottom();
-    fn scroll_by(pixels: i64);
-    fn scroll_top();
-});
-
 
 /// Webkit-based view.
 pub struct WebView {

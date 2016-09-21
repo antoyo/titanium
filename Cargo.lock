@@ -3,7 +3,7 @@ name = "titanium"
 version = "0.1.0"
 dependencies = [
  "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "dbus-macros 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "docopt 0.6.83 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
@@ -89,7 +89,7 @@ dependencies = [
 
 [[package]]
 name = "dbus-macros"
-version = "0.0.3"
+version = "0.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -512,7 +512,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum cairo-rs 0.1.0 (git+https://github.com/gtk-rs/cairo)" = "<none>"
 "checksum cairo-sys-rs 0.3.1 (git+https://github.com/gtk-rs/cairo)" = "<none>"
 "checksum dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "07dffec4516468a6f7c207a89aefa133d80459fac2548a625b5518af99658ecc"
-"checksum dbus-macros 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "240f5d499a409e6a029ebc1daf122a40a49daa66cfc75f2e25618f445a717e7f"
+"checksum dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d09a38f73e4bc8e89c06a6fd87ce9a9e0c8622f2165e5cec44f37a5b14ead6b4"
 "checksum docopt 0.6.83 (registry+https://github.com/rust-lang/crates.io-index)" = "fc42c6077823a361410c37d47c2535b73a190cbe10838dc4f400fe87c10c8c3b"
 "checksum gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)" = "<none>"
 "checksum gdk-pixbuf 0.1.0 (git+https://github.com/gtk-rs/gdk-pixbuf)" = "<none>"
