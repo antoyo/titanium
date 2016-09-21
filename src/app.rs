@@ -26,9 +26,8 @@ use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 
-use gdk::enums::key::Escape;
 use glib::object::Downcast;
-use gtk::{self, Inhibit, WidgetExt};
+use gtk;
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
@@ -46,6 +45,7 @@ pub type AppResult = Result<(), Box<Error>>;
 
 commands!(AppCommand {
     Back,
+    Finishsearch,
     Forward,
     Insert,
     Normal,
@@ -156,19 +156,6 @@ impl App {
 
         {
             let app = app.clone();
-            let webview = app.webview.clone();
-            let mg_app = app.app.clone();
-            let mg_app2 = app.app.clone();
-            mg_app.window().connect_key_press_event(move |_, key| {
-                if key.get_keyval() == Escape && mg_app2.get_mode() == "normal" {
-                    webview.finish_search();
-                }
-                Inhibit(false)
-            });
-        }
-
-        {
-            let app = app.clone();
             let mg_app = app.app.clone();
             mg_app.connect_special_command(move |command| {
                 app.handle_special_command(command);
@@ -196,6 +183,7 @@ impl App {
     fn handle_command(&self, command: AppCommand) {
         match command {
             Back => self.webview.go_back(),
+            Finishsearch => self.webview.finish_search(),
             Forward => self.webview.go_forward(),
             Insert => self.app.set_mode("insert"),
             Normal => self.app.set_mode("normal"),
