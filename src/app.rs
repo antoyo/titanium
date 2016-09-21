@@ -20,7 +20,9 @@
  */
 
 use std::env;
+use std::error::Error;
 use std::fs::OpenOptions;
+use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 
@@ -39,6 +41,8 @@ use self::SpecialCommand::*;
 use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+
+pub type AppResult = Result<(), Box<Error>>;
 
 commands!(AppCommand {
     Back,
@@ -68,14 +72,6 @@ special_commands!(SpecialCommand {
     Search('/', always),
 });
 
-macro_rules! unwrap_or_show_error {
-    ($app:expr, $error:expr) => {
-        if let Err(error) = $error {
-            $app.error(&error.to_string());
-        }
-    };
-}
-
 /// Titanium application.
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand>>,
@@ -101,9 +97,6 @@ impl App {
 
         let url_label = mg_app.add_statusbar_item();
 
-        unwrap_or_show_error!(mg_app, OpenOptions::new().create(true).write(true).open(&config_path));
-        unwrap_or_show_error!(mg_app, mg_app.parse_config(config_path));
-
         let url = homepage.unwrap_or("https://duckduckgo.com/lite/".to_string());
         let webview = WebView::new();
         webview.open(&url);
@@ -115,6 +108,9 @@ impl App {
             url_label: url_label,
             webview: webview,
         });
+
+        app.handle_error(app.create_config_file(config_path.as_path()));
+        app.handle_error(app.app.parse_config(config_path));
 
         {
             let app = app.clone();
@@ -190,6 +186,12 @@ impl App {
         app
     }
 
+    /// Create the default configuration file if it does not exist.
+    fn create_config_file(&self, config_path: &Path) -> AppResult {
+        try!(OpenOptions::new().create(true).write(true).open(&config_path));
+        Ok(())
+    }
+
     /// Handle the command.
     fn handle_command(&self, command: AppCommand) {
         match command {
@@ -201,18 +203,18 @@ impl App {
             Quit => gtk::main_quit(),
             Reload => self.webview.reload(),
             Reloadbypasscache => self.webview.reload_bypass_cache(),
-            Scrollbottom => self.webview.scroll_bottom(),
-            Scrolldown => self.webview.scroll_down_page(),
-            Scrolldownhalf => self.webview.scroll_down_half_page(),
-            Scrolldownline => self.webview.scroll_down_line(),
-            Scrolltop => self.webview.scroll_top(),
-            Scrollup => self.webview.scroll_up_page(),
-            Scrolluphalf => self.webview.scroll_up_half_page(),
-            Scrollupline => self.webview.scroll_up_line(),
+            Scrollbottom => self.handle_error(self.webview.scroll_bottom()),
+            Scrolldown => self.handle_error(self.webview.scroll_down_page()),
+            Scrolldownhalf => self.handle_error(self.webview.scroll_down_half_page()),
+            Scrolldownline => self.handle_error(self.webview.scroll_down_line()),
+            Scrolltop => self.handle_error(self.webview.scroll_top()),
+            Scrollup => self.handle_error(self.webview.scroll_up_page()),
+            Scrolluphalf => self.handle_error(self.webview.scroll_up_half_page()),
+            Scrollupline => self.handle_error(self.webview.scroll_up_line()),
             Searchnext => self.webview.search_next(),
             Searchprevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
-            Winopen(url) => self.open_in_new_window(&url),
+            Winopen(url) => self.handle_error(self.open_in_new_window(&url)),
         }
     }
 
@@ -225,10 +227,10 @@ impl App {
                     let decision: Result<NavigationPolicyDecision, _> = policy_decision.clone().downcast();
                     let url =
                         decision.ok()
-                        .and_then(|decision| decision.get_request())
-                        .and_then(|request| request.get_uri());
+                            .and_then(|decision| decision.get_request())
+                            .and_then(|request| request.get_uri());
                     if let Some(url) = url {
-                        app.open_in_new_window(&url);
+                        app.handle_error(app.open_in_new_window(&url));
                         return true;
                     }
                     false
@@ -236,6 +238,14 @@ impl App {
                 _ => false,
             }
         });
+    }
+
+    /// Show an error in the result is an error.
+    fn handle_error(&self, error: AppResult) {
+        if let Err(error) = error {
+            // Remove the quotes around the error string since DBus message contains quotes.
+            self.app.error(error.to_string().trim_matches('"'));
+        }
     }
 
     /// Handle the load_changed event.
@@ -272,13 +282,12 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    fn open_in_new_window(&self, url: &str) {
+    fn open_in_new_window(&self, url: &str) -> AppResult {
         let program = env::args().next().unwrap();
-        unwrap_or_show_error!(self.app,
-            Command::new(program)
-                .arg(url)
-                .spawn()
-        );
+        try!(Command::new(program)
+            .arg(url)
+            .spawn());
+        Ok(())
     }
 
     /// Set the title of the window as the progress and the web page title.

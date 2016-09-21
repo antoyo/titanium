@@ -31,7 +31,7 @@ use url::Url;
 use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use xdg::BaseDirectories;
 
-use app::APP_NAME;
+use app::{AppResult, APP_NAME};
 use message_server::MessageServer;
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
@@ -122,52 +122,55 @@ impl WebView {
     }
 
     /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) {
-        self.message_server.scroll_by(pixels as i64).ok();
+    fn scroll(&self, pixels: i32) -> AppResult {
+        try!(self.message_server.scroll_by(pixels as i64));
+        Ok(())
     }
 
     /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) {
-        self.message_server.scroll_bottom().ok();
+    pub fn scroll_bottom(&self) -> AppResult {
+        try!(self.message_server.scroll_bottom());
+        Ok(())
     }
 
     /// Scroll down by one line.
-    pub fn scroll_down_line(&self) {
-        self.scroll(SCROLL_LINE_VERTICAL);
+    pub fn scroll_down_line(&self) -> AppResult {
+        self.scroll(SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) {
+    pub fn scroll_down_half_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(allocation.height / 2);
+        self.scroll(allocation.height / 2)
     }
 
     /// Scroll down by one page.
-    pub fn scroll_down_page(&self) {
+    pub fn scroll_down_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(allocation.height);
+        self.scroll(allocation.height)
     }
 
     /// Scroll to the top of the page.
-    pub fn scroll_top(&self) {
-        self.message_server.scroll_top().ok();
+    pub fn scroll_top(&self) -> AppResult {
+        try!(self.message_server.scroll_top());
+        Ok(())
     }
 
     /// Scroll up by one line.
-    pub fn scroll_up_line(&self) {
-        self.scroll(-SCROLL_LINE_VERTICAL);
+    pub fn scroll_up_line(&self) -> AppResult {
+        self.scroll(-SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) {
+    pub fn scroll_up_half_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(-allocation.height / 2);
+        self.scroll(-allocation.height / 2)
     }
 
     /// Scroll up by one page.
-    pub fn scroll_up_page(&self) {
+    pub fn scroll_up_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(-allocation.height);
+        self.scroll(-allocation.height)
     }
 
     /// Search some text.
