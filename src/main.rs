@@ -20,7 +20,11 @@
  */
 
 /*
+ * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
+ * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
+ * TODO: show error if communication is not working.
  * TODO: follow link.
+ * TODO: activate insert mode after focusing a text element.
  * TODO: support bookmarks with tags.
  * TODO: settings (third-party cookies).
  * TODO: download manager.
@@ -29,20 +33,28 @@
  * TODO: command/open completions.
  * TODO: copy/paste URLs.
  * TODO: handle network errors.
+ * TODO: activate selected links with Enter.
+ * TODO: support marks.
  * TODO: preferred languages.
  * TODO: store cache.
+ * TODO: log console message to stdout.
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: non-modal javascript alert, prompt and confirm.
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: add content to the default config file.
+ * TODO: switch from dbus to gdbus.
  */
 
+extern crate dbus;
+#[macro_use]
+extern crate dbus_macros;
 extern crate docopt;
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
 extern crate gtk_sys;
+extern crate libc;
 #[macro_use]
 extern crate mg;
 #[macro_use]

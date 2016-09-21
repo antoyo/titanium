@@ -24,7 +24,9 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::rc::Rc;
 
+use glib::ToVariant;
 use gtk::{Inhibit, WidgetExt};
+use libc::getpid;
 use url::Url;
 use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use xdg::BaseDirectories;
@@ -33,10 +35,19 @@ use app::APP_NAME;
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
+dbus_interface!("com.titanium.client", interface MessageServer {
+    fn get_scroll_percentage() -> i64;
+    fn scroll_bottom();
+    fn scroll_by(pixels: i64);
+    fn scroll_top();
+});
+
+
 /// Webkit-based view.
 pub struct WebView {
     find_controller: FindController,
-    scrolled_callback: RefCell<Option<Rc<Box<Fn(u8)>>>>,
+    message_server: MessageServer,
+    scrolled_callback: RefCell<Option<Rc<Box<Fn(i64)>>>>,
     search_backwards: Cell<bool>,
     view: webkit2::WebView,
 }
@@ -46,6 +57,13 @@ impl WebView {
     pub fn new() -> Rc<Self> {
         let context = WebContext::get_default().unwrap();
         context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
+
+        let pid = unsafe { getpid() };
+        let bus_name = format!("com.titanium.process{}", pid);
+        let message_server = MessageServer::new(&bus_name);
+
+        context.set_web_extensions_initialization_user_data(&bus_name.to_variant());
+
         let view = webkit2::WebView::new_with_context(&context);
 
         let find_controller = view.get_find_controller().unwrap();
@@ -59,6 +77,7 @@ impl WebView {
         let webview =
             Rc::new(WebView {
                 find_controller: find_controller,
+                message_server: message_server,
                 scrolled_callback: RefCell::new(None),
                 search_backwards: Cell::new(false),
                 view: view,
@@ -78,11 +97,12 @@ impl WebView {
 
     /// Clear the selection.
     pub fn clear_selection(&self) {
+        // TODO: write this in the web extension.
         self.run_javascript("window.getSelection().empty();");
     }
 
     /// Connect the scrolled event.
-    pub fn connect_scrolled<F: Fn(u8) + 'static>(&self, callback: F) {
+    pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
         *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
     }
 
@@ -90,15 +110,9 @@ impl WebView {
     pub fn emit_scrolled_event(&self) {
         if let Some(ref callback) = *self.scrolled_callback.borrow() {
             let callback = callback.clone();
-            self.run_javascript_with_callback("window.scrollY / (document.body.scrollHeight - window.innerHeight)", move |result| {
-                if let Ok(result) = result {
-                    let context = result.get_global_context().unwrap();
-                    let value = result.get_value().unwrap();
-                    if let Some(number) = value.to_number(&context) {
-                        callback((number * 100.0).round() as u8);
-                    }
-                }
-            });
+            if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
+                callback(scroll_percentage);
+            }
         }
     }
 
@@ -121,12 +135,12 @@ impl WebView {
 
     /// Scroll by the specified number of pixels.
     fn scroll(&self, pixels: i32) {
-        self.run_javascript(&format!("window.scrollBy(0, {});", pixels));
+        self.message_server.scroll_by(pixels as i64).ok();
     }
 
     /// Scroll to the bottom of the page.
     pub fn scroll_bottom(&self) {
-        self.run_javascript("window.scrollTo(0, document.body.clientHeight);");
+        self.message_server.scroll_bottom().ok();
     }
 
     /// Scroll down by one line.
@@ -148,7 +162,7 @@ impl WebView {
 
     /// Scroll to the top of the page.
     pub fn scroll_top(&self) {
-        self.run_javascript("window.scrollTo(0, 0);");
+        self.message_server.scroll_top().ok();
     }
 
     /// Scroll up by one line.

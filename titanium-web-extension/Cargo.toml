@@ -1,0 +1,30 @@
+[package]
+name = "titanium-web-extension"
+version = "0.1.0"
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
+
+[lib]
+crate-type = ["dylib"]
+
+[features]
+default = ["webkit2gtk-webextension/v2_2"]
+
+[dependencies]
+dbus = "^0.4"
+dbus-macros = "^0.0.2"
+
+[dependencies.glib]
+git = "https://github.com/gtk-rs/glib"
+version = "0.1.0"
+
+[dependencies.glib-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.1"
+
+[dependencies.webkit2gtk-webextension]
+git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
+version = "^0.1"
+
+[dependencies.webkit2gtk-webextension-sys]
+git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
+version = "^0.2"

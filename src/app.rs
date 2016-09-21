@@ -136,6 +136,7 @@ impl App {
             webview.connect_scrolled(move |scroll_percentage| {
                 let text =
                     match scroll_percentage {
+                        -1 => "[all]".to_string(),
                         0 => "[top]".to_string(),
                         100 => "[bot]".to_string(),
                         _ => format!("[{}%]", scroll_percentage),
