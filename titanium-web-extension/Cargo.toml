@@ -11,7 +11,7 @@ default = ["webkit2gtk-webextension/v2_2"]
 
 [dependencies]
 dbus = "^0.4"
-dbus-macros = "^0.0.2"
+dbus-macros = "^0.0.4"
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"

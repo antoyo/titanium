@@ -21,10 +21,10 @@
  */
 
 /*
- * TODO: store the web extension and the current page id in the DBus server.
  * TODO: switch from AtomicIsize to AtomicU64.
  */
 
+extern crate dbus;
 #[macro_use]
 extern crate dbus_macros;
 #[macro_use]
@@ -40,6 +40,35 @@ use webkit2gtk_webextension::{DOMDocumentExt, DOMElement, DOMElementExt, DOMHTML
 
 web_extension_init!();
 
+dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize>, extension: WebExtension) {
+    fn get_scroll_percentage(&this) -> i64 {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            scroll_percentage(&page)
+        }
+        else {
+            0
+        }
+    }
+
+    fn scroll_bottom(&this) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            scroll_bottom(&page);
+        }
+    }
+
+    fn scroll_by(&this, pixels: i64) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            scroll_by(&page, pixels);
+        }
+    }
+
+    fn scroll_top(&this) {
+        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+            scroll_top(&page);
+        }
+    }
+});
+
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     let current_page_id = Arc::new(AtomicIsize::new(-1));
@@ -54,46 +83,8 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     let bus_name = user_data.get_str();
     if let Some(bus_name) = bus_name {
         let bus_name = bus_name.to_string();
-        let page_id1 = current_page_id.clone();
-        let page_id2 = current_page_id.clone();
-        let page_id3 = current_page_id.clone();
-        let page_id4 = current_page_id.clone();
-        let extension1 = extension.clone();
-        let extension2 = extension.clone();
-        let extension3 = extension.clone();
-        let extension4 = extension.clone();
-        thread::spawn(move || {
-            let message_server = dbus_class!(&bus_name, "com.titanium.client", class MessageServer {
-                fn get_scroll_percentage() -> i64 {
-                    if let Some(page) = extension1.get_page(page_id1.load(Relaxed) as u64) {
-                        scroll_percentage(&page)
-                    }
-                    else {
-                        0
-                    }
-                }
-
-                fn scroll_bottom() {
-                    if let Some(page) = extension2.get_page(page_id2.load(Relaxed) as u64) {
-                        scroll_bottom(&page);
-                    }
-                }
-
-                fn scroll_by(pixels: i64) {
-                    if let Some(page) = extension3.get_page(page_id3.load(Relaxed) as u64) {
-                        scroll_by(&page, pixels);
-                    }
-                }
-
-                fn scroll_top() {
-                    if let Some(page) = extension4.get_page(page_id4.load(Relaxed) as u64) {
-                        scroll_top(&page);
-                    }
-                }
-            });
-
-            message_server();
-        });
+        let message_server = MessageServer::new(current_page_id, extension);
+        thread::spawn(move || message_server.run(&bus_name));
     }
 }
 
