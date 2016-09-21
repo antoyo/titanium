@@ -166,7 +166,6 @@ impl App {
             mg_app.window().connect_key_press_event(move |_, key| {
                 if key.get_keyval() == Escape && mg_app2.get_mode() == "normal" {
                     webview.finish_search();
-                    webview.clear_selection();
                 }
                 Inhibit(false)
             });

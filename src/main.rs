@@ -20,13 +20,14 @@
  */
 
 /*
- * TODO: clear search (Searchnext still works after hitting Escape).
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
  * TODO: show error if communication is not working.
  * TODO: follow link.
+ * TODO: do not hard-code the extension directory: use the one provided by cargo.
+ * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
- * TODO: support bookmarks with tags.
+ * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: settings (third-party cookies).
  * TODO: download manager.
  * TODO: open file (instead of download).

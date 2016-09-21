@@ -28,7 +28,7 @@ use glib::ToVariant;
 use gtk::{Inhibit, WidgetExt};
 use libc::getpid;
 use url::Url;
-use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use xdg::BaseDirectories;
 
 use app::APP_NAME;
@@ -88,12 +88,6 @@ impl WebView {
         webview
     }
 
-    /// Clear the selection.
-    pub fn clear_selection(&self) {
-        // TODO: write this in the web extension.
-        self.run_javascript("window.getSelection().empty();");
-    }
-
     /// Connect the scrolled event.
     pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
         *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
@@ -111,6 +105,7 @@ impl WebView {
 
     /// Clear the current search.
     pub fn finish_search(&self) {
+        self.search("");
         self.find_controller.search_finish();
     }
 
