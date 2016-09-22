@@ -31,9 +31,9 @@ use gtk;
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2::NavigationPolicyDecision;
-use webkit2::LoadEvent::Started;
-use webkit2::PolicyDecisionType::NewWindowAction;
+use webkit2gtk::NavigationPolicyDecision;
+use webkit2gtk::LoadEvent::Started;
+use webkit2gtk::PolicyDecisionType::NewWindowAction;
 
 use self::AppCommand::*;
 use self::SpecialCommand::*;

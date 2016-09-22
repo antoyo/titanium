@@ -62,7 +62,7 @@ extern crate mg;
 extern crate mg_settings;
 extern crate rustc_serialize;
 extern crate url;
-extern crate webkit2;
+extern crate webkit2gtk;
 extern crate xdg;
 
 mod app;

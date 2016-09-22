@@ -28,7 +28,7 @@ use glib::ToVariant;
 use gtk::{Inhibit, WidgetExt};
 use libc::getpid;
 use url::Url;
-use webkit2::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2gtk::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
 use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
@@ -42,7 +42,7 @@ pub struct WebView {
     message_server: MessageServer,
     scrolled_callback: RefCell<Option<Rc<Box<Fn(i64)>>>>,
     search_backwards: Cell<bool>,
-    view: webkit2::WebView,
+    view: webkit2gtk::WebView,
 }
 
 impl WebView {
@@ -57,7 +57,7 @@ impl WebView {
 
         context.set_web_extensions_initialization_user_data(&bus_name.to_variant());
 
-        let view = webkit2::WebView::new_with_context(&context);
+        let view = webkit2gtk::WebView::new_with_context(&context);
 
         let find_controller = view.get_find_controller().unwrap();
 
@@ -91,6 +91,7 @@ impl WebView {
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult {
         self.message_server.activate_selection().ok();
+        // FIXME: finish search should be called after activate_selection() returns.
         self.finish_search();
         Ok(())
     }
@@ -230,9 +231,9 @@ impl WebView {
 is_widget!(WebView, view);
 
 impl Deref for WebView {
-    type Target = webkit2::WebView;
+    type Target = webkit2gtk::WebView;
 
-    fn deref(&self) -> &webkit2::WebView {
+    fn deref(&self) -> &webkit2gtk::WebView {
         &self.view
     }
 }

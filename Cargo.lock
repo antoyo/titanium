@@ -14,7 +14,7 @@ dependencies = [
  "mg-settings 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "webkit2 0.1.0 (git+https://github.com/antoyo/webkit2-rs)",
+ "webkit2gtk 0.1.0 (git+https://github.com/antoyo/webkit2gtk-rs)",
  "xdg 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -449,9 +449,9 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "webkit2"
+name = "webkit2gtk"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2-rs#0baa12c13f7bbe69f899578b6591e4c8eb277e23"
+source = "git+https://github.com/antoyo/webkit2gtk-rs#c1563f19cc52039a3a8d66ec3e190e3db5c3414b"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.1.0 (git+https://github.com/gtk-rs/gio)",
@@ -463,13 +463,13 @@ dependencies = [
  "gtk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "javascriptcore 0.1.0 (git+https://github.com/antoyo/javascriptcore-rs)",
  "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "webkit2-sys 0.3.1 (git+https://github.com/antoyo/webkit2-sys-rs)",
+ "webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-sys-rs)",
 ]
 
 [[package]]
-name = "webkit2-sys"
+name = "webkit2gtk-sys"
 version = "0.3.1"
-source = "git+https://github.com/antoyo/webkit2-sys-rs#615ba80c3dab5f74f0587588415aa7af20d31337"
+source = "git+https://github.com/antoyo/webkit2gtk-sys-rs#ae0a8bc02f9cce27200d526f6d696e88de775a37"
 dependencies = [
  "atk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "bitflags 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -549,8 +549,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum unicode-normalization 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "26643a2f83bac55f1976fb716c10234485f9202dcd65cfbdf9da49867b271172"
 "checksum url 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "afe9ec54bc4db14bc8744b7fed060d785ac756791450959b2248443319d5b119"
 "checksum utf8-ranges 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a1ca13c08c41c9c3e04224ed9ff80461d97e121589ff27c753a16cb10830ae0f"
-"checksum webkit2 0.1.0 (git+https://github.com/antoyo/webkit2-rs)" = "<none>"
-"checksum webkit2-sys 0.3.1 (git+https://github.com/antoyo/webkit2-sys-rs)" = "<none>"
+"checksum webkit2gtk 0.1.0 (git+https://github.com/antoyo/webkit2gtk-rs)" = "<none>"
+"checksum webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-sys-rs)" = "<none>"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
 "checksum xdg 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "77b831a5ba77110f438f0ac5583aafeb087f70432998ba6b7dcb1d32185db453"

@@ -15,7 +15,7 @@ url = "^1.2"
 xdg = "^2.0"
 
 [features]
-default = ["webkit2/v2_4"]
+default = ["webkit2gtk/v2_4"]
 
 [dependencies.gdk]
 git = "https://github.com/gtk-rs/gdk"
@@ -36,6 +36,6 @@ version = "0.3.1"
 [dependencies.mg]
 git = "https://github.com/antoyo/mg"
 
-[dependencies.webkit2]
-git = "https://github.com/antoyo/webkit2-rs"
+[dependencies.webkit2gtk]
+git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
