@@ -274,11 +274,12 @@ dependencies = [
 [[package]]
 name = "webkit2gtk-webextension"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#cdc369dd5d23213dbc92043a85b7a9b365c450a9"
+source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#2a91ddb9b5e5122c274cb460afd439056bbb9499"
 dependencies = [
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "gtk 0.1.0 (git+https://github.com/gtk-rs/gtk)",
+ "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "webkit2gtk-webextension-sys 0.2.0 (git+https://github.com/antoyo/webkit2gtk-webextension-sys-rs)",
 ]
 

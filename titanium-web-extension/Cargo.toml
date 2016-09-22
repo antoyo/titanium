@@ -7,7 +7,7 @@ authors = ["Antoni Boucher <bouanto@zoho.com>"]
 crate-type = ["dylib"]
 
 [features]
-default = ["webkit2gtk-webextension/v2_2"]
+default = ["webkit2gtk-webextension/v2_12"]
 
 [dependencies]
 dbus = "^0.4"

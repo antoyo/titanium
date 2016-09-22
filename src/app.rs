@@ -44,8 +44,10 @@ pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 pub type AppResult = Result<(), Box<Error>>;
 
 commands!(AppCommand {
+    Activateselection,
     Back,
     Finishsearch,
+    Follow,
     Forward,
     Insert,
     Normal,
@@ -182,8 +184,10 @@ impl App {
     /// Handle the command.
     fn handle_command(&self, command: AppCommand) {
         match command {
+            Activateselection => self.handle_error(self.webview.activate_selection()),
             Back => self.webview.go_back(),
             Finishsearch => self.webview.finish_search(),
+            Follow => self.handle_error(self.webview.follow_link()),
             Forward => self.webview.go_forward(),
             Insert => self.app.set_mode("insert"),
             Normal => self.app.set_mode("normal"),

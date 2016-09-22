@@ -21,6 +21,7 @@
 
 /*
  * TODO: follow link.
+ * TODO: only print titanium instead of " - titanium" when there is not yet a title.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
@@ -32,7 +33,6 @@
  * TODO: command/open completions.
  * TODO: copy/paste URLs.
  * TODO: handle network errors.
- * TODO: activate selected links with Enter.
  * TODO: support marks.
  * TODO: preferred languages.
  * TODO: store cache.

@@ -88,6 +88,13 @@ impl WebView {
         webview
     }
 
+    /// Activate the link in the selection
+    pub fn activate_selection(&self) -> AppResult {
+        self.message_server.activate_selection().ok();
+        self.finish_search();
+        Ok(())
+    }
+
     /// Connect the scrolled event.
     pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
         *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
@@ -107,6 +114,12 @@ impl WebView {
     pub fn finish_search(&self) {
         self.search("");
         self.find_controller.search_finish();
+    }
+
+    /// Follow a link.
+    pub fn follow_link(&self) -> AppResult {
+        //try!(self.message_server.follow_link());
+        Ok(())
     }
 
     /// Open the specified URL.

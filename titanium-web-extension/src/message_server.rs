@@ -24,13 +24,33 @@ use std::sync::atomic::AtomicIsize;
 use std::sync::atomic::Ordering::Relaxed;
 
 use dbus;
-use webkit2gtk_webextension::WebExtension;
+use glib::Cast;
+use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMHTMLElement, DOMHTMLElementExt, DOMNodeExt, WebExtension};
 
 use scroll::Scrollable;
 
+macro_rules! get_page {
+    ($this:ident) => {
+        $this.extension.get_page($this.page_id.load(Relaxed) as u64)
+    };
+}
+
 dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize>, extension: WebExtension) {
+    fn activate_selection(&this) {
+        let result = get_page!(this)
+            .and_then(|page| page.get_dom_document())
+            .and_then(|document| document.get_default_view())
+            .and_then(|window| window.get_selection())
+            .and_then(|selection| selection.get_anchor_node())
+            .and_then(|anchor_node| anchor_node.get_parent_element())
+            .and_then(|parent| parent.downcast::<DOMHTMLElement>().ok());
+        if let Some(parent) = result {
+            parent.click();
+        }
+    }
+
     fn get_scroll_percentage(&this) -> i64 {
-        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+        if let Some(page) = get_page!(this) {
             page.scroll_percentage()
         }
         else {
@@ -39,19 +59,19 @@ dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize
     }
 
     fn scroll_bottom(&this) {
-        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+        if let Some(page) = get_page!(this) {
             page.scroll_bottom();
         }
     }
 
     fn scroll_by(&this, pixels: i64) {
-        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+        if let Some(page) = get_page!(this) {
             page.scroll_by(pixels);
         }
     }
 
     fn scroll_top(&this) {
-        if let Some(page) = this.extension.get_page(this.page_id.load(Relaxed) as u64) {
+        if let Some(page) = get_page!(this) {
             page.scroll_top();
         }
     }
