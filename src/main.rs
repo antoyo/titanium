@@ -43,15 +43,18 @@
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: add content to the default config file.
  * TODO: switch from dbus to gdbus.
+ * TODO: soft scrolling (to avoid flickering for fixed elements).
+ * TODO: copier plugin (word, line, sentense, block, links…).
+ * FIXME: some dbus calls timeout.
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
  */
 
-extern crate dbus;
 #[macro_use]
-extern crate dbus_macros;
+extern crate gdbus;
 extern crate docopt;
 extern crate gdk;
+extern crate gio_sys;
 extern crate glib;
 extern crate gtk;
 extern crate gtk_sys;

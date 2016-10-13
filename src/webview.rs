@@ -52,8 +52,8 @@ impl WebView {
         context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
 
         let pid = unsafe { getpid() };
-        let bus_name = format!("com.titanium.process{}", pid);
-        let message_server = MessageServer::new(&bus_name);
+        let bus_name = format!("/com/titanium/process{}", pid);
+        let message_server = MessageServer::new("com.titanium.web-extensions", &bus_name);
 
         context.set_web_extensions_initialization_user_data(&bus_name.to_variant());
 

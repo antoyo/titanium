@@ -4,8 +4,6 @@ version = "0.1.0"
 authors = ["Antoni Boucher <bouanto@zoho.com>"]
 
 [dependencies]
-dbus = "^0.4"
-dbus-macros = "^0.0.6"
 docopt = "^0.6"
 libc = "^0.2"
 #mg = "^0.0.4"
@@ -17,9 +15,17 @@ xdg = "^2.0"
 [features]
 default = ["webkit2gtk/v2_4"]
 
+[dependencies.gdbus]
+git = "https://github.com/antoyo/gdbus-rs"
+version = "0.0.1"
+
 [dependencies.gdk]
 git = "https://github.com/gtk-rs/gdk"
 version = "0.5.0"
+
+[dependencies.gio-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.1"
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"

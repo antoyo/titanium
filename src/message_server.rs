@@ -21,12 +21,13 @@
 
 //! Message server interface.
 
-use dbus;
-
-dbus_interface!("com.titanium.client", interface MessageServer {
+dbus_interface!(
+#[dbus("com.titanium.client")]
+interface MessageServer {
     fn activate_selection();
     fn get_scroll_percentage() -> i64;
     fn scroll_bottom();
     fn scroll_by(pixels: i64);
     fn scroll_top();
-});
+}
+);

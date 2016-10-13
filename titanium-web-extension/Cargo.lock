@@ -2,8 +2,8 @@
 name = "titanium-web-extension"
 version = "0.1.0"
 dependencies = [
- "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gdbus 0.0.1 (git+https://github.com/antoyo/gdbus-rs)",
+ "gio-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "webkit2gtk-webextension 0.1.0 (git+https://github.com/antoyo/webkit2gtk-webextension-rs)",
@@ -33,6 +33,11 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "bitflags"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "c_vec"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -58,20 +63,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbus"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+name = "gdbus"
+version = "0.0.1"
+source = "git+https://github.com/antoyo/gdbus-rs#a607e77e75cbfd73620e2aa5d02987f676559928"
 dependencies = [
+ "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gio-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
+ "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
+ "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
+ "gobject-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "dbus-macros"
-version = "0.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -301,11 +302,11 @@ dependencies = [
 "checksum atk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"
 "checksum bitflags 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dead7461c1127cf637931a1e50934eb6eee8bff2f74433ac7909e9afcee04a3"
 "checksum bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4f67931368edf3a9a51d29886d245f1c3db2f1ef0dcc9e35ff70341b78c10d23"
+"checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum c_vec 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)" = "aa9e1d9f7d49e289f36f19effbf3d5a5e30163ecf9c7a3c9be94d5374dec5b9a"
 "checksum cairo-rs 0.1.0 (git+https://github.com/gtk-rs/cairo)" = "<none>"
 "checksum cairo-sys-rs 0.3.1 (git+https://github.com/gtk-rs/cairo)" = "<none>"
-"checksum dbus 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "07dffec4516468a6f7c207a89aefa133d80459fac2548a625b5518af99658ecc"
-"checksum dbus-macros 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d09a38f73e4bc8e89c06a6fd87ce9a9e0c8622f2165e5cec44f37a5b14ead6b4"
+"checksum gdbus 0.0.1 (git+https://github.com/antoyo/gdbus-rs)" = "<none>"
 "checksum gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)" = "<none>"
 "checksum gdk-pixbuf 0.1.0 (git+https://github.com/gtk-rs/gdk-pixbuf)" = "<none>"
 "checksum gdk-pixbuf-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"

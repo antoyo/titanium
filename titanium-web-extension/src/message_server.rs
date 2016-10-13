@@ -19,11 +19,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::sync::Arc;
-use std::sync::atomic::AtomicIsize;
-use std::sync::atomic::Ordering::Relaxed;
+#![allow(non_upper_case_globals)]
 
-use dbus;
+use std::cell::Cell;
+use std::rc::Rc;
+
 use glib::Cast;
 use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMHTMLElement, DOMHTMLElementExt, DOMNodeExt, WebExtension};
 
@@ -31,12 +31,12 @@ use scroll::Scrollable;
 
 macro_rules! get_page {
     ($this:ident) => {
-        $this.extension.get_page($this.page_id.load(Relaxed) as u64)
+        $this.extension.get_page($this.page_id.get())
     };
 }
 
-dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize>, extension: WebExtension) {
-    fn activate_selection(&this) {
+dbus_class!("com.titanium.client", class MessageServer (page_id: Rc<Cell<u64>>, extension: WebExtension) {
+    fn activate_selection(&this) -> () {
         let result = get_page!(this)
             .and_then(|page| page.get_dom_document())
             .and_then(|document| document.get_default_view())
@@ -58,19 +58,19 @@ dbus_class!("com.titanium.client", class MessageServer (page_id: Arc<AtomicIsize
         }
     }
 
-    fn scroll_bottom(&this) {
+    fn scroll_bottom(&this) -> () {
         if let Some(page) = get_page!(this) {
             page.scroll_bottom();
         }
     }
 
-    fn scroll_by(&this, pixels: i64) {
+    fn scroll_by(&this, pixels: i64) -> () {
         if let Some(page) = get_page!(this) {
             page.scroll_by(pixels);
         }
     }
 
-    fn scroll_top(&this) {
+    fn scroll_top(&this) -> () {
         if let Some(page) = get_page!(this) {
             page.scroll_top();
         }
