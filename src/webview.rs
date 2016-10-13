@@ -59,6 +59,8 @@ impl WebView {
 
         let view = webkit2gtk::WebView::new_with_context(&context);
 
+        WebView::configure(&view);
+
         let find_controller = view.get_find_controller().unwrap();
 
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
@@ -94,6 +96,12 @@ impl WebView {
         // FIXME: finish search should be called after activate_selection() returns.
         self.finish_search();
         Ok(())
+    }
+
+    fn configure(view: &webkit2gtk::WebView) {
+        if let Some(settings) = view.get_settings() {
+            settings.set_enable_developer_extras(true);
+        }
     }
 
     /// Connect the scrolled event.
@@ -225,6 +233,14 @@ impl WebView {
     /// Set whether the search is backward or not.
     pub fn set_search_backward(&self, backward: bool) {
         self.search_backwards.set(backward);
+    }
+
+    /// Show the web inspector.
+    pub fn show_inspector(&self) {
+        if let Some(inspector) = self.view.get_inspector() {
+            inspector.show();
+            inspector.detach();
+        }
     }
 }
 

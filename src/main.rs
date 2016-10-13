@@ -45,6 +45,7 @@
  * TODO: switch from dbus to gdbus.
  * TODO: soft scrolling (to avoid flickering for fixed elements).
  * TODO: copier plugin (word, line, sentense, block, links…).
+ * FIXME: enter to activate selected link.
  * FIXME: some dbus calls timeout.
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
