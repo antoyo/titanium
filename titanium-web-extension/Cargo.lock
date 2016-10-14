@@ -65,7 +65,7 @@ dependencies = [
 [[package]]
 name = "gdbus"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/gdbus-rs#a607e77e75cbfd73620e2aa5d02987f676559928"
+source = "git+https://github.com/antoyo/gdbus-rs#24c6258cda7f86aaa1a223fa343066dd6aeaadc8"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -275,7 +275,7 @@ dependencies = [
 [[package]]
 name = "webkit2gtk-webextension"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#2a91ddb9b5e5122c274cb460afd439056bbb9499"
+source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#265c090ff1dac1d27920903f184dedb10cf51f0d"
 dependencies = [
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",

@@ -22,22 +22,42 @@
 #![allow(non_upper_case_globals)]
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use glib::Cast;
-use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMHTMLElement, DOMHTMLElementExt, DOMNodeExt, WebExtension};
+use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMElement, DOMHTMLElement, DOMHTMLElementExt, DOMNodeExt, WebExtension};
 
+use dom::get_body;
+use hints::{create_hints, hide_unrelevant_hints, HINTS_ID};
 use scroll::Scrollable;
 
 macro_rules! get_page {
-    ($this:ident) => {
-        $this.extension.get_page($this.page_id.get())
+    ($_self:ident) => {
+        $_self.extension.get_page($_self.page_id.get())
     };
 }
 
-dbus_class!("com.titanium.client", class MessageServer (page_id: Rc<Cell<u64>>, extension: WebExtension) {
-    fn activate_selection(&this) -> () {
-        let result = get_page!(this)
+dbus_class!("com.titanium.client", class MessageServer
+    ( page_id: Rc<Cell<u64>>
+    , extension: WebExtension
+    , hint_keys: String
+    , hint_map: HashMap<String, DOMElement>
+    )
+{
+    fn activate_hint(&mut self) -> () {
+        let element = self.hint_map.get(&self.hint_keys)
+            .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
+        if let Some(element) = element {
+            self.hide_hints();
+            self.hint_map.clear();
+            self.hint_keys.clear();
+            element.click();
+        }
+    }
+
+    fn activate_selection(&self) -> () {
+        let result = get_page!(self)
             .and_then(|page| page.get_dom_document())
             .and_then(|document| document.get_default_view())
             .and_then(|window| window.get_selection())
@@ -49,8 +69,25 @@ dbus_class!("com.titanium.client", class MessageServer (page_id: Rc<Cell<u64>>, 
         }
     }
 
-    fn get_scroll_percentage(&this) -> i64 {
-        if let Some(page) = get_page!(this) {
+    // Return true if an element should be clicked.
+    fn enter_hint_key(&mut self, key: char) -> bool {
+        self.hint_keys.push(key);
+        let element = self.hint_map.get(&self.hint_keys)
+            .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
+        // If no element is found, hide the unrelevant hints.
+        let result = element.is_some();
+        if !result {
+            let document = get_page!(self)
+                .and_then(|page| page.get_dom_document());
+            if let Some(document) = document {
+                hide_unrelevant_hints(&document, &self.hint_keys);
+            }
+        }
+        result
+    }
+
+    fn get_scroll_percentage(&self) -> i64 {
+        if let Some(page) = get_page!(self) {
             page.scroll_percentage()
         }
         else {
@@ -58,21 +95,45 @@ dbus_class!("com.titanium.client", class MessageServer (page_id: Rc<Cell<u64>>, 
         }
     }
 
-    fn scroll_bottom(&this) -> () {
-        if let Some(page) = get_page!(this) {
+    fn hide_hints(&self) -> () {
+        let page = get_page!(self);
+        let elements = page.as_ref()
+            .and_then(|page| page.get_dom_document())
+            .and_then(|document| document.get_element_by_id(HINTS_ID))
+            .and_then(|hints| page.as_ref().and_then(|page| get_body(page).map(|body| (hints, body))));
+        if let Some((hints, body)) = elements {
+            body.remove_child(&hints).ok();
+        }
+    }
+
+    fn scroll_bottom(&self) -> () {
+        if let Some(page) = get_page!(self) {
             page.scroll_bottom();
         }
     }
 
-    fn scroll_by(&this, pixels: i64) -> () {
-        if let Some(page) = get_page!(this) {
+    fn scroll_by(&self, pixels: i64) -> () {
+        if let Some(page) = get_page!(self) {
             page.scroll_by(pixels);
         }
     }
 
-    fn scroll_top(&this) -> () {
-        if let Some(page) = get_page!(this) {
+    fn scroll_top(&self) -> () {
+        if let Some(page) = get_page!(self) {
             page.scroll_top();
+        }
+    }
+
+    fn show_hint_on_links(&mut self) -> () {
+        self.hint_keys.clear();
+        let page = get_page!(self);
+        let body = page.as_ref().and_then(|page| get_body(page));
+        let document = page.and_then(|page| page.get_dom_document());
+        if let (Some(document), Some(body)) = (document, body) {
+            if let Some((hints, hint_map)) = create_hints(&document) {
+                self.hint_map = hint_map;
+                body.append_child(&hints).ok();
+            }
         }
     }
 });

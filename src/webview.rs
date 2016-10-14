@@ -21,6 +21,9 @@
 
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
+use std::error::Error;
+use std::fs::{File, read_dir};
+use std::io::Read;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -28,7 +31,10 @@ use glib::ToVariant;
 use gtk::{Inhibit, WidgetExt};
 use libc::getpid;
 use url::Url;
-use webkit2gtk::{self, CookiePersistentStorage, FindController, FindOptions, WebContext, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2gtk::{self, CookiePersistentStorage, FindController, FindOptions, UserContentManager, UserScript, UserStyleSheet, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2gtk::UserContentInjectedFrames::AllFrames;
+use webkit2gtk::UserScriptInjectionTime::End;
+use webkit2gtk::UserStyleLevel::User;
 use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
@@ -49,7 +55,8 @@ impl WebView {
     /// Create a new web view.
     pub fn new() -> Rc<Self> {
         let context = WebContext::get_default().unwrap();
-        context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
+        //context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
+        context.set_web_extensions_directory("titanium-web-extension/target/debug");
 
         let pid = unsafe { getpid() };
         let bus_name = format!("/com/titanium/process{}", pid);
@@ -57,7 +64,7 @@ impl WebView {
 
         context.set_web_extensions_initialization_user_data(&bus_name.to_variant());
 
-        let view = webkit2gtk::WebView::new_with_context(&context);
+        let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
 
         WebView::configure(&view);
 
@@ -65,7 +72,7 @@ impl WebView {
 
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let cookie_path = xdg_dirs.place_data_file("cookies")
-            .expect("cannot create configuration directory");
+            .expect("cannot create data directory");
         let cookie_manager = context.get_cookie_manager().unwrap();
         cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
 
@@ -90,11 +97,51 @@ impl WebView {
         webview
     }
 
+    /// Activate the selected hint.
+    pub fn activate_hint(&self) -> AppResult {
+        try!(self.message_server.activate_hint());
+        Ok(())
+    }
+
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult {
         self.message_server.activate_selection().ok();
         // FIXME: finish search should be called after activate_selection() returns.
         self.finish_search();
+        Ok(())
+    }
+
+    /// Add the user scripts.
+    pub fn add_scripts(&self) -> AppResult {
+        if let Some(content_manager) = self.view.get_user_content_manager() {
+            let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+            let script_path = try!(xdg_dirs.place_config_file("scripts"));
+            for filename in try!(read_dir(script_path)) {
+                let filename = try!(filename);
+                let mut file = try!(File::open(filename.path()));
+                let mut content = String::new();
+                try!(file.read_to_string(&mut content));
+                let script = UserScript::new(&content, AllFrames, End, &[], &[]);
+                content_manager.add_script(&script);
+            }
+        }
+        Ok(())
+    }
+
+    /// Add the user stylesheets.
+    pub fn add_stylesheets(&self) -> AppResult {
+        if let Some(content_manager) = self.view.get_user_content_manager() {
+            let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+            let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
+            for filename in try!(read_dir(stylesheets_path)) {
+                let filename = try!(filename);
+                let mut file = try!(File::open(filename.path()));
+                let mut content = String::new();
+                try!(file.read_to_string(&mut content));
+                let stylesheet = UserStyleSheet::new(&content, AllFrames, User, &[], &[]);
+                content_manager.add_style_sheet(&stylesheet);
+            }
+        }
         Ok(())
     }
 
@@ -119,6 +166,12 @@ impl WebView {
         }
     }
 
+    /// Send a key to the web process to process with the current hints.
+    pub fn enter_hint_key(&self, key_char: char) -> Result<bool, Box<Error>> {
+        self.message_server.enter_hint_key(key_char)
+            .map_err(From::from)
+    }
+
     /// Clear the current search.
     pub fn finish_search(&self) {
         self.search("");
@@ -127,7 +180,13 @@ impl WebView {
 
     /// Follow a link.
     pub fn follow_link(&self) -> AppResult {
-        //try!(self.message_server.follow_link());
+        try!(self.message_server.show_hint_on_links());
+        Ok(())
+    }
+
+    /// Hide the hints.
+    pub fn hide_hints(&self) -> AppResult {
+        try!(self.message_server.hide_hints());
         Ok(())
     }
 

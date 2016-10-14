@@ -19,15 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::char;
 use std::env;
 use std::error::Error;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, create_dir_all};
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 
+use gdk::EventKey;
 use glib::object::Downcast;
-use gtk;
+use gtk::{self, Inhibit};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
@@ -49,6 +51,7 @@ commands!(AppCommand {
     Finishsearch,
     Follow,
     Forward,
+    Hidehints,
     Insert,
     Inspector,
     Normal,
@@ -90,6 +93,7 @@ impl App {
             .expect("cannot create configuration directory");
 
         let mg_app = Application::new_with_config(hash! {
+            "f" => "follow",
             "i" => "insert",
         });
         mg_app.use_dark_theme();
@@ -112,7 +116,7 @@ impl App {
             webview: webview,
         });
 
-        app.handle_error(app.create_config_file(config_path.as_path()));
+        app.handle_error(app.create_config_files(config_path.as_path()));
         app.handle_error(app.app.parse_config(config_path));
 
         {
@@ -173,12 +177,25 @@ impl App {
             });
         }
 
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
+            mg_app.connect_key_press_event(move |_, event_key| {
+                app.handle_key_press(event_key)
+            });
+        }
+
         app
     }
 
-    /// Create the default configuration file if it does not exist.
-    fn create_config_file(&self, config_path: &Path) -> AppResult {
+    /// Create the default configuration files and directories if it does not exist.
+    fn create_config_files(&self, config_path: &Path) -> AppResult {
         try!(OpenOptions::new().create(true).write(true).open(&config_path));
+        let xdg_dirs = try!(BaseDirectories::with_prefix(APP_NAME));
+        let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
+        let scripts_path = try!(xdg_dirs.place_config_file("scripts"));
+        try!(create_dir_all(stylesheets_path));
+        try!(create_dir_all(scripts_path));
         Ok(())
     }
 
@@ -188,8 +205,12 @@ impl App {
             Activateselection => self.handle_error(self.webview.activate_selection()),
             Back => self.webview.go_back(),
             Finishsearch => self.webview.finish_search(),
-            Follow => self.handle_error(self.webview.follow_link()),
+            Follow => {
+                self.app.set_mode("follow");
+                self.handle_error(self.webview.follow_link())
+            },
             Forward => self.webview.go_forward(),
+            Hidehints => self.hide_hints(),
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
@@ -237,8 +258,37 @@ impl App {
     /// Show an error in the result is an error.
     fn handle_error(&self, error: AppResult) {
         if let Err(error) = error {
-            // Remove the quotes around the error string since DBus message contains quotes.
-            self.app.error(error.to_string().trim_matches('"'));
+            self.show_error(error);
+        }
+    }
+
+    /// In follow mode, send the key to the web process.
+    fn handle_follow_key_press(&self, event_key: &EventKey) -> Inhibit {
+        if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
+            if key_char.is_alphanumeric() {
+                if let Some(key_char) = key_char.to_lowercase().next() {
+                    match self.webview.enter_hint_key(key_char) {
+                        Ok(should_click) => {
+                            if should_click {
+                                self.webview.activate_hint().ok();
+                                self.hide_hints();
+                            }
+                        },
+                        Err(error) => self.show_error(error),
+                    }
+                }
+            }
+        }
+        Inhibit(true)
+    }
+
+    /// Handle the key press event.
+    fn handle_key_press(&self, event_key: &EventKey) -> Inhibit {
+        if self.app.get_mode() == "follow" {
+            self.handle_follow_key_press(event_key)
+        }
+        else {
+            Inhibit(false)
         }
     }
 
@@ -250,6 +300,8 @@ impl App {
         let webview = app.webview.clone();
         webview.connect_load_changed(move |webview, load_event| {
             if load_event == Started {
+                app.handle_error(app.webview.add_stylesheets());
+                app.handle_error(app.webview.add_scripts());
                 app.app.set_mode("normal");
             }
 
@@ -275,6 +327,12 @@ impl App {
         }
     }
 
+    /// Hide the hints and return to normal mode.
+    fn hide_hints(&self) {
+        self.handle_error(self.webview.hide_hints());
+        self.app.set_mode("normal");
+    }
+
     /// Open the given URL in a new window.
     fn open_in_new_window(&self, url: &str) -> AppResult {
         let program = env::args().next().unwrap();
@@ -295,5 +353,11 @@ impl App {
                 self.app.set_window_title(&format!("[{}%] {} - {}", progress, title, APP_NAME));
             }
         }
+    }
+
+    /// Show the error in the status bar.
+    fn show_error(&self, error: Box<Error>) {
+        // Remove the quotes around the error string since DBus message contains quotes.
+        self.app.error(error.to_string().trim_matches('"'));
     }
 }

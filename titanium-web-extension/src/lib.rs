@@ -20,10 +20,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * TODO: switch from AtomicIsize to AtomicU64.
- */
-
 #[macro_use]
 extern crate gdbus;
 extern crate gio_sys;
@@ -31,10 +27,12 @@ extern crate gio_sys;
 extern crate webkit2gtk_webextension;
 
 mod dom;
+mod hints;
 mod scroll;
 mod message_server;
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::mem::forget;
 use std::rc::Rc;
 
@@ -58,7 +56,7 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
 
     let bus_name = user_data.get_str();
     if let Some(bus_name) = bus_name {
-        let mut message_server: MessageServer = MessageServer::new("com.titanium.web-extensions", current_page_id, extension);
+        let mut message_server: MessageServer = MessageServer::new("com.titanium.web-extensions", current_page_id, extension, String::new(), HashMap::new());
         message_server.run(&bus_name);
         forget(message_server);
     }
