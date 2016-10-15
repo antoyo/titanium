@@ -29,7 +29,6 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * TODO: show an error when there are no hints.
  * TODO: popup blocker.
- * TODO: only print titanium instead of " - titanium" when there is not yet a title.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
