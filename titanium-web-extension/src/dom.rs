@@ -209,3 +209,10 @@ pub fn mouse_down(element: DOMElement) {
         element.dispatch_event(&event).ok();
     }
 }
+
+/// Show an element.
+pub fn show(element: &DOMElement) {
+    if let Some(style) = element.get_style() {
+        style.remove_property("display").ok();
+    }
+}

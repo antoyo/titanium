@@ -20,14 +20,14 @@
  */
 
 /*
- * FIXME: prompt slow to show.
+ * FIXME: cannot go out of insert mode.
  * FIXME: hints not working with multiple windows.
- * FIXME: if no hints match, reset the char buffer and show all hints.
+ * TODO: show an error when there are no hints.
  * FIXME: the style of the hints is affected on duckduckgo.com.
  * FIXME: missing hints on duckduckgo.com menu.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
- * TODO: show an error when there are no hints.
+ * TODO: show the before unload prompt on exit if needed.
  * TODO: popup blocker.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
@@ -38,6 +38,7 @@
  * TODO: add a setting for the hint characters.
  * TODO: download manager.
  * TODO: open file (instead of download).
+ * FIXME: prompt slow to show.
  * TODO: adblock.
  * TODO: command/open completions.
  * TODO: copy/paste URLs.

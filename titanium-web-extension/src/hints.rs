@@ -31,7 +31,7 @@ use webkit2gtk_webextension::{
     DOMNodeExt,
 };
 
-use dom::{Pos, get_position, hide, is_enabled, is_visible};
+use dom::{Pos, get_position, hide, is_enabled, is_visible, show};
 
 pub const HINTS_ID: &'static str = "__titanium_hints";
 
@@ -188,13 +188,31 @@ fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
 }
 
 /// Hide the hints that does not start with `hint_keys`.
-pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) {
-    let hints = document.query_selector_all(&format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys));
-    if let Ok(hints) = hints {
+pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) -> bool {
+    let all_hints = document.query_selector_all(&format!(".__titanium_hint"));
+    let hints_to_hide = document.query_selector_all(&format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys));
+    if let Ok(hints) = hints_to_hide {
         for i in 0 .. hints.get_length() {
             let hint = hints.item(i).and_then(|hint| hint.downcast().ok());
             if let Some(hint_element) = hint {
                 hide(&hint_element);
+            }
+        }
+        if let Ok(all_hints) = all_hints {
+            return all_hints.get_length() == hints.get_length()
+        }
+    }
+    false
+}
+
+/// Show all hints.
+pub fn show_all_hints(document: &DOMDocument) {
+    let all_hints = document.query_selector_all(&format!(".__titanium_hint"));
+    if let Ok(hints) = all_hints {
+        for i in 0 .. hints.get_length() {
+            let hint = hints.item(i).and_then(|hint| hint.downcast().ok());
+            if let Some(hint_element) = hint {
+                show(&hint_element);
             }
         }
     }

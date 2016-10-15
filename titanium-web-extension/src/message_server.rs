@@ -29,7 +29,7 @@ use glib::Cast;
 use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMElement, DOMElementExt, DOMHTMLElement, DOMHTMLElementExt, DOMHTMLInputElement, DOMHTMLSelectElement, DOMHTMLTextAreaElement, DOMNodeExt, WebExtension};
 
 use dom::{get_body, mouse_down};
-use hints::{create_hints, hide_unrelevant_hints, HINTS_ID};
+use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use scroll::Scrollable;
 
 macro_rules! get_page {
@@ -108,7 +108,11 @@ dbus_class!("com.titanium.client", class MessageServer
             let document = get_page!(self)
                 .and_then(|page| page.get_dom_document());
             if let Some(document) = document {
-                hide_unrelevant_hints(&document, &self.hint_keys);
+                let all_hidden = hide_unrelevant_hints(&document, &self.hint_keys);
+                if all_hidden {
+                    self.hint_keys.clear();
+                    show_all_hints(&document);
+                }
             }
         }
         result
