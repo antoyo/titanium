@@ -26,9 +26,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use glib::Cast;
-use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMElement, DOMHTMLElement, DOMHTMLElementExt, DOMNodeExt, WebExtension};
+use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMElement, DOMElementExt, DOMHTMLElement, DOMHTMLElementExt, DOMHTMLInputElement, DOMHTMLSelectElement, DOMHTMLTextAreaElement, DOMNodeExt, WebExtension};
 
-use dom::get_body;
+use dom::{get_body, mouse_down};
 use hints::{create_hints, hide_unrelevant_hints, HINTS_ID};
 use scroll::Scrollable;
 
@@ -45,15 +45,45 @@ dbus_class!("com.titanium.client", class MessageServer
     , hint_map: HashMap<String, DOMElement>
     )
 {
-    fn activate_hint(&mut self) -> () {
+    // Return true if a text element has been focused.
+    fn activate_hint(&mut self) -> bool {
         let element = self.hint_map.get(&self.hint_keys)
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         if let Some(element) = element {
             self.hide_hints();
             self.hint_map.clear();
             self.hint_keys.clear();
-            element.click();
+            let input_element: Result<DOMHTMLInputElement, _> = element.clone().downcast();
+            let select_element: Result<DOMHTMLSelectElement, _> = element.clone().downcast();
+            let textarea_element: Result<DOMHTMLTextAreaElement, _> = element.clone().downcast();
+            if let Ok(input_element) = input_element {
+                if let Some(input_type) = input_element.get_input_type() {
+                    match input_type.as_ref() {
+                        // TODO: check which element types need a click.
+                        "button" | "checkbox" | "radio" | "submit" => input_element.click(),
+                        // FIXME: file and color not opening.
+                        "color" | "file" => {
+                            mouse_down(input_element.upcast());
+                        },
+                        _ => {
+                            input_element.focus();
+                            return true;
+                        },
+                    }
+                }
+            }
+            else if let Ok(textarea_element) = textarea_element {
+                textarea_element.focus();
+                return true;
+            }
+            else if let Ok(select_element) = select_element {
+                mouse_down(select_element.upcast());
+            }
+            else {
+                element.click();
+            }
         }
+        false
     }
 
     fn activate_selection(&self) -> () {

@@ -24,7 +24,7 @@
 dbus_interface!(
 #[dbus("com.titanium.client")]
 interface MessageServer {
-    fn activate_hint(&mut self);
+    fn activate_hint(&mut self) -> bool;
     fn activate_selection(&self);
     fn enter_hint_key(&mut self, key: char) -> bool;
     fn get_scroll_percentage(&self) -> i64;

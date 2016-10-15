@@ -270,8 +270,11 @@ impl App {
                     match self.webview.enter_hint_key(key_char) {
                         Ok(should_click) => {
                             if should_click {
-                                self.webview.activate_hint().ok();
+                                let result = self.webview.activate_hint();
                                 self.hide_hints();
+                                if let Ok(true) = result {
+                                    self.app.set_mode("insert")
+                                }
                             }
                         },
                         Err(error) => self.show_error(error),

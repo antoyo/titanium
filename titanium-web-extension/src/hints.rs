@@ -21,9 +21,10 @@
 
 use std::collections::HashMap;
 
+use glib::object::Downcast;
 use webkit2gtk_webextension::{DOMDocument, DOMDocumentExt, DOMElement, DOMElementExt, DOMNodeExt};
 
-use dom::{Pos, get_position, hide, is_visible};
+use dom::{Pos, get_position, hide, is_enabled, is_visible};
 
 pub const HINTS_ID: &'static str = "__titanium_hints";
 
@@ -103,7 +104,7 @@ fn create_hint(document: &DOMDocument, pos: Pos, hint_text: &str) -> Option<DOME
     })
 }
 
-/// Create the hints over all the links.
+/// Create the hints over all the elements that can be activated by the user (links, form elements).
 pub fn create_hints(document: &DOMDocument) -> Option<(DOMElement, HashMap<String, DOMElement>)> {
     document.create_element("div").ok().map(|hints| {
         hints.set_id(HINTS_ID);
@@ -113,25 +114,44 @@ pub fn create_hints(document: &DOMDocument) -> Option<(DOMElement, HashMap<Strin
             style.set_property("top", "0", "").ok();
         }
 
-        // TODO: hints to other elements (form elements).
-        let links = document.get_elements_by_tag_name("a");
-        let mut link_elements = vec![];
-        if let Some(links) = links {
-            for i in 0 .. links.get_length() {
-                if let Some(link) = links.item(i) {
-                    if let Some(link_element) = link.get_first_child().and_then(|child| child.get_parent_element()) {
-                        if is_visible(&document, &link_element) {
-                            link_elements.push(link_element);
+        let mut elements_to_hint = vec![];
+        let tag_names = ["a", "button", "select", "textarea"];
+        for tag_name in &tag_names {
+            let elements = document.get_elements_by_tag_name(tag_name);
+            if let Some(elements) = elements {
+                for i in 0 .. elements.get_length() {
+                    if let Some(element) = elements.item(i) {
+                        if let Ok(element) = element.downcast() {
+                            // Only show the hints for visible elements that are not disabled.
+                            if is_visible(&document, &element) && is_enabled(&element) {
+                                elements_to_hint.push(element);
+                            }
                         }
                     }
                 }
             }
         }
 
-        let mut hint_map = Hints::new(link_elements.len());
-        for link_element in link_elements {
-            let pos = get_position(&document, &link_element);
-            if let Some(hint) = create_hint(&document, pos, &hint_map.add(&link_element)) {
+        let form_elements = document.get_elements_by_tag_name("input");
+        if let Some(form_elements) = form_elements {
+            for i in 0 .. form_elements.get_length() {
+                if let Some(element) = form_elements.item(i) {
+                    if let Ok(element) = element.downcast() {
+                        if is_visible(&document, &element) && is_enabled(&element) {
+                            // Do not show hints for hidden form elements.
+                            if element.get_attribute("type") != Some("hidden".to_string()) {
+                                elements_to_hint.push(element);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut hint_map = Hints::new(elements_to_hint.len());
+        for element in elements_to_hint {
+            let pos = get_position(&document, &element);
+            if let Some(hint) = create_hint(&document, pos, &hint_map.add(&element)) {
                 hints.append_child(&hint).ok();
             }
         }
@@ -144,8 +164,7 @@ pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) {
     let hints = document.query_selector_all(&format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys));
     if let Ok(hints) = hints {
         for i in 0 .. hints.get_length() {
-            let hint = hints.item(i)
-                .and_then(|hint| hint.get_first_child().and_then(|child| child.get_parent_element()));
+            let hint = hints.item(i).and_then(|hint| hint.downcast().ok());
             if let Some(hint_element) = hint {
                 hide(&hint_element);
             }

@@ -98,9 +98,10 @@ impl WebView {
     }
 
     /// Activate the selected hint.
-    pub fn activate_hint(&self) -> AppResult {
-        try!(self.message_server.activate_hint());
-        Ok(())
+    pub fn activate_hint(&self) -> Result<bool, Box<Error>> {
+        self.view.grab_focus();
+        self.message_server.activate_hint()
+            .map_err(From::from)
     }
 
     /// Activate the link in the selection

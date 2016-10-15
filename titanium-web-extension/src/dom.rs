@@ -19,8 +19,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use glib::Cast;
 
-use webkit2gtk_webextension::{DOMDocument, DOMDocumentExt, DOMDOMWindowExtManual, DOMElement, DOMElementExt, DOMHTMLElement, WebPage};
+use webkit2gtk_webextension::{
+    DOMDocument,
+    DOMDocumentExt,
+    DOMDOMWindowExtManual,
+    DOMElement,
+    DOMElementExt,
+    DOMEventExt,
+    DOMEventTarget,
+    DOMEventTargetExt,
+    DOMHTMLButtonElement,
+    DOMHTMLElement,
+    DOMHTMLFieldSetElement,
+    DOMHTMLFieldSetElementExtManual,
+    DOMHTMLInputElement,
+    DOMHTMLSelectElement,
+    DOMHTMLTextAreaElement,
+    DOMNodeExt,
+    WebPage,
+};
 
 #[derive(Debug)]
 pub struct Pos {
@@ -82,6 +101,62 @@ pub fn hide(element: &DOMElement) {
     }
 }
 
+/// Check if an input element is enabled.
+/// Other element types return true.
+pub fn is_enabled(element: &DOMElement) -> bool {
+    let is_form_element =
+        if let Ok(_) = element.clone().downcast::<DOMHTMLButtonElement>() {
+            true
+        }
+        else if let Ok(_) = element.clone().downcast::<DOMHTMLInputElement>() {
+            true
+        }
+        else if let Ok(_) = element.clone().downcast::<DOMHTMLSelectElement>() {
+            true
+        }
+        else if let Ok(_) = element.clone().downcast::<DOMHTMLTextAreaElement>() {
+            true
+        }
+        else {
+            false
+        };
+    if is_form_element {
+        let mut element = Some(element.clone());
+        while let Some(el) = element {
+            if el.get_tag_name() == Some("BODY".to_string()) {
+                break;
+            }
+            if let Ok(element) = el.clone().downcast::<DOMHTMLButtonElement>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+            else if let Ok(element) = el.clone().downcast::<DOMHTMLInputElement>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+            else if let Ok(element) = el.clone().downcast::<DOMHTMLSelectElement>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+            else if let Ok(element) = el.clone().downcast::<DOMHTMLTextAreaElement>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+            else if let Ok(element) = el.clone().downcast::<DOMHTMLFieldSetElement>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+            element = el.get_parent_element();
+        }
+    }
+    true
+}
+
 /// Check if an element is visible.
 pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
     if let Some(window) = document.get_default_view() {
@@ -110,4 +185,15 @@ pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
         }
     }
     false
+}
+
+/// Trigger a mouse down event on the element.
+pub fn mouse_down(element: DOMElement) {
+    let event = element.get_owner_document()
+        .and_then(|document| document.create_event("MouseEvents").ok());
+    if let Some(event) = event {
+        event.init_event("mousedown", true, true);
+        let element: DOMEventTarget = element.clone().upcast();
+        element.dispatch_event(&event).ok();
+    }
 }

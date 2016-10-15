@@ -92,7 +92,7 @@ dependencies = [
 [[package]]
 name = "gdbus"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/gdbus-rs#24c6258cda7f86aaa1a223fa343066dd6aeaadc8"
+source = "git+https://github.com/antoyo/gdbus-rs#39aed1729c39b1f3de7797a07d024aead1f932f0"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
