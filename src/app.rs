@@ -23,19 +23,19 @@ use std::char;
 use std::env;
 use std::error::Error;
 use std::fs::{OpenOptions, create_dir_all};
+use std::mem::zeroed;
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 
 use gdk::EventKey;
-use glib::object::Downcast;
+use glib::translate::{FromGlibPtr, ToGlibPtr};
 use gtk::{self, Inhibit};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2gtk::NavigationPolicyDecision;
+use webkit2gtk::NavigationAction;
 use webkit2gtk::LoadEvent::Started;
-use webkit2gtk::PolicyDecisionType::NewWindowAction;
 
 use self::AppCommand::*;
 use self::SpecialCommand::*;
@@ -150,7 +150,7 @@ impl App {
 
         {
             let app = app.clone();
-            App::handle_decisions(app);
+            App::handle_create(app);
         }
 
         {
@@ -233,25 +233,19 @@ impl App {
         }
     }
 
-    /// Handle policy decisions like opening new windows.
-    fn handle_decisions(app: Rc<App>) {
+    /// Handle create window.
+    fn handle_create(app: Rc<App>) {
         let webview = app.webview.clone();
-        webview.connect_decide_policy(move |_, policy_decision, policy_decision_type| {
-            match policy_decision_type {
-                NewWindowAction => {
-                    let decision: Result<NavigationPolicyDecision, _> = policy_decision.clone().downcast();
-                    let url =
-                        decision.ok()
-                            .and_then(|decision| decision.get_request())
-                            .and_then(|request| request.get_uri());
-                    if let Some(url) = url {
-                        app.handle_error(app.open_in_new_window(&url));
-                        return true;
-                    }
-                    false
-                },
-                _ => false,
+        webview.connect_create(move |_, action| {
+            // TODO: remove this hack when the binding is fixed.
+            let mut action: NavigationAction = unsafe { FromGlibPtr::from_glib_full(action.to_glib_none().0 as *mut _) };
+            if let Some(request) = action.get_request() {
+                if let Some(url) = request.get_uri() {
+                    app.handle_error(app.open_in_new_window(&url));
+                }
             }
+            // TODO: remove this hack when the binding is fixed.
+            unsafe { zeroed() }
         });
     }
 

@@ -149,6 +149,8 @@ impl WebView {
     fn configure(view: &webkit2gtk::WebView) {
         if let Some(settings) = view.get_settings() {
             settings.set_enable_developer_extras(true);
+            // TODO: block popup.
+            settings.set_javascript_can_open_windows_automatically(true);
         }
     }
 
