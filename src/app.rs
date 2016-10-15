@@ -29,13 +29,13 @@ use std::process::Command;
 use std::rc::Rc;
 
 use gdk::EventKey;
-use glib::translate::{FromGlibPtr, ToGlibPtr};
 use gtk::{self, Inhibit};
 use mg::{Application, StatusBarItem};
 use mg_settings;
 use xdg::BaseDirectories;
-use webkit2gtk::NavigationAction;
+use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::Started;
+use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
 use self::AppCommand::*;
 use self::SpecialCommand::*;
@@ -185,6 +185,15 @@ impl App {
             });
         }
 
+        {
+            let app = app.clone();
+            let webview = app.webview.clone();
+            webview.connect_script_dialog(move |_, script_dialog| {
+                app.handle_script_dialog(script_dialog);
+                true
+            });
+        }
+
         app
     }
 
@@ -237,8 +246,6 @@ impl App {
     fn handle_create(app: Rc<App>) {
         let webview = app.webview.clone();
         webview.connect_create(move |_, action| {
-            // TODO: remove this hack when the binding is fixed.
-            let mut action: NavigationAction = unsafe { FromGlibPtr::from_glib_full(action.to_glib_none().0 as *mut _) };
             if let Some(request) = action.get_request() {
                 if let Some(url) = request.get_uri() {
                     app.handle_error(app.open_in_new_window(&url));
@@ -308,6 +315,16 @@ impl App {
 
             app.set_title();
         });
+    }
+
+    /// Handle the script dialog event.
+    fn handle_script_dialog(&self, script_dialog: &ScriptDialog) {
+        match script_dialog.get_dialog_type() {
+            Alert => {
+                self.app.message(&format!("[JavaScript] {}", script_dialog.get_message()));
+            },
+            _ => (),
+        }
     }
 
     /// Handle the special command.

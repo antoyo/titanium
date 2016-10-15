@@ -41,6 +41,18 @@ use webkit2gtk_webextension::{
     WebPage,
 };
 
+macro_rules! return_if_disabled {
+    ($ty:ty, $element:expr) => {
+        if $element.is::<$ty>() {
+            if let Ok(element) = $element.clone().downcast::<$ty>() {
+                if element.get_disabled() {
+                    return false;
+                }
+            }
+        }
+    };
+}
+
 #[derive(Debug)]
 pub struct Pos {
     pub x: i64,
@@ -136,52 +148,21 @@ pub fn hide(element: &DOMElement) {
 /// Other element types return true.
 pub fn is_enabled(element: &DOMElement) -> bool {
     let is_form_element =
-        if let Ok(_) = element.clone().downcast::<DOMHTMLButtonElement>() {
-            true
-        }
-        else if let Ok(_) = element.clone().downcast::<DOMHTMLInputElement>() {
-            true
-        }
-        else if let Ok(_) = element.clone().downcast::<DOMHTMLSelectElement>() {
-            true
-        }
-        else if let Ok(_) = element.clone().downcast::<DOMHTMLTextAreaElement>() {
-            true
-        }
-        else {
-            false
-        };
+        element.is::<DOMHTMLButtonElement>() ||
+        element.is::<DOMHTMLInputElement>() ||
+        element.is::<DOMHTMLSelectElement>() ||
+        element.is::<DOMHTMLTextAreaElement>();
     if is_form_element {
         let mut element = Some(element.clone());
         while let Some(el) = element {
             if el.get_tag_name() == Some("BODY".to_string()) {
                 break;
             }
-            if let Ok(element) = el.clone().downcast::<DOMHTMLButtonElement>() {
-                if element.get_disabled() {
-                    return false;
-                }
-            }
-            else if let Ok(element) = el.clone().downcast::<DOMHTMLInputElement>() {
-                if element.get_disabled() {
-                    return false;
-                }
-            }
-            else if let Ok(element) = el.clone().downcast::<DOMHTMLSelectElement>() {
-                if element.get_disabled() {
-                    return false;
-                }
-            }
-            else if let Ok(element) = el.clone().downcast::<DOMHTMLTextAreaElement>() {
-                if element.get_disabled() {
-                    return false;
-                }
-            }
-            else if let Ok(element) = el.clone().downcast::<DOMHTMLFieldSetElement>() {
-                if element.get_disabled() {
-                    return false;
-                }
-            }
+            return_if_disabled!(DOMHTMLButtonElement, el);
+            return_if_disabled!(DOMHTMLInputElement, el);
+            return_if_disabled!(DOMHTMLSelectElement, el);
+            return_if_disabled!(DOMHTMLTextAreaElement, el);
+            return_if_disabled!(DOMHTMLFieldSetElement, el);
             element = el.get_parent_element();
         }
     }

@@ -53,30 +53,29 @@ dbus_class!("com.titanium.client", class MessageServer
             self.hide_hints();
             self.hint_map.clear();
             self.hint_keys.clear();
-            let input_element: Result<DOMHTMLInputElement, _> = element.clone().downcast();
-            let select_element: Result<DOMHTMLSelectElement, _> = element.clone().downcast();
-            let textarea_element: Result<DOMHTMLTextAreaElement, _> = element.clone().downcast();
-            if let Ok(input_element) = input_element {
-                if let Some(input_type) = input_element.get_input_type() {
+            if element.is::<DOMHTMLInputElement>() {
+                let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
+                    .and_then(|input_element| input_element.get_input_type());
+                if let Some(input_type) = input_type {
                     match input_type.as_ref() {
-                        "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => input_element.click(),
+                        "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
                         // FIXME: file and color not opening.
                         "color" | "file" => {
-                            mouse_down(input_element.upcast());
+                            mouse_down(element.upcast());
                         },
                         _ => {
-                            input_element.focus();
+                            element.focus();
                             return true;
                         },
                     }
                 }
             }
-            else if let Ok(textarea_element) = textarea_element {
-                textarea_element.focus();
+            else if element.is::<DOMHTMLTextAreaElement>() {
+                element.focus();
                 return true;
             }
-            else if let Ok(select_element) = select_element {
-                mouse_down(select_element.upcast());
+            else if element.is::<DOMHTMLSelectElement>() {
+                mouse_down(element.upcast());
             }
             else {
                 element.click();

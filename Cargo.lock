@@ -316,7 +316,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#9af56281ef04d3177399acc4407ced35e20a5f44"
+source = "git+https://github.com/antoyo/mg#defddaf3392e92c68e00446806de9c4e35fcd5de"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -447,7 +447,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2gtk"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-rs#9bf2890ac4f00662dc26b6921ce800d0f7e037b5"
+source = "git+https://github.com/antoyo/webkit2gtk-rs#3cd3813036d2362f66348bd3014a3e7e65f873d7"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.1.0 (git+https://github.com/gtk-rs/gio)",
