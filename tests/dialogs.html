@@ -1,7 +1,36 @@
 <button id="alert">Alert</button>
+<button id="prompt">Prompt</button>
+<button id="confirm">Confirm</button>
+<button id="prompt2">Prompt default</button>
+<p id="answer"></p>
 <script>
 var button = document.getElementById("alert");
 button.addEventListener("click", function() {
     alert("Message from JavaScript!");
 }, false);
+
+var button = document.getElementById("prompt");
+button.addEventListener("click", function() {
+    var answer = prompt("Yes or no?");
+    var paragraph = document.getElementById("answer");
+    paragraph.innerHTML = answer;
+}, false);
+
+var button = document.getElementById("prompt2");
+button.addEventListener("click", function() {
+    var answer = prompt("Yes or no?", "yes");
+    var paragraph = document.getElementById("answer");
+    paragraph.innerHTML = answer;
+}, false);
+
+var button = document.getElementById("confirm");
+button.addEventListener("click", function() {
+    var answer = confirm("Do you really want to leave?");
+    var paragraph = document.getElementById("answer");
+    paragraph.innerHTML = answer;
+}, false);
+
+window.onbeforeunload = function(){
+    return 'Are you sure you want to leave?';
+};
 </script>

@@ -20,7 +20,14 @@
  */
 
 /*
- * TODO: non-modal javascript alert, prompt and confirm.
+ * FIXME: prompt slow to show.
+ * FIXME: hints not working with multiple windows.
+ * FIXME: if no hints match, reset the char buffer and show all hints.
+ * FIXME: the style of the hints is affected on duckduckgo.com.
+ * FIXME: missing hints on duckduckgo.com menu.
+ * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
+ * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
+ * TODO: show an error when there are no hints.
  * TODO: popup blocker.
  * TODO: only print titanium instead of " - titanium" when there is not yet a title.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
@@ -47,6 +54,7 @@
  * TODO: switch from dbus to gdbus.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: copier plugin (word, line, sentense, block, links…).
+ * TODO: i18n.
  * FIXME: enter to activate selected link.
  * FIXME: some dbus calls timeout (seems to be called by the click method since it triggers an
  * action in the application which is waiting for the answer of the call).

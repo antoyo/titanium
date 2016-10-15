@@ -23,7 +23,6 @@ use std::char;
 use std::env;
 use std::error::Error;
 use std::fs::{OpenOptions, create_dir_all};
-use std::mem::zeroed;
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
@@ -189,7 +188,7 @@ impl App {
             let app = app.clone();
             let webview = app.webview.clone();
             webview.connect_script_dialog(move |_, script_dialog| {
-                app.handle_script_dialog(script_dialog);
+                app.handle_script_dialog(script_dialog.clone());
                 true
             });
         }
@@ -251,8 +250,7 @@ impl App {
                     app.handle_error(app.open_in_new_window(&url));
                 }
             }
-            // TODO: remove this hack when the binding is fixed.
-            unsafe { zeroed() }
+            None
         });
     }
 
@@ -318,10 +316,24 @@ impl App {
     }
 
     /// Handle the script dialog event.
-    fn handle_script_dialog(&self, script_dialog: &ScriptDialog) {
+    fn handle_script_dialog(&self, script_dialog: ScriptDialog) {
         match script_dialog.get_dialog_type() {
             Alert => {
                 self.app.message(&format!("[JavaScript] {}", script_dialog.get_message()));
+            },
+            Confirm => {
+                let confirmed = self.app.blocking_yes_no_question(&format!("[JavaScript] {}", script_dialog.get_message()));
+                script_dialog.confirm_set_confirmed(confirmed);
+            },
+            BeforeUnloadConfirm => {
+                let confirmed = self.app.blocking_yes_no_question("[JavaScript] Do you really want to leave this page?");
+                script_dialog.confirm_set_confirmed(confirmed);
+            },
+            Prompt => {
+                let default_answer = script_dialog.prompt_get_default_text().to_string();
+                let input = self.app.blocking_input(&format!("[JavaScript] {}", script_dialog.get_message()), &default_answer);
+                let input = input.unwrap_or_default();
+                script_dialog.prompt_set_text(&input);
             },
             _ => (),
         }
