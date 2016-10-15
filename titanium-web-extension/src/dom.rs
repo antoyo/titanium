@@ -77,8 +77,8 @@ pub fn get_offset(element: &DOMElement) -> Pos {
     }
 }
 
-/// Get the position of an element relative to the page root.
-pub fn get_position(document: &DOMDocument, element: &DOMElement) -> Pos {
+/// Get the position of an element relative to the iframe.
+fn get_position_from_iframe(document: &DOMDocument, element: &DOMElement) -> Pos {
     let (left, top) =
         if let Some(body) = document.get_body() {
             let left = body.get_scroll_left();
@@ -92,6 +92,37 @@ pub fn get_position(document: &DOMDocument, element: &DOMElement) -> Pos {
     pos.x += left;
     pos.y += top;
     pos
+}
+
+/// Get the position of an element relative to the page root.
+pub fn get_position(element: &DOMElement) -> Option<Pos> {
+    if let Some(document) = element.get_owner_document() {
+        let mut pos = get_position_from_iframe(&document, element);
+        if let Some(window) = document.get_default_view() {
+            let mut frame = window.get_frame_element();
+            loop {
+                let parent_frame =
+                    match frame {
+                        Some(ref parent_frame) => parent_frame.clone(),
+                        None => break,
+                    };
+                let parent_document = parent_frame.get_owner_document();
+                if let Some(parent_document) = parent_document {
+                    let iframe_pos = get_position_from_iframe(&document, &parent_frame);
+                    pos.x += iframe_pos.x;
+                    pos.y += iframe_pos.y;
+                    let window = parent_document.get_default_view();
+                    if let Some(window) = window {
+                        frame = window.get_frame_element();
+                    }
+                }
+            }
+        }
+        Some(pos)
+    }
+    else {
+        None
+    }
 }
 
 /// Hide an element.

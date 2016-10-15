@@ -59,8 +59,7 @@ dbus_class!("com.titanium.client", class MessageServer
             if let Ok(input_element) = input_element {
                 if let Some(input_type) = input_element.get_input_type() {
                     match input_type.as_ref() {
-                        // TODO: check which element types need a click.
-                        "button" | "checkbox" | "radio" | "submit" => input_element.click(),
+                        "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => input_element.click(),
                         // FIXME: file and color not opening.
                         "color" | "file" => {
                             mouse_down(input_element.upcast());

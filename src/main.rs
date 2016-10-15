@@ -20,7 +20,7 @@
  */
 
 /*
- * TODO: make sure the hints are shown at the right position within iframes.
+ * TODO: non-modal javascript alert, prompt and confirm.
  * TODO: popup blocker.
  * TODO: only print titanium instead of " - titanium" when there is not yet a title.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
@@ -42,7 +42,6 @@
  * TODO: log console message to stdout.
  * TODO: NoScript.
  * TODO: open textarea in text editor.
- * TODO: non-modal javascript alert, prompt and confirm.
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: add content to the default config file.
  * TODO: switch from dbus to gdbus.
