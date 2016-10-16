@@ -19,6 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::cell::RefCell;
 use std::char;
 use std::env;
 use std::error::Error;
@@ -34,10 +35,13 @@ use mg_settings;
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::Started;
+use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
 use self::AppCommand::*;
 use self::SpecialCommand::*;
+use popup_manager::PopupManager;
+use urls::get_base_url;
 use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -83,6 +87,7 @@ special_commands!(SpecialCommand {
 /// Titanium application.
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand>>,
+    popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
@@ -113,6 +118,7 @@ impl App {
 
         let app = Rc::new(App {
             app: mg_app,
+            popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
             url_label: url_label,
             webview: webview,
@@ -120,6 +126,8 @@ impl App {
 
         app.handle_error(app.create_config_files(config_path.as_path()));
         app.handle_error(app.app.parse_config(config_path));
+
+        app.handle_error((*app.popup_manager.borrow_mut()).load());
 
         {
             let app = app.clone();
@@ -211,9 +219,17 @@ impl App {
         app
     }
 
+    /// Save the specified url in the popup blacklist.
+    fn blacklist_popup(&self, url: &str) {
+        self.handle_error((*self.popup_manager.borrow_mut()).blacklist(url));
+    }
+
     /// Create the default configuration files and directories if it does not exist.
     fn create_config_files(&self, config_path: &Path) -> AppResult {
+        let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
         try!(OpenOptions::new().create(true).write(true).open(&config_path));
+        try!(OpenOptions::new().create(true).write(true).open(&popup_whitelist_path));
+        try!(OpenOptions::new().create(true).write(true).open(&popup_blacklist_path));
         let xdg_dirs = try!(BaseDirectories::with_prefix(APP_NAME));
         let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
         let scripts_path = try!(xdg_dirs.place_config_file("scripts"));
@@ -261,11 +277,43 @@ impl App {
 
     /// Handle create window.
     fn handle_create(app: Rc<App>) {
+        fn open(app: &Rc<App>, url: &str) {
+            app.handle_error(app.open_in_new_window(url));
+        }
+
         let webview = app.webview.clone();
         webview.connect_create(move |_, action| {
             if let Some(request) = action.get_request() {
                 if let Some(url) = request.get_uri() {
-                    app.handle_error(app.open_in_new_window(&url));
+                    // Block popup.
+                    let popup_manager = &*app.popup_manager.borrow();
+                    let base_url = get_base_url(&url);
+                    if action.get_navigation_type() == Other && !popup_manager.is_whitelisted(&url) {
+                        if popup_manager.is_blacklisted(&url) {
+                            Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));
+                        }
+                        else {
+                            let instance = app.clone();
+                            app.app.question(&format!("A popup from {} was blocked. Do you want to open it?", base_url),
+                                &['y', 'n', 'a', 'e'], move |answer|
+                            {
+                                match answer {
+                                    Some('a') => {
+                                        open(&instance, &url);
+                                        instance.whitelist_popup(&url);
+                                    },
+                                    Some('y') => open(&instance, &url),
+                                    Some('e') => {
+                                        instance.blacklist_popup(&url);
+                                    },
+                                    _ => (),
+                                }
+                            });
+                        }
+                    }
+                    else {
+                        open(&app, &url);
+                    }
                 }
             }
             None
@@ -420,6 +468,11 @@ impl App {
     /// Show the zoom level in the status bar.
     fn show_zoom(&self, level: i32) {
         Application::info(&self.app, &format!("Zoom level: {}%", level));
+    }
+
+    /// Save the specified url in the popup whitelist.
+    fn whitelist_popup(&self, url: &str) {
+        self.handle_error((*self.popup_manager.borrow_mut()).whitelist(url));
     }
 
     /// Zoom in.

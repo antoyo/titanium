@@ -25,8 +25,9 @@
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
+ * FIXME: go to insert mode for hints of multiple selection combo box.
  * TODO: follow in new window.
- * TODO: popup blocker.
+ * TODO: ask confirmation before submitting again the same form.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
@@ -84,6 +85,8 @@ extern crate xdg;
 
 mod app;
 mod message_server;
+mod popup_manager;
+mod urls;
 mod webview;
 
 use docopt::Docopt;
