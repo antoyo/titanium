@@ -22,9 +22,12 @@
 /*
  * TODO: show an error when there are no hints.
  * FIXME: missing hints on duckduckgo.com menu.
+ * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
+ * TODO: follow in new window.
  * TODO: show the before unload prompt on exit if needed.
+ * TODO: zoom.
  * TODO: popup blocker.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.

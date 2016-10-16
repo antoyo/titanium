@@ -316,7 +316,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#d21946ffeba08a4a057dc2f98e325ce9849dc8ac"
+source = "git+https://github.com/antoyo/mg#04e5f8d65b8864000ab6604152d86b277d8fa36b"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",

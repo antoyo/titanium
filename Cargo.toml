@@ -13,7 +13,7 @@ url = "^1.2"
 xdg = "^2.0"
 
 [features]
-default = ["webkit2gtk/v2_6"]
+default = ["webkit2gtk/v2_12"]
 
 [dependencies.gdbus]
 git = "https://github.com/antoyo/gdbus-rs"

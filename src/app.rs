@@ -193,6 +193,18 @@ impl App {
             });
         }
 
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
+            mg_app.connect_close(move || {
+                app.quit();
+            });
+        }
+
+        app.webview.connect_close(|_| {
+            gtk::main_quit();
+        });
+
         app
     }
 
@@ -223,7 +235,7 @@ impl App {
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
             Open(url) => self.webview.open(&url),
-            Quit => gtk::main_quit(),
+            Quit => self.quit(),
             Reload => self.webview.reload(),
             Reloadbypasscache => self.webview.reload_bypass_cache(),
             Scrollbottom => self.handle_error(self.webview.scroll_bottom()),
@@ -366,6 +378,11 @@ impl App {
             .arg(url)
             .spawn());
         Ok(())
+    }
+
+    /// Try to close the web view and quit the application.
+    fn quit(&self) {
+        self.webview.try_close();
     }
 
     /// Set the title of the window as the progress and the web page title.
