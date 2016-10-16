@@ -59,10 +59,10 @@ impl WebView {
         context.set_web_extensions_directory("titanium-web-extension/target/debug");
 
         let pid = unsafe { getpid() };
-        let bus_name = format!("/com/titanium/process{}", pid);
-        let message_server = MessageServer::new("com.titanium.web-extensions", &bus_name);
+        let server_name = format!("com.titanium.process{}", pid);
+        let message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions");
 
-        context.set_web_extensions_initialization_user_data(&bus_name.to_variant());
+        context.set_web_extensions_initialization_user_data(&server_name.to_variant());
 
         let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
 

@@ -54,10 +54,10 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
         });
     }
 
-    let bus_name = user_data.get_str();
-    if let Some(bus_name) = bus_name {
-        let mut message_server: MessageServer = MessageServer::new("com.titanium.web-extensions", current_page_id, extension, String::new(), HashMap::new());
-        message_server.run(&bus_name);
+    let server_name = user_data.get_str();
+    if let Some(server_name) = server_name {
+        let mut message_server: MessageServer = MessageServer::new(server_name, current_page_id, extension, String::new(), HashMap::new());
+        message_server.run("/com/titanium/WebExtensions");
         forget(message_server);
     }
 }

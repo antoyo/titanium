@@ -20,8 +20,6 @@
  */
 
 /*
- * FIXME: cannot go out of insert mode.
- * FIXME: hints not working with multiple windows.
  * TODO: show an error when there are no hints.
  * FIXME: the style of the hints is affected on duckduckgo.com.
  * FIXME: missing hints on duckduckgo.com menu.
