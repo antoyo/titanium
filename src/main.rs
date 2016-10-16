@@ -21,7 +21,6 @@
 
 /*
  * TODO: show an error when there are no hints.
- * FIXME: the style of the hints is affected on duckduckgo.com.
  * FIXME: missing hints on duckduckgo.com menu.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
