@@ -304,6 +304,26 @@ impl WebView {
             inspector.detach();
         }
     }
+
+    /// Zoom in.
+    pub fn zoom_in(&self) -> i32 {
+        let level = self.view.get_zoom_level();
+        self.view.set_zoom_level(level + 0.1);
+        (self.view.get_zoom_level() * 100.0) as i32
+    }
+
+    /// Zoom back to 100%.
+    pub fn zoom_normal(&self) -> i32 {
+        self.view.set_zoom_level(1.0);
+        100
+    }
+
+    /// Zoom out.
+    pub fn zoom_out(&self) -> i32 {
+        let level = self.view.get_zoom_level();
+        self.view.set_zoom_level(level - 0.1);
+        (self.view.get_zoom_level() * 100.0) as i32
+    }
 }
 
 is_widget!(WebView, view);

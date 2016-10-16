@@ -70,6 +70,9 @@ commands!(AppCommand {
     Searchprevious,
     Stop,
     Winopen(String),
+    Zoomin,
+    Zoomnormal,
+    Zoomout,
 });
 
 special_commands!(SpecialCommand {
@@ -250,6 +253,9 @@ impl App {
             Searchprevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
             Winopen(url) => self.handle_error(self.open_in_new_window(&url)),
+            Zoomin => self.zoom_in(),
+            Zoomnormal => self.zoom_normal(),
+            Zoomout => self.zoom_out(),
         }
     }
 
@@ -409,5 +415,25 @@ impl App {
     fn show_error(&self, error: Box<Error>) {
         // Remove the quotes around the error string since DBus message contains quotes.
         self.app.error(error.to_string().trim_matches('"'));
+    }
+
+    /// Show the zoom level in the status bar.
+    fn show_zoom(&self, level: i32) {
+        Application::info(&self.app, &format!("Zoom level: {}%", level));
+    }
+
+    /// Zoom in.
+    fn zoom_in(&self) {
+        self.show_zoom(self.webview.zoom_in());
+    }
+
+    /// Zoom back to 100%.
+    fn zoom_normal(&self) {
+        self.show_zoom(self.webview.zoom_normal());
+    }
+
+    /// Zoom out.
+    fn zoom_out(&self) {
+        self.show_zoom(self.webview.zoom_out());
     }
 }
