@@ -27,10 +27,10 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
+ * TODO: remove the title bar of the inspector.
  * TODO: follow in new window.
  * TODO: disable the tab key in the status bar input.
  * TODO: ask confirmation before submitting again the same form.
- * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.

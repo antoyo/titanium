@@ -304,9 +304,25 @@ impl WebView {
 
     /// Show the web inspector.
     pub fn show_inspector(&self) {
+        static mut SHOWN: bool = false;
         if let Some(inspector) = self.view.get_inspector() {
+            inspector.connect_attach(|inspector| {
+                unsafe {
+                    if !SHOWN {
+                        inspector.detach();
+                        SHOWN = true;
+                        return true;
+                    }
+                    SHOWN = true;
+                }
+                false
+            });
+            inspector.connect_closed(|_| {
+                unsafe {
+                    SHOWN = false;
+                }
+            });
             inspector.show();
-            inspector.detach();
         }
     }
 
