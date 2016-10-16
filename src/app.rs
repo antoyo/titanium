@@ -442,20 +442,19 @@ impl App {
     /// Set the title of the window as the progress and the web page title.
     fn set_title(&self) {
         let progress = (self.webview.get_estimated_load_progress() * 100.0) as i32;
-        if let Some(title) = self.webview.get_title() {
-            let title =
-                if title.is_empty() {
-                    String::new()
-                }
-                else {
-                    format!("{} - ", title)
-                };
-            if progress == 100 {
-                self.app.set_window_title(&format!("{}{}", title, APP_NAME));
+        let title = self.webview.get_title().unwrap_or_default();
+        let title =
+            if title.is_empty() {
+                String::new()
             }
             else {
-                self.app.set_window_title(&format!("[{}%] {}{}", progress, title, APP_NAME));
-            }
+                format!("{} - ", title)
+            };
+        if progress == 100 {
+            self.app.set_window_title(&format!("{}{}", title, APP_NAME));
+        }
+        else {
+            self.app.set_window_title(&format!("[{}%] {}{}", progress, title, APP_NAME));
         }
     }
 

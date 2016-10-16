@@ -27,7 +27,6 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
- * TODO: show 0% when starting to load a page.
  * TODO: follow in new window.
  * TODO: disable the tab key in the status bar input.
  * TODO: ask confirmation before submitting again the same form.
