@@ -1,6 +1,5 @@
 = Titanium Web Browser
 
-[.lead]
 A keyboard-driven web browser written in Rust
 
 //image:https://img.shields.io/crates/v/titanium.svg[link="https://crates.io/crates/titanium"]
