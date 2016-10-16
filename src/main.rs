@@ -26,7 +26,9 @@
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
+ *
  * TODO: follow in new window.
+ * TODO: disable the tab key in the status bar input.
  * TODO: ask confirmation before submitting again the same form.
  * TODO: detach the inspector (after it is shown) and remove its title bar.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
@@ -50,6 +52,7 @@
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: add content to the default config file.
+ * TODO: private browsing.
  * TODO: switch from dbus to gdbus.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: copier plugin (word, line, sentense, block, links…).

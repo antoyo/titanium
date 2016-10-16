@@ -1,0 +1,24 @@
+= Titanium Web Browser
+
+[.lead]
+A keyboard-driven web browser written in Rust
+
+//image:https://img.shields.io/crates/v/titanium.svg[link="https://crates.io/crates/titanium"]
+//image:https://img.shields.io/crates/d/titanium.svg[link="https://crates.io/crates/titanium"]
+image:https://img.shields.io/crates/l/titanium.svg[link="LICENSE"]
+
+Titanium is written and Rust and uses WebKit2GTK to render web pages.
+
+It is inspired on Vimperator and qutebrowser.py.
+
+//== Screenshots
+
+//== Installing Titanium
+
+== Features
+
+ * vim-like keybindings
+ * follow links/scroll from the keyboard
+ * pop-up blocker with blacklist and whitelist
+ * user scripts and user style sheet
+ * page search
