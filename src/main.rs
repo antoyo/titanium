@@ -27,6 +27,7 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
+ * TODO: show 0% when starting to load a page.
  * TODO: follow in new window.
  * TODO: disable the tab key in the status bar input.
  * TODO: ask confirmation before submitting again the same form.
@@ -47,7 +48,6 @@
  * TODO: support marks.
  * TODO: preferred languages.
  * TODO: store cache.
- * TODO: log console message to stdout.
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
@@ -82,6 +82,7 @@ extern crate mg;
 #[macro_use]
 extern crate mg_settings;
 extern crate rustc_serialize;
+extern crate simplelog;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
@@ -94,6 +95,8 @@ mod urls;
 mod webview;
 
 use docopt::Docopt;
+use simplelog::TermLogger;
+use simplelog::LogLevelFilter::{self, Off};
 
 use app::App;
 
@@ -101,12 +104,16 @@ const USAGE: &'static str = "
 Titanium web browser.
 
 Usage:
-    titanium [<url>]
+    titanium [<url>] [--log]
+
+Options:
+    --log   Show the log messages.
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
     arg_url: Option<String>,
+    flag_log: bool,
 }
 
 fn main() {
@@ -115,6 +122,15 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|decoder| decoder.decode())
         .unwrap_or_else(|error| error.exit());
+
+    let filter_level =
+        if args.flag_log {
+            LogLevelFilter::max()
+        }
+        else {
+            Off
+        };
+    TermLogger::init(filter_level).unwrap();
 
     let _app = App::new(args.arg_url);
 

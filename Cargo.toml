@@ -9,6 +9,7 @@ libc = "^0.2"
 #mg = "^0.0.4"
 mg-settings = "^0.0.4"
 rustc-serialize = "^0.3"
+simplelog = "^0.2"
 url = "^1.2"
 xdg = "^2.0"
 
