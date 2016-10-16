@@ -39,6 +39,7 @@ use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
 use message_server::MessageServer;
+use stylesheet::get_stylesheet_and_whitelist;
 
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
@@ -115,6 +116,7 @@ impl WebView {
     /// Add the user scripts.
     pub fn add_scripts(&self) -> AppResult {
         if let Some(content_manager) = self.view.get_user_content_manager() {
+            content_manager.remove_all_scripts();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
             let script_path = try!(xdg_dirs.place_config_file("scripts"));
             for filename in try!(read_dir(script_path)) {
@@ -122,6 +124,7 @@ impl WebView {
                 let mut file = try!(File::open(filename.path()));
                 let mut content = String::new();
                 try!(file.read_to_string(&mut content));
+                // TODO: support whitelist as a comment in the script.
                 let script = UserScript::new(&content, AllFrames, End, &[], &[]);
                 content_manager.add_script(&script);
             }
@@ -132,6 +135,7 @@ impl WebView {
     /// Add the user stylesheets.
     pub fn add_stylesheets(&self) -> AppResult {
         if let Some(content_manager) = self.view.get_user_content_manager() {
+            content_manager.remove_all_style_sheets();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
             let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
             for filename in try!(read_dir(stylesheets_path)) {
@@ -139,7 +143,9 @@ impl WebView {
                 let mut file = try!(File::open(filename.path()));
                 let mut content = String::new();
                 try!(file.read_to_string(&mut content));
-                let stylesheet = UserStyleSheet::new(&content, AllFrames, User, &[], &[]);
+                let (stylesheet, stylesheet_whitelist) = get_stylesheet_and_whitelist(&content);
+                let whitelist: Vec<_> = stylesheet_whitelist.iter().map(|url| url.as_ref()).collect();
+                let stylesheet = UserStyleSheet::new(&stylesheet, AllFrames, User, &whitelist, &[]);
                 content_manager.add_style_sheet(&stylesheet);
             }
         }

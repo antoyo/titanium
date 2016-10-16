@@ -89,6 +89,7 @@ extern crate xdg;
 mod app;
 mod message_server;
 mod popup_manager;
+mod stylesheet;
 mod urls;
 mod webview;
 
