@@ -11,7 +11,10 @@ Titanium is written and Rust and uses WebKit2GTK to render web pages.
 
 It is inspired on Vimperator and qutebrowser.py.
 
-//== Screenshots
+== Screenshots
+
+image:doc/screenshots/titanium.png[Titanium,300,link="doc/screenshots/titanium.png"]
+image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="doc/screenshots/titanium-follow-links.png"]
 
 //== Installing Titanium
 
