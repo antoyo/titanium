@@ -124,13 +124,14 @@ pub struct App {
 impl App {
     pub fn new(homepage: Option<String>) -> Rc<Self> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+        let include_path = xdg_dirs.get_config_home();
         let config_path = xdg_dirs.place_config_file("config")
             .expect("cannot create configuration directory");
 
         let mg_app = Application::new_with_config(hash! {
             "f" => "follow",
             "i" => "insert",
-        });
+        }, Some(include_path));
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
