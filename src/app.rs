@@ -50,17 +50,17 @@ pub type AppResult = Result<(), Box<Error>>;
 #[derive(Commands)]
 enum AppCommand {
     #[completion(hidden)]
-    Activateselection,
+    ActivateSelection,
     #[help(text="Go back in the history")]
     Back,
     #[completion(hidden)]
-    Finishsearch,
+    FinishSearch,
     #[completion(hidden)]
     Follow,
     #[help(text="Go forward in the history")]
     Forward,
     #[completion(hidden)]
-    Hidehints,
+    HideHints,
     #[completion(hidden)]
     Insert,
     #[help(text="Open the web inspector")]
@@ -74,37 +74,37 @@ enum AppCommand {
     #[help(text="Reload the current page")]
     Reload,
     #[help(text="Reload the current page without using the cache")]
-    Reloadbypasscache,
+    ReloadBypassCache,
     #[completion(hidden)]
-    Scrollbottom,
+    ScrollBottom,
     #[completion(hidden)]
-    Scrolldown,
+    ScrollDown,
     #[completion(hidden)]
-    Scrolldownhalf,
+    ScrollDownHalf,
     #[completion(hidden)]
-    Scrolldownline,
+    ScrollDownLine,
     #[completion(hidden)]
-    Scrolltop,
+    ScrollTop,
     #[completion(hidden)]
-    Scrollup,
+    ScrollUp,
     #[completion(hidden)]
-    Scrolluphalf,
+    ScrollUpHalf,
     #[completion(hidden)]
-    Scrollupline,
+    ScrollUpLine,
     #[completion(hidden)]
-    Searchnext,
+    SearchNext,
     #[completion(hidden)]
-    Searchprevious,
+    SearchPrevious,
     #[help(text="Stop loading the current page")]
     Stop,
     #[help(text="Open an URL in a new window")]
-    Winopen(String),
+    WinOpen(String),
     #[help(text="Zoom the current page in")]
-    Zoomin,
+    ZoomIn,
     #[help(text="Zoom the current page to 100%")]
-    Zoomnormal,
+    ZoomNormal,
     #[help(text="Zoom the current page out")]
-    Zoomout,
+    ZoomOut,
 }
 
 special_commands!(SpecialCommand {
@@ -269,37 +269,37 @@ impl App {
     /// Handle the command.
     fn handle_command(&self, command: AppCommand) {
         match command {
-            Activateselection => self.handle_error(self.webview.activate_selection()),
+            ActivateSelection => self.handle_error(self.webview.activate_selection()),
             Back => self.webview.go_back(),
-            Finishsearch => self.webview.finish_search(),
+            FinishSearch => self.webview.finish_search(),
             Follow => {
                 self.app.set_mode("follow");
                 self.handle_error(self.webview.follow_link())
             },
             Forward => self.webview.go_forward(),
-            Hidehints => self.hide_hints(),
+            HideHints => self.hide_hints(),
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
             Open(url) => self.webview.open(&url),
             Quit => self.quit(),
             Reload => self.webview.reload(),
-            Reloadbypasscache => self.webview.reload_bypass_cache(),
-            Scrollbottom => self.handle_error(self.webview.scroll_bottom()),
-            Scrolldown => self.handle_error(self.webview.scroll_down_page()),
-            Scrolldownhalf => self.handle_error(self.webview.scroll_down_half_page()),
-            Scrolldownline => self.handle_error(self.webview.scroll_down_line()),
-            Scrolltop => self.handle_error(self.webview.scroll_top()),
-            Scrollup => self.handle_error(self.webview.scroll_up_page()),
-            Scrolluphalf => self.handle_error(self.webview.scroll_up_half_page()),
-            Scrollupline => self.handle_error(self.webview.scroll_up_line()),
-            Searchnext => self.webview.search_next(),
-            Searchprevious => self.webview.search_previous(),
+            ReloadBypassCache => self.webview.reload_bypass_cache(),
+            ScrollBottom => self.handle_error(self.webview.scroll_bottom()),
+            ScrollDown => self.handle_error(self.webview.scroll_down_page()),
+            ScrollDownHalf => self.handle_error(self.webview.scroll_down_half_page()),
+            ScrollDownLine => self.handle_error(self.webview.scroll_down_line()),
+            ScrollTop => self.handle_error(self.webview.scroll_top()),
+            ScrollUp => self.handle_error(self.webview.scroll_up_page()),
+            ScrollUpHalf => self.handle_error(self.webview.scroll_up_half_page()),
+            ScrollUpLine => self.handle_error(self.webview.scroll_up_line()),
+            SearchNext => self.webview.search_next(),
+            SearchPrevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
-            Winopen(url) => self.handle_error(self.open_in_new_window(&url)),
-            Zoomin => self.zoom_in(),
-            Zoomnormal => self.zoom_normal(),
-            Zoomout => self.zoom_out(),
+            WinOpen(url) => self.handle_error(self.open_in_new_window(&url)),
+            ZoomIn => self.zoom_in(),
+            ZoomNormal => self.zoom_normal(),
+            ZoomOut => self.zoom_out(),
         }
     }
 
