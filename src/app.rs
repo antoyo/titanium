@@ -33,7 +33,7 @@ use gtk::{self, Inhibit};
 use mg::{Application, StatusBarItem};
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
-use webkit2gtk::LoadEvent::Started;
+use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
@@ -267,6 +267,19 @@ impl App {
         Ok(())
     }
 
+    /// Get the title or the url if there are no title.
+    fn get_title(&self) -> String {
+        let title = self.webview.get_title()
+            .or(self.webview.get_uri())
+            .unwrap_or_default();
+        if title.is_empty() {
+            String::new()
+        }
+        else {
+            format!("{} - ", title)
+        }
+    }
+
     /// Handle the command.
     fn handle_command(&self, command: AppCommand) {
         match command {
@@ -406,7 +419,12 @@ impl App {
                 app.url_label.set_text(&url);
             }
 
-            app.set_title();
+            if load_event == Finished {
+                app.set_title_without_progress();
+            }
+            else {
+                app.set_title();
+            }
         });
     }
 
@@ -471,22 +489,19 @@ impl App {
     /// Set the title of the window as the progress and the web page title.
     fn set_title(&self) {
         let progress = (self.webview.get_estimated_load_progress() * 100.0) as i32;
-        let title = self.webview.get_title()
-            .or(self.webview.get_uri())
-            .unwrap_or_default();
-        let title =
-            if title.is_empty() {
-                String::new()
-            }
-            else {
-                format!("{} - ", title)
-            };
         if progress == 100 {
-            self.app.set_window_title(&format!("{}{}", title, APP_NAME));
+            self.set_title_without_progress();
         }
         else {
+            let title = self.get_title();
             self.app.set_window_title(&format!("[{}%] {}{}", progress, title, APP_NAME));
         }
+    }
+
+    /// Set the title of the window as the web page title or url.
+    fn set_title_without_progress(&self) {
+        let title = self.get_title();
+        self.app.set_window_title(&format!("{}{}", title, APP_NAME));
     }
 
     /// Show the error in the status bar.

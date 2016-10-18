@@ -28,7 +28,6 @@
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
  * TODO: disable completion of special commands.
- * TODO: update window title when stopping page load.
  * TODO: open completions.
  * TODO: settings (third-party cookies).
  * TODO: add a setting for the hint characters.
