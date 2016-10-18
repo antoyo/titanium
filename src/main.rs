@@ -21,18 +21,17 @@
 
 /*
  * TODO: show an error when there are no hints.
- * FIXME: missing hints on duckduckgo.com menu.
+ * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
- * TODO: disable completion of special commands.
- * TODO: open completions.
- * TODO: settings (third-party cookies).
+ * TODO: settings (application and webkit including third-party cookies).
  * TODO: add a setting for the hint characters.
  * TODO: download manager.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
+ * TODO: open completions.
  * TODO: open file (instead of download).
  * TODO: follow in new window.
  * TODO: adblock.
@@ -49,7 +48,6 @@
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
- * FIXME: enter to activate selected link.
  *
  * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: disable the tab key in the status bar input.

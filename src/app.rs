@@ -410,6 +410,7 @@ impl App {
         let webview = app.webview.clone();
         webview.connect_load_changed(move |webview, load_event| {
             if load_event == Started {
+                app.webview.finish_search();
                 app.handle_error(app.webview.add_stylesheets());
                 app.handle_error(app.webview.add_scripts());
                 app.app.set_mode("normal");

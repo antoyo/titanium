@@ -112,9 +112,7 @@ impl WebView {
 
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult {
-        self.message_server.activate_selection().ok();
-        // FIXME: finish search should be called after activate_selection() returns.
-        self.finish_search();
+        try!(self.message_server.activate_selection());
         Ok(())
     }
 
