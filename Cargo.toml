@@ -6,8 +6,6 @@ authors = ["Antoni Boucher <bouanto@zoho.com>"]
 [dependencies]
 docopt = "^0.6"
 libc = "^0.2"
-#mg = "^0.0.4"
-mg-settings = "^0.0.4"
 rustc-serialize = "^0.3"
 simplelog = "^0.2"
 url = "^1.2"
@@ -42,6 +40,14 @@ version = "0.3.1"
 
 [dependencies.mg]
 git = "https://github.com/antoyo/mg"
+
+[dependencies.mg-settings]
+git = "https://github.com/antoyo/mg-settings"
+version = "^0.0.5-pre"
+
+[dependencies.mg-settings-macros]
+git = "https://github.com/antoyo/mg-settings"
+version = "^0.0.1"
 
 [dependencies.webkit2gtk]
 git = "https://github.com/antoyo/webkit2gtk-rs"

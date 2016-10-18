@@ -27,21 +27,14 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
- * TODO: remove the title bar of the inspector.
- * TODO: follow in new window.
- * TODO: disable the tab key in the status bar input.
- * TODO: ask confirmation before submitting again the same form.
- * TODO: do not hard-code the extension directory: use the one provided by cargo.
- * TODO: find a way to install the titanium web extension library on cargo install.
- * TODO: activate insert mode after focusing a text element.
- * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
+ * TODO: open completions.
  * TODO: settings (third-party cookies).
  * TODO: add a setting for the hint characters.
  * TODO: download manager.
+ * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open file (instead of download).
- * FIXME: prompt slow to show.
+ * TODO: follow in new window.
  * TODO: adblock.
- * TODO: command/open completions.
  * TODO: copy/paste URLs.
  * TODO: handle network errors.
  * TODO: support marks.
@@ -52,12 +45,21 @@
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: add content to the default config file.
  * TODO: private browsing.
- * TODO: switch from dbus to gdbus.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
  * FIXME: enter to activate selected link.
- * FIXME: some dbus calls timeout (seems to be called by the click method since it triggers an
+ *
+ * TODO: remove the title bar of the inspector (window decorated property).
+ * TODO: disable the tab key in the status bar input.
+ * TODO: in command and input mode, put the messages into a queue.
+ * TODO: ask confirmation before submitting again the same form.
+ * TODO: do not hard-code the extension directory: use the one provided by cargo.
+ * TODO: find a way to install the titanium web extension library on cargo install.
+ * TODO: activate insert mode after focusing a text element.
+ * FIXME: prompt slow to show.
+ *
+ * FIXME: some dbus calls timeout (seems to be caused by the click method since it triggers an
  * action in the application which is waiting for the answer of the call).
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
@@ -65,6 +67,7 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
+#![feature(proc_macro)]
 #![warn(missing_docs)]
 
 #[macro_use]
@@ -80,6 +83,8 @@ extern crate libc;
 extern crate mg;
 #[macro_use]
 extern crate mg_settings;
+#[macro_use]
+extern crate mg_settings_macros;
 extern crate rustc_serialize;
 extern crate simplelog;
 extern crate url;

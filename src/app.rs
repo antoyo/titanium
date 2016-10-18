@@ -31,7 +31,6 @@ use std::rc::Rc;
 use gdk::EventKey;
 use gtk::{self, Inhibit};
 use mg::{Application, StatusBarItem};
-use mg_settings;
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::Started;
@@ -48,36 +47,65 @@ pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 pub type AppResult = Result<(), Box<Error>>;
 
-commands!(AppCommand {
+#[derive(Commands)]
+enum AppCommand {
+    #[completion(hidden)]
     Activateselection,
+    #[help(text="Go back in the history")]
     Back,
+    #[completion(hidden)]
     Finishsearch,
+    #[completion(hidden)]
     Follow,
+    #[help(text="Go forward in the history")]
     Forward,
+    #[completion(hidden)]
     Hidehints,
+    #[completion(hidden)]
     Insert,
+    #[help(text="Open the web inspector")]
     Inspector,
+    #[completion(hidden)]
     Normal,
+    #[help(text="Open an URL")]
     Open(String),
+    #[help(text="Quit the application")]
     Quit,
+    #[help(text="Reload the current page")]
     Reload,
+    #[help(text="Reload the current page without using the cache")]
     Reloadbypasscache,
+    #[completion(hidden)]
     Scrollbottom,
+    #[completion(hidden)]
     Scrolldown,
+    #[completion(hidden)]
     Scrolldownhalf,
+    #[completion(hidden)]
     Scrolldownline,
+    #[completion(hidden)]
     Scrolltop,
+    #[completion(hidden)]
     Scrollup,
+    #[completion(hidden)]
     Scrolluphalf,
+    #[completion(hidden)]
     Scrollupline,
+    #[completion(hidden)]
     Searchnext,
+    #[completion(hidden)]
     Searchprevious,
+    #[help(text="Stop loading the current page")]
     Stop,
+    #[help(text="Open an URL in a new window")]
     Winopen(String),
+    #[help(text="Zoom the current page in")]
     Zoomin,
+    #[help(text="Zoom the current page to 100%")]
     Zoomnormal,
+    #[help(text="Zoom the current page out")]
     Zoomout,
-});
+}
 
 special_commands!(SpecialCommand {
     BackwardSearch('?', always),
