@@ -27,6 +27,7 @@
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
+ * FIXME: can only be launched from the terminal.
  * TODO: settings (application and webkit including third-party cookies).
  * TODO: add a setting for the hint characters.
  * TODO: download manager.

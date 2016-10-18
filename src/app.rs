@@ -128,7 +128,7 @@ impl App {
         let config_path = xdg_dirs.place_config_file("config")
             .expect("cannot create configuration directory");
 
-        let mg_app = Application::new_with_config(hash! {
+        let mg_app = Application::new_with_config_and_path(hash! {
             "f" => "follow",
             "i" => "insert",
         }, Some(include_path));

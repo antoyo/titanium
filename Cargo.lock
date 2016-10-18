@@ -323,7 +323,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#4b05ad68ad4bc06b4a9a6a9423ab45e549b1360f"
+source = "git+https://github.com/antoyo/mg#e0eebb29da92104bcf19b855f59115bd46478b3d"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -350,7 +350,7 @@ version = "0.0.1"
 source = "git+https://github.com/antoyo/mg-settings#b054f722a6880613b0327fcb74c00bb847eb036d"
 dependencies = [
  "quote 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -437,7 +437,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "syn"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -610,7 +610,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum simplelog 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4377e296e05f52bd920b86565039842e5db882d9255c3dfc6d895be2b2095036"
 "checksum soup-sys 0.3.1 (git+https://github.com/antoyo/soup-sys-rs)" = "<none>"
 "checksum strsim 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "50c069df92e4b01425a8bf3576d5d417943a6a7272fbabaf5bd80b1aaa76442e"
-"checksum syn 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "96fed4e825d615b0ffd74dabb1dc4c5a078ab44e2c8004798f01510edf6cf515"
+"checksum syn 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f0b3fffcf2e4f57b97d518587471e54398803216c93a6ff3dc2d20c4b95a0ecf"
 "checksum term 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "3deff8a2b3b6607d6d7cc32ac25c0b33709453ca9cceac006caac51e963cf94a"
 "checksum thread-id 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a9539db560102d1cef46b8b78ce737ff0bb64e7e18d35b2a5688f7d097d0ff03"
 "checksum thread_local 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "8576dbbfcaef9641452d5cf0df9b0e7eeab7694956dd33bb61515fb8f18cfdd5"
