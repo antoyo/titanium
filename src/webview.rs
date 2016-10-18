@@ -56,8 +56,13 @@ impl WebView {
     /// Create a new web view.
     pub fn new() -> Rc<Self> {
         let context = WebContext::get_default().unwrap();
-        //context.set_web_extensions_directory("/usr/local/lib/titanium/web-extensions");
-        context.set_web_extensions_directory("titanium-web-extension/target/debug");
+        if cfg!(debug_assertions) {
+            context.set_web_extensions_directory("titanium-web-extension/target/debug");
+        }
+        else {
+            let install_path = env!("TITANIUM_EXTENSION_INSTALL_PATH");
+            context.set_web_extensions_directory(install_path);
+        }
 
         let pid = unsafe { getpid() };
         let server_name = format!("com.titanium.process{}", pid);
