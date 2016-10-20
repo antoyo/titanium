@@ -29,7 +29,9 @@
  *
  * FIXME: can only be launched from the terminal.
  * TODO: settings (application and webkit including third-party cookies).
- * TODO: add a setting for the hint characters.
+ * TODO: #[default(value)] attribute for settings.
+ * TODO: settings completion.
+ * TODO: add shortcuts like Tab, Shift-Tab, Ctrl-P and Ctrl-N to command completion.
  * TODO: download manager.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
@@ -94,6 +96,7 @@ extern crate xdg;
 mod app;
 mod message_server;
 mod popup_manager;
+mod settings;
 mod stylesheet;
 mod urls;
 mod webview;

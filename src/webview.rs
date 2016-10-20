@@ -112,7 +112,7 @@ impl WebView {
 
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult {
-        try!(self.message_server.activate_selection());
+        self.message_server.activate_selection()?;
         Ok(())
     }
 
@@ -121,12 +121,11 @@ impl WebView {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_scripts();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-            let script_path = try!(xdg_dirs.place_config_file("scripts"));
-            for filename in try!(read_dir(script_path)) {
-                let filename = try!(filename);
-                let mut file = try!(File::open(filename.path()));
+            let script_path = xdg_dirs.place_config_file("scripts")?;
+            for filename in read_dir(script_path)? {
+                let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
-                try!(file.read_to_string(&mut content));
+                file.read_to_string(&mut content)?;
                 // TODO: support whitelist as a comment in the script.
                 let script = UserScript::new(&content, AllFrames, End, &[], &[]);
                 content_manager.add_script(&script);
@@ -140,12 +139,11 @@ impl WebView {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_style_sheets();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-            let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
-            for filename in try!(read_dir(stylesheets_path)) {
-                let filename = try!(filename);
-                let mut file = try!(File::open(filename.path()));
+            let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
+            for filename in read_dir(stylesheets_path)? {
+                let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
-                try!(file.read_to_string(&mut content));
+                file.read_to_string(&mut content)?;
                 let (stylesheet, stylesheet_whitelist) = get_stylesheet_and_whitelist(&content);
                 let whitelist: Vec<_> = stylesheet_whitelist.iter().map(|url| url.as_ref()).collect();
                 let stylesheet = UserStyleSheet::new(&stylesheet, AllFrames, User, &whitelist, &[]);
@@ -190,14 +188,14 @@ impl WebView {
     }
 
     /// Follow a link.
-    pub fn follow_link(&self) -> AppResult {
-        try!(self.message_server.show_hint_on_links());
+    pub fn follow_link(&self, hint_chars: &str) -> AppResult {
+        self.message_server.show_hint_on_links(hint_chars)?;
         Ok(())
     }
 
     /// Hide the hints.
     pub fn hide_hints(&self) -> AppResult {
-        try!(self.message_server.hide_hints());
+        self.message_server.hide_hints()?;
         Ok(())
     }
 
@@ -215,13 +213,13 @@ impl WebView {
 
     /// Scroll by the specified number of pixels.
     fn scroll(&self, pixels: i32) -> AppResult {
-        try!(self.message_server.scroll_by(pixels as i64));
+        self.message_server.scroll_by(pixels as i64)?;
         Ok(())
     }
 
     /// Scroll to the bottom of the page.
     pub fn scroll_bottom(&self) -> AppResult {
-        try!(self.message_server.scroll_bottom());
+        self.message_server.scroll_bottom()?;
         Ok(())
     }
 
@@ -244,7 +242,7 @@ impl WebView {
 
     /// Scroll to the top of the page.
     pub fn scroll_top(&self) -> AppResult {
-        try!(self.message_server.scroll_top());
+        self.message_server.scroll_top()?;
         Ok(())
     }
 

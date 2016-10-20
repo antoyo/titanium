@@ -323,7 +323,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#e0eebb29da92104bcf19b855f59115bd46478b3d"
+source = "git+https://github.com/antoyo/mg#10a4d2a23bcbac4b7d875ce53e2ed610aeed4859"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -339,7 +339,7 @@ dependencies = [
 [[package]]
 name = "mg-settings"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg-settings#b054f722a6880613b0327fcb74c00bb847eb036d"
+source = "git+https://github.com/antoyo/mg-settings#478b4879bc84cb11399834a1be0d82425c4951e0"
 dependencies = [
  "mg-settings-macros 0.0.1 (git+https://github.com/antoyo/mg-settings)",
 ]
@@ -347,7 +347,7 @@ dependencies = [
 [[package]]
 name = "mg-settings-macros"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/mg-settings#b054f722a6880613b0327fcb74c00bb847eb036d"
+source = "git+https://github.com/antoyo/mg-settings#478b4879bc84cb11399834a1be0d82425c4951e0"
 dependencies = [
  "quote 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",

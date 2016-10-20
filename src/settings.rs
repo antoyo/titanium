@@ -19,19 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//! Message server interface.
-
-dbus_interface!(
-#[dbus("com.titanium.client")]
-interface MessageServer {
-    fn activate_hint(&mut self) -> bool;
-    fn activate_selection(&self);
-    fn enter_hint_key(&mut self, key: char) -> bool;
-    fn get_scroll_percentage(&self) -> i64;
-    fn hide_hints(&self);
-    fn scroll_bottom(&self);
-    fn scroll_by(&self, pixels: i64);
-    fn scroll_top(&self);
-    fn show_hint_on_links(&mut self, hint_chars: &str);
+#[derive(Settings)]
+pub struct AppSettings {
+    pub hint_chars: String,
 }
-);

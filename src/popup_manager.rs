@@ -77,16 +77,16 @@ impl PopupManager {
 
     /// Load the urls from the files.
     pub fn load(&mut self) -> AppResult {
-        self.blacklisted_urls = try!(self.read_as_set(&self.blacklist_path));
-        self.whitelisted_urls = try!(self.read_as_set(&self.whitelist_path));
+        self.blacklisted_urls = self.read_as_set(&self.blacklist_path)?;
+        self.whitelisted_urls = self.read_as_set(&self.whitelist_path)?;
         Ok(())
     }
 
     /// Read a file as a HashSet where all lines are one entry in the set.
     fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>, Box<Error>> {
-        let mut file = try!(File::open(path));
+        let mut file = File::open(path)?;
         let mut content = String::new();
-        try!(file.read_to_string(&mut content));
+        file.read_to_string(&mut content)?;
         let set = content.lines()
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string()).collect();
@@ -94,9 +94,9 @@ impl PopupManager {
     }
 
     fn save(&self, path: &PathBuf, list: &HashSet<String>) -> AppResult {
-        let mut file = try!(File::create(path));
+        let mut file = File::create(path)?;
         for url in list {
-            try!(writeln!(file, "{}", url));
+            writeln!(file, "{}", url)?;
         }
         Ok(())
     }

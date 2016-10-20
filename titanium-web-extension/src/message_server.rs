@@ -156,13 +156,13 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
-    fn show_hint_on_links(&mut self) -> () {
+    fn show_hint_on_links(&mut self, hint_chars: &str) -> () {
         self.hint_keys.clear();
         let page = get_page!(self);
         let body = page.as_ref().and_then(|page| get_body(page));
         let document = page.and_then(|page| page.get_dom_document());
         if let (Some(document), Some(body)) = (document, body) {
-            if let Some((hints, hint_map)) = create_hints(&document) {
+            if let Some((hints, hint_map)) = create_hints(&document, hint_chars) {
                 self.hint_map = hint_map;
                 body.append_child(&hints).ok();
             }

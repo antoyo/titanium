@@ -30,16 +30,17 @@ use std::rc::Rc;
 
 use gdk::EventKey;
 use gtk::{self, Inhibit};
-use mg::{Application, StatusBarItem};
+use mg::{Application, ApplicationBuilder, StatusBarItem};
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
+use popup_manager::PopupManager;
 use self::AppCommand::*;
 use self::SpecialCommand::*;
-use popup_manager::PopupManager;
+use settings::AppSettings;
 use urls::get_base_url;
 use webview::WebView;
 
@@ -114,7 +115,7 @@ special_commands!(SpecialCommand {
 
 /// Titanium application.
 pub struct App {
-    app: Rc<Application<SpecialCommand, AppCommand>>,
+    app: Rc<Application<SpecialCommand, AppCommand, AppSettings>>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
     url_label: StatusBarItem,
@@ -128,10 +129,14 @@ impl App {
         let config_path = xdg_dirs.place_config_file("config")
             .expect("cannot create configuration directory");
 
-        let mg_app = Application::new_with_config_and_path(hash! {
-            "f" => "follow",
-            "i" => "insert",
-        }, Some(include_path));
+        let mg_app = ApplicationBuilder::new()
+            .include_path(include_path)
+            .modes(hash! {
+                "f" => "follow",
+                "i" => "insert",
+            })
+            .settings(AppSettings::new())
+            .build();
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -256,14 +261,14 @@ impl App {
     /// Create the default configuration files and directories if it does not exist.
     fn create_config_files(&self, config_path: &Path) -> AppResult {
         let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
-        try!(OpenOptions::new().create(true).write(true).open(&config_path));
-        try!(OpenOptions::new().create(true).write(true).open(&popup_whitelist_path));
-        try!(OpenOptions::new().create(true).write(true).open(&popup_blacklist_path));
-        let xdg_dirs = try!(BaseDirectories::with_prefix(APP_NAME));
-        let stylesheets_path = try!(xdg_dirs.place_config_file("stylesheets"));
-        let scripts_path = try!(xdg_dirs.place_config_file("scripts"));
-        try!(create_dir_all(stylesheets_path));
-        try!(create_dir_all(scripts_path));
+        OpenOptions::new().create(true).write(true).open(&config_path)?;
+        OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
+        OpenOptions::new().create(true).write(true).open(&popup_blacklist_path)?;
+        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
+        let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
+        let scripts_path = xdg_dirs.place_config_file("scripts")?;
+        create_dir_all(stylesheets_path)?;
+        create_dir_all(scripts_path)?;
         Ok(())
     }
 
@@ -288,7 +293,7 @@ impl App {
             FinishSearch => self.webview.finish_search(),
             Follow => {
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link())
+                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
             },
             Forward => self.webview.go_forward(),
             HideHints => self.hide_hints(),
@@ -476,9 +481,9 @@ impl App {
     /// Open the given URL in a new window.
     fn open_in_new_window(&self, url: &str) -> AppResult {
         let program = env::args().next().unwrap();
-        try!(Command::new(program)
+        Command::new(program)
             .arg(url)
-            .spawn());
+            .spawn()?;
         Ok(())
     }
 

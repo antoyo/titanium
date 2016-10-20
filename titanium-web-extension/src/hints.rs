@@ -43,8 +43,8 @@ pub struct Hints {
 }
 
 impl Hints {
-    fn new(size: usize) -> Self {
-        let characters = "auietsrncbpodljyxkqghf".to_string();
+    fn new(size: usize, hint_chars: &str) -> Self {
+        let characters = hint_chars.to_string();
         let first_index =
             if size <= characters.len() {
                 0
@@ -112,7 +112,7 @@ fn create_hint(document: &DOMDocument, pos: Pos, hint_text: &str) -> Option<DOME
 }
 
 /// Create the hints over all the elements that can be activated by the user (links, form elements).
-pub fn create_hints(document: &DOMDocument) -> Option<(DOMElement, HashMap<String, DOMElement>)> {
+pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElement, HashMap<String, DOMElement>)> {
     document.create_element("div").ok().map(|hints| {
         hints.set_id(HINTS_ID);
         if let Some(style) = hints.get_style() {
@@ -123,7 +123,7 @@ pub fn create_hints(document: &DOMDocument) -> Option<(DOMElement, HashMap<Strin
 
         let elements_to_hint = get_elements_to_hint(document);
 
-        let mut hint_map = Hints::new(elements_to_hint.len());
+        let mut hint_map = Hints::new(elements_to_hint.len(), hint_chars);
         for element in elements_to_hint {
             if let Some(pos) = get_position(&element) {
                 if let Some(hint) = create_hint(&document, pos, &hint_map.add(&element)) {
