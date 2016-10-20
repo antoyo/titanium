@@ -3,4 +3,7 @@ include webkit
 
 set home-page = https://duckduckgo.com/
 
+# Search engines.
+search-engine wikipedia http://en.wikipedia.org/w/index.php?search={}
+
 set hint-chars = hjklasdfgyuiopqwertnmzxcvb

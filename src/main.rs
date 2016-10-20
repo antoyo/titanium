@@ -28,6 +28,7 @@
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
  * FIXME: can only be launched from the terminal.
+ * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  * TODO: settings completion.
  * TODO: add shortcuts like Tab, Shift-Tab, Ctrl-P and Ctrl-N to command completion.
@@ -93,6 +94,7 @@ extern crate webkit2gtk;
 extern crate xdg;
 
 mod app;
+mod commands;
 mod message_server;
 mod popup_manager;
 mod settings;

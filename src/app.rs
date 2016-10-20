@@ -21,6 +21,7 @@
 
 use std::cell::RefCell;
 use std::char;
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fs::{File, OpenOptions, create_dir_all};
@@ -38,9 +39,10 @@ use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
+use commands::{AppCommand, SpecialCommand};
+use commands::AppCommand::*;
+use commands::SpecialCommand::*;
 use popup_manager::PopupManager;
-use self::AppCommand::*;
-use self::SpecialCommand::*;
 use settings::AppSettings;
 use urls::get_base_url;
 use webview::WebView;
@@ -49,76 +51,12 @@ pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 pub type AppResult = Result<(), Box<Error>>;
 
-#[derive(Commands)]
-enum AppCommand {
-    #[completion(hidden)]
-    ActivateSelection,
-    #[help(text="Go back in the history")]
-    Back,
-    #[completion(hidden)]
-    FinishSearch,
-    #[completion(hidden)]
-    Follow,
-    #[help(text="Go forward in the history")]
-    Forward,
-    #[completion(hidden)]
-    HideHints,
-    #[completion(hidden)]
-    Insert,
-    #[help(text="Open the web inspector")]
-    Inspector,
-    #[completion(hidden)]
-    Normal,
-    #[help(text="Open an URL")]
-    Open(String),
-    #[help(text="Quit the application")]
-    Quit,
-    #[help(text="Reload the current page")]
-    Reload,
-    #[help(text="Reload the current page without using the cache")]
-    ReloadBypassCache,
-    #[completion(hidden)]
-    ScrollBottom,
-    #[completion(hidden)]
-    ScrollDown,
-    #[completion(hidden)]
-    ScrollDownHalf,
-    #[completion(hidden)]
-    ScrollDownLine,
-    #[completion(hidden)]
-    ScrollTop,
-    #[completion(hidden)]
-    ScrollUp,
-    #[completion(hidden)]
-    ScrollUpHalf,
-    #[completion(hidden)]
-    ScrollUpLine,
-    #[completion(hidden)]
-    SearchNext,
-    #[completion(hidden)]
-    SearchPrevious,
-    #[help(text="Stop loading the current page")]
-    Stop,
-    #[help(text="Open an URL in a new window")]
-    WinOpen(String),
-    #[help(text="Zoom the current page in")]
-    ZoomIn,
-    #[help(text="Zoom the current page to 100%")]
-    ZoomNormal,
-    #[help(text="Zoom the current page out")]
-    ZoomOut,
-}
-
-special_commands!(SpecialCommand {
-    BackwardSearch('?', always),
-    Search('/', always),
-});
-
 /// Titanium application.
 pub struct App {
     app: Rc<Application<SpecialCommand, AppCommand, AppSettings>>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
+    search_engines: Rc<RefCell<HashMap<String, String>>>,
     url_label: StatusBarItem,
     webview: Rc<WebView>,
 }
@@ -153,6 +91,7 @@ impl App {
             app: mg_app,
             popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
+            search_engines: Rc::new(RefCell::new(HashMap::new())),
             url_label: url_label,
             webview: webview,
         });
@@ -161,6 +100,14 @@ impl App {
             let webview = app.webview.clone();
             app.app.connect_setting_changed(move |setting| {
                 webview.setting_changed(&setting);
+            });
+        }
+
+        {
+            let app = app.clone();
+            let mg_app = app.app.clone();
+            mg_app.connect_command(move |command| {
+                app.handle_command(command);
             });
         }
 
@@ -209,14 +156,6 @@ impl App {
         {
             let app = app.clone();
             let mg_app = app.app.clone();
-            mg_app.connect_command(move |command| {
-                app.handle_command(command);
-            });
-        }
-
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
             mg_app.connect_special_command(move |command| {
                 app.handle_special_command(command);
             });
@@ -260,6 +199,17 @@ impl App {
         });
 
         app
+    }
+
+    /// Add a search engine.
+    fn add_search_engine(&self, args: &str) {
+        let args: Vec<_> = args.split_whitespace().collect();
+        if args.len() == 2 {
+            (*self.search_engines.borrow_mut()).insert(args[0].to_string(), args[1].to_string());
+        }
+        else {
+            self.app.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));
+        }
     }
 
     /// Save the specified url in the popup blacklist.
@@ -328,7 +278,7 @@ impl App {
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
-            Open(url) => self.webview.open(&url),
+            Open(url) => self.open(&url),
             Quit => self.quit(),
             Reload => self.webview.reload(),
             ReloadBypassCache => self.webview.reload_bypass_cache(),
@@ -340,6 +290,7 @@ impl App {
             ScrollUp => self.handle_error(self.webview.scroll_up_page()),
             ScrollUpHalf => self.handle_error(self.webview.scroll_up_half_page()),
             ScrollUpLine => self.handle_error(self.webview.scroll_up_line()),
+            SearchEngine(args) => self.add_search_engine(&args),
             SearchNext => self.webview.search_next(),
             SearchPrevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
@@ -506,8 +457,15 @@ impl App {
         self.app.set_mode("normal");
     }
 
+    /// Open the given URL in the web view.
+    fn open(&self, url: &str) {
+        let url = self.transform_url(url);
+        self.webview.open(&url);
+    }
+
     /// Open the given URL in a new window.
     fn open_in_new_window(&self, url: &str) -> AppResult {
+        let url = self.transform_url(url);
         let program = env::args().next().unwrap();
         Command::new(program)
             .arg(url)
@@ -547,6 +505,19 @@ impl App {
     /// Show the zoom level in the status bar.
     fn show_zoom(&self, level: i32) {
         Application::info(&self.app, &format!("Zoom level: {}%", level));
+    }
+
+    /// If the url starts with a search engine keyword, transform the url to the URL of the search
+    /// engine.
+    fn transform_url(&self, url: &str) -> String {
+        if let Some(keyword) = url.split_whitespace().next() {
+            if let Some(engine_url) = (*self.search_engines.borrow()).get(keyword) {
+                let rest = url.chars().skip_while(|&c| c != ' ').collect::<String>();
+                let rest = rest.trim();
+                return engine_url.replace("{}", rest);
+            }
+        }
+        url.to_string()
     }
 
     /// Save the specified url in the popup whitelist.
