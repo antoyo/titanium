@@ -19,8 +19,30 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use webkit2gtk;
+
+#[derive(Setting)]
+pub enum CookieAcceptPolicy {
+    #[default]
+    Always,
+    Never,
+    NoThirdParty,
+}
+
+impl CookieAcceptPolicy {
+    /// Convert the setting type to the webkit type.
+    pub fn to_webkit(&self) -> webkit2gtk::CookieAcceptPolicy {
+        match *self {
+            CookieAcceptPolicy::Always => webkit2gtk::CookieAcceptPolicy::Always,
+            CookieAcceptPolicy::Never => webkit2gtk::CookieAcceptPolicy::Never,
+            CookieAcceptPolicy::NoThirdParty => webkit2gtk::CookieAcceptPolicy::NoThirdParty,
+        }
+    }
+}
+
 #[derive(Settings)]
 pub struct AppSettings {
+    pub cookie_accept: CookieAcceptPolicy,
     pub hint_chars: String,
     pub webkit_allow_file_access_from_file_urls: bool,
     pub webkit_allow_modal_dialogs: bool,

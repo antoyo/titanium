@@ -28,7 +28,6 @@
  * FIXME: go to insert mode for hints of multiple selection combo box.
  *
  * FIXME: can only be launched from the terminal.
- * TODO: settings (application and webkit including third-party cookies).
  * TODO: #[default(value)] attribute for settings.
  * TODO: settings completion.
  * TODO: add shortcuts like Tab, Shift-Tab, Ctrl-P and Ctrl-N to command completion.

@@ -40,8 +40,9 @@ use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
 use message_server::MessageServer;
-use settings::AppSettings;
+use settings::{AppSettings, CookieAcceptPolicy};
 use settings::AppSettingsVariant::{
+    CookieAccept,
     HintChars,
     WebkitAllowFileAccessFromFileUrls,
     WebkitAllowModalDialogs,
@@ -347,6 +348,7 @@ impl WebView {
     pub fn setting_changed(&self, setting: &<AppSettings as Settings>::Variant) {
         if let Some(settings) = self.view.get_settings() {
             match *setting {
+                CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) => (),
                 WebkitAllowFileAccessFromFileUrls(value) =>
                     settings.set_allow_file_access_from_file_urls(value),
@@ -447,6 +449,15 @@ impl WebView {
                 WebkitZoomTextOnly(value) =>
                     settings.set_zoom_text_only(value),
             }
+        }
+    }
+
+    /// Set the cookie accept policy.
+    fn set_cookie_accept(&self, cookie_accept: &CookieAcceptPolicy) {
+        let cookie_manager = self.view.get_context()
+            .and_then(|context| context.get_cookie_manager());
+        if let Some(cookie_manager) = cookie_manager {
+            cookie_manager.set_accept_policy(cookie_accept.to_webkit());
         }
     }
 
