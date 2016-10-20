@@ -1,4 +1,6 @@
 include keys
 include webkit
 
+set home-page = https://duckduckgo.com/
+
 set hint-chars = hjklasdfgyuiopqwertnmzxcvb

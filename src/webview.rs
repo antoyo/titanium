@@ -44,6 +44,7 @@ use settings::{AppSettings, CookieAcceptPolicy};
 use settings::AppSettingsVariant::{
     CookieAccept,
     HintChars,
+    HomePage,
     WebkitAllowFileAccessFromFileUrls,
     WebkitAllowModalDialogs,
     WebkitAutoLoadImages,
@@ -349,7 +350,7 @@ impl WebView {
         if let Some(settings) = self.view.get_settings() {
             match *setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
-                HintChars(_) => (),
+                HintChars(_) | HomePage(_) => (),
                 WebkitAllowFileAccessFromFileUrls(value) =>
                     settings.set_allow_file_access_from_file_urls(value),
                 WebkitAllowModalDialogs(value) =>

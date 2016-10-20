@@ -146,9 +146,7 @@ impl App {
 
         let url_label = mg_app.add_statusbar_item();
 
-        let url = homepage.unwrap_or("https://duckduckgo.com/lite/".to_string());
         let webview = WebView::new();
-        webview.open(&url);
         mg_app.set_view(&*webview);
 
         let app = Rc::new(App {
@@ -168,6 +166,9 @@ impl App {
 
         app.handle_error(app.create_config_files(config_path.as_path()));
         app.handle_error(app.app.parse_config(config_path));
+
+        let url = homepage.unwrap_or(app.app.settings().home_page.clone());
+        app.webview.open(&url);
 
         app.handle_error((*app.popup_manager.borrow_mut()).load());
 
