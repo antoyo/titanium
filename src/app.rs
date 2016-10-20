@@ -158,6 +158,13 @@ impl App {
             webview: webview,
         });
 
+        {
+            let webview = app.webview.clone();
+            app.app.connect_setting_changed(move |setting| {
+                webview.setting_changed(&setting);
+            });
+        }
+
         app.handle_error(app.create_config_files(config_path.as_path()));
         app.handle_error(app.app.parse_config(config_path));
 
