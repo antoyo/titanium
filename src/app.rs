@@ -23,7 +23,8 @@ use std::cell::RefCell;
 use std::char;
 use std::env;
 use std::error::Error;
-use std::fs::{OpenOptions, create_dir_all};
+use std::fs::{File, OpenOptions, create_dir_all};
+use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
@@ -267,15 +268,34 @@ impl App {
 
     /// Create the default configuration files and directories if it does not exist.
     fn create_config_files(&self, config_path: &Path) -> AppResult {
-        let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
-        OpenOptions::new().create(true).write(true).open(&config_path)?;
-        OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
-        OpenOptions::new().create(true).write(true).open(&popup_blacklist_path)?;
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
+
         let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
         let scripts_path = xdg_dirs.place_config_file("scripts")?;
         create_dir_all(stylesheets_path)?;
         create_dir_all(scripts_path)?;
+
+        let keys_path = xdg_dirs.place_config_file("keys")?;
+        let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
+        let hints_css_path = xdg_dirs.place_config_file("stylesheets/hints.css")?;
+        self.create_default_config_file(config_path, include_str!("../config/config"))?;
+        self.create_default_config_file(&keys_path, include_str!("../config/keys"))?;
+        self.create_default_config_file(&webkit_config_path, include_str!("../config/webkit"))?;
+        self.create_default_config_file(&hints_css_path, include_str!("../config/stylesheets/hints.css"))?;
+
+        let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
+        OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
+        OpenOptions::new().create(true).write(true).open(&popup_blacklist_path)?;
+
+        Ok(())
+    }
+
+    /// Create the config file with its default content if it does not exist.
+    fn create_default_config_file(&self, path: &Path, content: &'static str) -> AppResult {
+        if !path.exists() {
+            let mut file = File::create(path)?;
+            write!(file, "{}", content)?;
+        }
         Ok(())
     }
 

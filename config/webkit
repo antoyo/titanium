@@ -1,0 +1,2 @@
+set webkit-enable-developer-extras = false
+set webkit-javascript-can-open-windows-automatically = true

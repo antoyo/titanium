@@ -1,0 +1,31 @@
+nmap <C-b> scroll-up
+nmap <C-c> stop
+nmap <C-d> scroll-down-half
+nmap <C-f> scroll-down
+nmap <C-i> forward
+nmap <C-o> back
+nmap <C-r> inspector
+nmap <C-u> scroll-up-half
+nmap r reload
+nmap R reload-bypass-cache
+nmap f follow
+nmap gg scroll-top
+nmap G scroll-bottom
+nmap i insert
+nmap n search-next
+nmap N search-previous
+nmap o :open
+nmap O :open <url>
+nmap q quit
+nmap k scroll-up-line
+nmap j scroll-down-line
+nmap w :win-open
+nmap W :win-open <url>
+nmap = zoom-normal
+nmap - zoom-out
+nmap + zoom-in
+nmap <Enter> activate-selection
+nmap <Esc> finish-search
+
+fmap <Esc> hide-hints
+imap <Esc> normal
