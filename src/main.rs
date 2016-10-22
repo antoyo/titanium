@@ -26,10 +26,12 @@
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
+ * FIXME: font color, family, size for hints (https://developer.mozilla.org/en-US/docs/Web/API/Window/open).
  *
  * FIXME: can only be launched from the terminal.
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
+ *
  * TODO: settings completion.
  * TODO: add shortcuts like Tab, Shift-Tab, Ctrl-P and Ctrl-N to command completion.
  * TODO: download manager.
@@ -37,8 +39,9 @@
  * TODO: open completions.
  * TODO: open file (instead of download).
  * TODO: follow in new window.
- * TODO: adblock.
  * TODO: copy/paste URLs.
+ * TODO: add tests.
+ * TODO: adblock.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.
@@ -46,7 +49,6 @@
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
- * TODO: add content to the default config file.
  * TODO: private browsing.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: copier plugin (word, line, sentense, block, links…).
@@ -104,7 +106,7 @@ mod webview;
 
 use docopt::Docopt;
 use simplelog::TermLogger;
-use simplelog::LogLevelFilter::{self, Off};
+use simplelog::LogLevelFilter;
 
 use app::App;
 
@@ -131,14 +133,9 @@ fn main() {
         .and_then(|decoder| decoder.decode())
         .unwrap_or_else(|error| error.exit());
 
-    let filter_level =
-        if args.flag_log {
-            LogLevelFilter::max()
-        }
-        else {
-            Off
-        };
-    TermLogger::init(filter_level).unwrap();
+    if args.flag_log {
+        TermLogger::init(LogLevelFilter::max()).unwrap();
+    }
 
     let _app = App::new(args.arg_url);
 
