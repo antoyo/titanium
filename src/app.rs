@@ -397,7 +397,12 @@ impl App {
                 app.webview.finish_search();
                 app.handle_error(app.webview.add_stylesheets());
                 app.handle_error(app.webview.add_scripts());
-                app.app.set_mode("normal");
+
+                // Check to mode to avoid going back to normal mode if the user is in command mode.
+                let mode = app.app.get_mode();
+                if mode == "insert" || mode == "follow" {
+                    app.app.set_mode("normal");
+                }
             }
 
             if let Some(url) = webview.get_uri() {

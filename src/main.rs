@@ -32,9 +32,8 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: settings completion.
- * TODO: add shortcuts like Tab, Shift-Tab, Ctrl-P and Ctrl-N to command completion.
  * TODO: download manager.
+ * TODO: add help text for commands and settings.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
  * TODO: open file (instead of download).
