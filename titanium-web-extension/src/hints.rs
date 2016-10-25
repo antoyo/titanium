@@ -137,6 +137,7 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
 
 /// Get the elements to hint.
 fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
+    // TODO: refactor.
     let mut elements_to_hint = vec![];
     let tag_names = ["a", "button", "select", "textarea"];
     for tag_name in &tag_names {

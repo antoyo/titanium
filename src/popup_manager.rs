@@ -30,6 +30,7 @@ use xdg::BaseDirectories;
 use app::{AppResult, APP_NAME};
 use urls::get_base_url;
 
+/// Manager to know whether a popup should be always or never opened.
 pub struct PopupManager {
     blacklisted_urls: HashSet<String>,
     blacklist_path: PathBuf,
@@ -38,6 +39,7 @@ pub struct PopupManager {
 }
 
 impl PopupManager {
+    /// Create a new popup manager.
     pub fn new() -> Self {
         let (whitelist_path, blacklist_path) = Self::config_path();
         PopupManager {
@@ -93,6 +95,7 @@ impl PopupManager {
         Ok(set)
     }
 
+    /// Save the list in the file specified by `path`.
     fn save(&self, path: &PathBuf, list: &HashSet<String>) -> AppResult {
         let mut file = File::create(path)?;
         for url in list {
@@ -101,10 +104,12 @@ impl PopupManager {
         Ok(())
     }
 
+    /// Save the popup blacklist.
     fn save_blacklist(&self) -> AppResult {
         self.save(&self.blacklist_path, &self.blacklisted_urls)
     }
 
+    /// Save the popup whitelist.
     fn save_whitelist(&self) -> AppResult {
         self.save(&self.whitelist_path, &self.whitelisted_urls)
     }

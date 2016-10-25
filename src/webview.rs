@@ -27,12 +27,29 @@ use std::io::Read;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use glib::ToVariant;
+use glib::{Cast, ToVariant};
 use gtk::{Inhibit, WidgetExt};
 use libc::getpid;
 use mg_settings::settings::Settings;
 use url::Url;
-use webkit2gtk::{self, CookiePersistentStorage, FindController, FindOptions, UserContentManager, UserScript, UserStyleSheet, WebContext, WebViewExt, FIND_OPTIONS_BACKWARDS, FIND_OPTIONS_CASE_INSENSITIVE, FIND_OPTIONS_WRAP_AROUND};
+use webkit2gtk::{
+    self,
+    CookiePersistentStorage,
+    Download,
+    FindController,
+    FindOptions,
+    PolicyDecisionExt,
+    ResponsePolicyDecision,
+    UserContentManager,
+    UserScript,
+    UserStyleSheet,
+    WebContext,
+    WebViewExt,
+    FIND_OPTIONS_BACKWARDS,
+    FIND_OPTIONS_CASE_INSENSITIVE,
+    FIND_OPTIONS_WRAP_AROUND,
+};
+use webkit2gtk::PolicyDecisionType::Response;
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
@@ -111,30 +128,12 @@ pub struct WebView {
 impl WebView {
     /// Create a new web view.
     pub fn new() -> Rc<Self> {
-        let context = WebContext::get_default().unwrap();
-        if cfg!(debug_assertions) {
-            context.set_web_extensions_directory("titanium-web-extension/target/debug");
-        }
-        else {
-            let install_path = env!("TITANIUM_EXTENSION_INSTALL_PATH");
-            context.set_web_extensions_directory(install_path);
-        }
-
-        let pid = unsafe { getpid() };
-        let server_name = format!("com.titanium.process{}", pid);
-        let message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions");
-
-        context.set_web_extensions_initialization_user_data(&server_name.to_variant());
+        let (context, message_server) = WebView::initialize_web_extension();
 
         let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
+        view.set_vexpand(true);
 
         let find_controller = view.get_find_controller().unwrap();
-
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        let cookie_path = xdg_dirs.place_data_file("cookies")
-            .expect("cannot create data directory");
-        let cookie_manager = context.get_cookie_manager().unwrap();
-        cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
 
         let webview =
             Rc::new(WebView {
@@ -145,14 +144,7 @@ impl WebView {
                 view: view,
             });
 
-        {
-            let webview = webview.clone();
-            let view = webview.view.clone();
-            view.connect_draw(move |_, _| {
-                webview.emit_scrolled_event();
-                Inhibit(false)
-            });
-        }
+        WebView::create_events(&webview);
 
         webview
     }
@@ -207,9 +199,47 @@ impl WebView {
         Ok(())
     }
 
+    /// Add a callback for the download started event.
+    pub fn connect_download_started<F: Fn(&WebContext, &Download) + 'static>(&self, callback: F) {
+        if let Some(context) = self.view.get_context() {
+            context.connect_download_started(callback);
+        }
+    }
+
     /// Connect the scrolled event.
     pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
         *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
+    }
+
+    /// Create the events.
+    fn create_events(webview: &Rc<WebView>) {
+        // Emit the scroll event whenever the view is drawn.
+        {
+            let webview = webview.clone();
+            let view = webview.view.clone();
+            view.connect_draw(move |_, _| {
+                webview.emit_scrolled_event();
+                Inhibit(false)
+            });
+        }
+
+        // Download file whose mime type is not supported.
+        {
+            let webview = webview.clone();
+            let view = webview.view.clone();
+            view.connect_decide_policy(move |_, policy_decision, policy_decision_type| {
+                if policy_decision_type == Response {
+                    let policy_decision = policy_decision.clone();
+                    if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
+                        if !policy_decision.is_mime_type_supported() {
+                            policy_decision.download();
+                            return true;
+                        }
+                    }
+                }
+                false
+            });
+        }
     }
 
     /// Emit the scrolled event.
@@ -244,6 +274,32 @@ impl WebView {
     pub fn hide_hints(&self) -> AppResult {
         self.message_server.hide_hints()?;
         Ok(())
+    }
+
+    /// Create the context and initialize the web extension.
+    fn initialize_web_extension() -> (WebContext, MessageServer) {
+        let context = WebContext::get_default().unwrap();
+        if cfg!(debug_assertions) {
+            context.set_web_extensions_directory("titanium-web-extension/target/debug");
+        }
+        else {
+            let install_path = env!("TITANIUM_EXTENSION_INSTALL_PATH");
+            context.set_web_extensions_directory(install_path);
+        }
+
+        let pid = unsafe { getpid() };
+        let server_name = format!("com.titanium.process{}", pid);
+        let message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions");
+
+        context.set_web_extensions_initialization_user_data(&server_name.to_variant());
+
+        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+        let cookie_path = xdg_dirs.place_data_file("cookies")
+            .expect("cannot create data directory");
+        let cookie_manager = context.get_cookie_manager().unwrap();
+        cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
+
+        (context, message_server)
     }
 
     /// Open the specified URL.

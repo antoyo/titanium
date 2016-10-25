@@ -19,26 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use url::Url;
+use std::ffi::CStr;
 
-/// Get the base URL (domain and tld) of an URL.
-/// Returns an empty string in case there are no hosts.
-pub fn get_base_url(url: &str) -> String {
-    let parsed_url = Url::parse(url).unwrap();
-    let mut base_url = parsed_url.host_str().unwrap_or("").to_string();
-    // Remove all sub-domains.
-    let mut period_count = base_url.chars().filter(|&c| c == '.').count();
-    while period_count > 1 {
-        base_url = base_url.chars().skip_while(|&c| c != '.').skip(1).collect();
-        period_count = base_url.chars().filter(|&c| c == '.').count();
+pub use glib_sys::G_USER_DIRECTORY_DOWNLOAD;
+use glib_sys::{GUserDirectory, g_get_user_special_dir};
+
+/// Returns the full path of a special directory using its logical id.
+pub fn get_user_special_dir(user_directory: GUserDirectory) -> String {
+    unsafe {
+        let path = g_get_user_special_dir(user_directory);
+        CStr::from_ptr(path).to_str().unwrap().to_string()
     }
-    base_url
-}
-
-/// Get the filename from the URL.
-pub fn get_filename(url: &str) -> Option<String> {
-    let parsed_url = Url::parse(url).unwrap();
-    parsed_url.path_segments()
-        .and_then(|segments| segments.last())
-        .map(|filename| filename.to_string())
 }

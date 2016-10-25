@@ -31,7 +31,8 @@ use std::process::Command;
 use std::rc::Rc;
 
 use gdk::EventKey;
-use gtk::{self, Inhibit};
+use gtk::{self, ContainerExt, Inhibit};
+use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
@@ -42,6 +43,8 @@ use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
+use download_list_view::DownloadListView;
+use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 use popup_manager::PopupManager;
 use settings::AppSettings;
 use urls::get_base_url;
@@ -50,10 +53,12 @@ use webview::WebView;
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 pub type AppResult = Result<(), Box<Error>>;
+type MgApp = Rc<Application<SpecialCommand, AppCommand, AppSettings>>;
 
 /// Titanium application.
 pub struct App {
-    app: Rc<Application<SpecialCommand, AppCommand, AppSettings>>,
+    app: MgApp,
+    download_list_view: Rc<RefCell<DownloadListView>>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
     search_engines: Rc<RefCell<HashMap<String, String>>>,
@@ -62,20 +67,22 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(homepage: Option<String>) -> Rc<Self> {
+    fn build() -> MgApp {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let include_path = xdg_dirs.get_config_home();
-        let config_path = xdg_dirs.place_config_file("config")
-            .expect("cannot create configuration directory");
 
-        let mg_app = ApplicationBuilder::new()
+        ApplicationBuilder::new()
             .include_path(include_path)
             .modes(hash! {
                 "f" => "follow",
                 "i" => "insert",
             })
             .settings(AppSettings::new())
-            .build();
+            .build()
+    }
+
+    pub fn new(homepage: Option<String>) -> Rc<Self> {
+        let mg_app = App::build();
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -84,11 +91,19 @@ impl App {
 
         let url_label = mg_app.add_statusbar_item();
 
+        let vbox = gtk::Box::new(Vertical, 0);
+
+        let download_list_view = DownloadListView::new();
+        vbox.add(&download_list_view);
+
         let webview = WebView::new();
-        mg_app.set_view(&*webview);
+        vbox.add(&*webview);
+
+        mg_app.set_view(&vbox);
 
         let app = Rc::new(App {
             app: mg_app,
+            download_list_view: Rc::new(RefCell::new(download_list_view)),
             popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
             search_engines: Rc::new(RefCell::new(HashMap::new())),
@@ -96,107 +111,18 @@ impl App {
             webview: webview,
         });
 
-        {
-            let webview = app.webview.clone();
-            app.app.connect_setting_changed(move |setting| {
-                webview.setting_changed(&setting);
-            });
-        }
+        App::create_events(&app);
 
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
-            mg_app.connect_command(move |command| {
-                app.handle_command(command);
-            });
-        }
-
-        app.handle_error(app.create_config_files(config_path.as_path()));
-        app.handle_error(app.app.parse_config(config_path));
+        // Create the events before parsing the config so that the settings are taken into account
+        // and the commands are executed.
+        app.parse_config();
 
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
         app.webview.open(&url);
 
         app.handle_error((*app.popup_manager.borrow_mut()).load());
 
-        {
-            let app = app.clone();
-            App::handle_load_changed(app);
-        }
-
-        {
-            let app = app.clone();
-            let webview = app.webview.clone();
-            webview.connect_resource_load_started(move |_, _, _| {
-                app.set_title();
-            });
-        }
-
-        {
-            let app = app.clone();
-            let webview = app.webview.clone();
-            let scroll_label = app.scroll_label.clone();
-            webview.connect_scrolled(move |scroll_percentage| {
-                let text =
-                    match scroll_percentage {
-                        -1 => "[all]".to_string(),
-                        0 => "[top]".to_string(),
-                        100 => "[bot]".to_string(),
-                        _ => format!("[{}%]", scroll_percentage),
-                    };
-                scroll_label.set_text(&text);
-            });
-        }
-
-        {
-            let app = app.clone();
-            App::handle_create(app);
-        }
-
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
-            mg_app.connect_special_command(move |command| {
-                app.handle_special_command(command);
-            });
-        }
-
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
-            mg_app.add_variable("url", move || {
-                app.webview.get_uri().unwrap()
-            });
-        }
-
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
-            mg_app.connect_key_press_event(move |_, event_key| {
-                app.handle_key_press(event_key)
-            });
-        }
-
-        {
-            let app = app.clone();
-            let webview = app.webview.clone();
-            webview.connect_script_dialog(move |_, script_dialog| {
-                app.handle_script_dialog(script_dialog.clone());
-                true
-            });
-        }
-
-        {
-            let app = app.clone();
-            let mg_app = app.app.clone();
-            mg_app.connect_close(move || {
-                app.quit();
-            });
-        }
-
-        app.webview.connect_close(|_| {
-            gtk::main_quit();
-        });
+        App::create_variables(app.clone());
 
         app
     }
@@ -248,6 +174,92 @@ impl App {
             write!(file, "{}", content)?;
         }
         Ok(())
+    }
+
+    /// Create the events.
+    fn create_events(app: &Rc<Self>) {
+        {
+            let webview = app.webview.clone();
+            app.app.connect_setting_changed(move |setting| {
+                webview.setting_changed(&setting);
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.app.connect_command(move |command| {
+                application.handle_command(command);
+            });
+        }
+
+        App::handle_load_changed(app.clone());
+
+        {
+            let application = app.clone();
+            app.webview.connect_resource_load_started(move |_, _, _| {
+                application.set_title();
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.webview.connect_scrolled(move |scroll_percentage| {
+                application.show_scroll(scroll_percentage);
+            });
+        }
+
+        App::handle_create(app.clone());
+
+        {
+            let application = app.clone();
+            app.app.connect_special_command(move |command| {
+                application.handle_special_command(command);
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.app.connect_key_press_event(move |_, event_key| {
+                application.handle_key_press(event_key)
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.webview.connect_script_dialog(move |_, script_dialog| {
+                application.handle_script_dialog(script_dialog.clone());
+                true
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.webview.connect_download_started(move |_, download| {
+                (*application.download_list_view.borrow_mut()).add(download);
+            });
+        }
+
+        App::handle_decide_destination(app.clone());
+
+        {
+            let application = app.clone();
+            app.app.connect_close(move || {
+                application.quit();
+            });
+        }
+
+        app.webview.connect_close(|_| {
+            // TODO: if there are active downloads, ask confirmation before exit.
+            gtk::main_quit();
+        });
+    }
+
+    /// Create the variables accessible from the config files.
+    fn create_variables(app: Rc<Self>) {
+        let application = app.clone();
+        app.app.add_variable("url", move || {
+            application.webview.get_uri().unwrap()
+        });
     }
 
     /// Get the title or the url if there are no title.
@@ -303,6 +315,7 @@ impl App {
 
     /// Handle create window.
     fn handle_create(app: Rc<App>) {
+        // TODO: refactor.
         fn open(app: &Rc<App>, url: &str) {
             app.handle_error(app.open_in_new_window(url));
         }
@@ -343,6 +356,42 @@ impl App {
                 }
             }
             None
+        });
+    }
+
+    /// Handle the download decide destination event.
+    fn handle_decide_destination(app: Rc<App>) {
+        let application = app.clone();
+        (*app.download_list_view.borrow_mut()).connect_decide_destination(move |download, suggested_filename| {
+            let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
+            let destination = application.app.blocking_input("Save file to: (<C-x> to open)", &default_path);
+            if let Some(destination) = destination {
+                let path = Path::new(&destination);
+                let download_destination =
+                    if path.is_dir() {
+                        path.join(suggested_filename)
+                    }
+                    else {
+                        path.to_path_buf()
+                    };
+                let exists = download_destination.exists();
+                let download_destination = download_destination.to_str().unwrap();
+                if exists {
+                    let message = &format!("Do you want to overwrite {}?", download_destination);
+                    let answer = application.app.blocking_yes_no_question(message);
+                    if answer {
+                        download.set_allow_overwrite(true);
+                    }
+                    else {
+                        download.cancel();
+                    }
+                }
+                download.set_destination(&format!("file://{}", download_destination));
+            }
+            else {
+                download.cancel();
+            }
+            true
         });
     }
 
@@ -392,6 +441,7 @@ impl App {
     /// Go back to normal mode.
     fn handle_load_changed(app: Rc<App>) {
         let webview = app.webview.clone();
+
         webview.connect_load_changed(move |webview, load_event| {
             if load_event == Started {
                 app.webview.finish_search();
@@ -478,6 +528,15 @@ impl App {
         Ok(())
     }
 
+    /// Create the missing config files and parse the config files.
+    fn parse_config(&self) {
+        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
+        let config_path = xdg_dirs.place_config_file("config")
+            .expect("cannot create configuration directory");
+        self.handle_error(self.create_config_files(config_path.as_path()));
+        self.handle_error(self.app.parse_config(config_path));
+    }
+
     /// Try to close the web view and quit the application.
     fn quit(&self) {
         self.webview.try_close();
@@ -505,6 +564,18 @@ impl App {
     fn show_error(&self, error: Box<Error>) {
         // Remove the quotes around the error string since DBus message contains quotes.
         self.app.error(error.to_string().trim_matches('"'));
+    }
+
+    /// Show the scroll percentage.
+    fn show_scroll(&self, scroll_percentage: i64) {
+        let text =
+            match scroll_percentage {
+                -1 => "[all]".to_string(),
+                0 => "[top]".to_string(),
+                100 => "[bot]".to_string(),
+                _ => format!("[{}%]", scroll_percentage),
+            };
+        self.scroll_label.set_text(&text);
     }
 
     /// Show the zoom level in the status bar.

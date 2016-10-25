@@ -32,7 +32,8 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: download manager.
+ * TODO: dialog builder module in mg.
+ * TODO: handle ctrl-click.
  * TODO: add help text for commands and settings.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
@@ -50,9 +51,11 @@
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: private browsing.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
+ * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
  *
+ * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: disable the tab key in the status bar input.
  * TODO: in command and input mode, put the messages into a queue.
@@ -79,6 +82,7 @@ extern crate docopt;
 extern crate gdk;
 extern crate gio_sys;
 extern crate glib;
+extern crate glib_sys;
 extern crate gtk;
 extern crate gtk_sys;
 extern crate libc;
@@ -88,6 +92,7 @@ extern crate mg;
 extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
+extern crate number_prefix;
 extern crate rustc_serialize;
 extern crate simplelog;
 extern crate url;
@@ -96,6 +101,9 @@ extern crate xdg;
 
 mod app;
 mod commands;
+mod download_view;
+mod download_list_view;
+mod glib_user_dir;
 mod message_server;
 mod popup_manager;
 mod settings;
