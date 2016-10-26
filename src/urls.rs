@@ -19,6 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use regex::Regex;
 use url::Url;
 
 /// Get the base URL (domain and tld) of an URL.
@@ -41,4 +42,10 @@ pub fn get_filename(url: &str) -> Option<String> {
     parsed_url.path_segments()
         .and_then(|segments| segments.last())
         .map(|filename| filename.to_string())
+}
+
+/// Check if the input string looks like a URL.
+pub fn is_url(input: &str) -> bool {
+    let regex = Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)").unwrap();
+    regex.is_match(input)
 }

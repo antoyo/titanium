@@ -15,6 +15,7 @@ dependencies = [
  "mg-settings 0.0.5-pre (git+https://github.com/antoyo/mg-settings)",
  "mg-settings-macros 0.0.1 (git+https://github.com/antoyo/mg-settings)",
  "number_prefix 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.77 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "simplelog 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

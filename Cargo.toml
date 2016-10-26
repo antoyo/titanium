@@ -7,6 +7,7 @@ authors = ["Antoni Boucher <bouanto@zoho.com>"]
 docopt = "^0.6"
 libc = "^0.2"
 number_prefix = "^0.2"
+regex = "^0.1"
 rustc-serialize = "^0.3"
 simplelog = "^0.2"
 url = "^1.2"

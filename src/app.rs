@@ -47,7 +47,7 @@ use download_list_view::DownloadListView;
 use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 use popup_manager::PopupManager;
 use settings::AppSettings;
-use urls::get_base_url;
+use urls::{get_base_url, is_url};
 use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -58,6 +58,7 @@ type MgApp = Rc<Application<SpecialCommand, AppCommand, AppSettings>>;
 /// Titanium application.
 pub struct App {
     app: MgApp,
+    default_search_engine: Rc<RefCell<Option<String>>>,
     download_list_view: Rc<RefCell<DownloadListView>>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
@@ -103,6 +104,7 @@ impl App {
 
         let app = Rc::new(App {
             app: mg_app,
+            default_search_engine: Rc::new(RefCell::new(None)),
             download_list_view: Rc::new(RefCell::new(download_list_view)),
             popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
@@ -131,7 +133,11 @@ impl App {
     fn add_search_engine(&self, args: &str) {
         let args: Vec<_> = args.split_whitespace().collect();
         if args.len() == 2 {
-            (*self.search_engines.borrow_mut()).insert(args[0].to_string(), args[1].to_string());
+            let keyword = args[0].to_string();
+            if (*self.default_search_engine.borrow()).is_none() {
+                *self.default_search_engine.borrow_mut() = Some(keyword.clone());
+            }
+            (*self.search_engines.borrow_mut()).insert(keyword, args[1].to_string());
         }
         else {
             self.app.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));
@@ -586,11 +592,22 @@ impl App {
     /// If the url starts with a search engine keyword, transform the url to the URL of the search
     /// engine.
     fn transform_url(&self, url: &str) -> String {
-        if let Some(keyword) = url.split_whitespace().next() {
-            if let Some(engine_url) = (*self.search_engines.borrow()).get(keyword) {
+        let words: Vec<_> = url.split_whitespace().collect();
+        let (engine_prefix, rest) =
+            if words.len() > 1 && (*self.search_engines.borrow()).contains_key(words[0]) {
                 let rest = url.chars().skip_while(|&c| c != ' ').collect::<String>();
-                let rest = rest.trim();
-                return engine_url.replace("{}", rest);
+                let rest = rest.trim().to_string();
+                (Some(words[0].to_string()), rest)
+            }
+            else if !is_url(url) {
+                ((*self.default_search_engine.borrow()).clone(), url.to_string())
+            }
+            else {
+                (None, String::new())
+            };
+        if let Some(ref prefix) = engine_prefix {
+            if let Some(engine_url) = (*self.search_engines.borrow()).get(prefix) {
+                return engine_url.replace("{}", &rest);
             }
         }
         url.to_string()

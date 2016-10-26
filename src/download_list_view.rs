@@ -56,6 +56,8 @@ impl DownloadListView {
 
         {
             let callback = self.decide_destination_callback.clone();
+            // TODO: instead of requiring to call connect_decide_destination, add the callback as a
+            // parameter to the constructor.
             download.connect_decide_destination(move |download, suggested_filename| {
                 if let Some(ref callback) = *callback.borrow() {
                     callback(download, suggested_filename)

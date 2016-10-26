@@ -28,17 +28,17 @@
  * FIXME: go to insert mode for hints of multiple selection combo box.
  * FIXME: font color, family, size for hints (https://developer.mozilla.org/en-US/docs/Web/API/Window/open).
  *
- * FIXME: can only be launched from the terminal.
+ * TODO: handle the errors instead of unwrap().
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * TODO: follow in new window.
+ * TODO: do not consider right-click open in new window as a popup.
  * TODO: dialog builder module in mg.
- * TODO: handle ctrl-click.
  * TODO: add help text for commands and settings.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
  * TODO: open file (instead of download).
- * TODO: follow in new window.
  * TODO: copy/paste URLs.
  * TODO: add tests.
  * TODO: adblock.
@@ -54,6 +54,7 @@
  * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
+ * TODO: handle ctrl-click.
  *
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
@@ -93,6 +94,7 @@ extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
 extern crate number_prefix;
+extern crate regex;
 extern crate rustc_serialize;
 extern crate simplelog;
 extern crate url;

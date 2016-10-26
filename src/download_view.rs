@@ -61,6 +61,7 @@ impl DownloadView {
         // the list
         // FIXME: some downloads do not start (fixed with clear_cache()).
         let last_update = Rc::new(RefCell::new(SystemTime::now()));
+        // TODO: rename this variable.
         let never_shown = Rc::new(Cell::new(false));
         {
             let progress_bar = progress_bar.clone();
