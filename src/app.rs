@@ -245,6 +245,14 @@ impl App {
             });
         }
 
+        {
+            let application = app.clone();
+            app.webview.connect_new_window(move |url| {
+                application.handle_error(application.open_in_new_window(url));
+            });
+        }
+
+
         App::handle_decide_destination(app.clone());
 
         {
@@ -312,6 +320,11 @@ impl App {
             SearchNext => self.webview.search_next(),
             SearchPrevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
+            WinFollow => {
+                self.webview.set_open_in_new_window();
+                self.app.set_mode("follow");
+                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
+            },
             WinOpen(url) => self.handle_error(self.open_in_new_window(&url)),
             ZoomIn => self.zoom_in(),
             ZoomNormal => self.zoom_normal(),
@@ -333,6 +346,7 @@ impl App {
                     // Block popup.
                     let popup_manager = &*app.popup_manager.borrow();
                     let base_url = get_base_url(&url);
+                    // TODO: is_user_gesture() to block popup.
                     if action.get_navigation_type() == Other && !popup_manager.is_whitelisted(&url) {
                         if popup_manager.is_blacklisted(&url) {
                             Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));

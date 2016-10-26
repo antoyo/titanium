@@ -71,6 +71,8 @@ pub enum AppCommand {
     SearchPrevious,
     #[help(text="Stop loading the current page")]
     Stop,
+    #[completion(hidden)]
+    WinFollow,
     #[help(text="Open an URL in a new window")]
     WinOpen(String),
     #[help(text="Zoom the current page in")]

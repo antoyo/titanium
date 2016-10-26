@@ -38,6 +38,8 @@ use webkit2gtk::{
     Download,
     FindController,
     FindOptions,
+    NavigationPolicyDecision,
+    PolicyDecision,
     PolicyDecisionExt,
     ResponsePolicyDecision,
     UserContentManager,
@@ -49,7 +51,8 @@ use webkit2gtk::{
     FIND_OPTIONS_CASE_INSENSITIVE,
     FIND_OPTIONS_WRAP_AROUND,
 };
-use webkit2gtk::PolicyDecisionType::Response;
+use webkit2gtk::NavigationType::LinkClicked;
+use webkit2gtk::PolicyDecisionType::{NavigationAction, Response};
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
@@ -120,6 +123,8 @@ const SCROLL_LINE_VERTICAL: i32 = 40;
 pub struct WebView {
     find_controller: FindController,
     message_server: MessageServer,
+    new_window_callback: RefCell<Option<Rc<Box<Fn(&str)>>>>,
+    open_in_new_window: Cell<bool>,
     scrolled_callback: RefCell<Option<Rc<Box<Fn(i64)>>>>,
     search_backwards: Cell<bool>,
     view: webkit2gtk::WebView,
@@ -139,6 +144,8 @@ impl WebView {
             Rc::new(WebView {
                 find_controller: find_controller,
                 message_server: message_server,
+                new_window_callback: RefCell::new(None),
+                open_in_new_window: Cell::new(false),
                 scrolled_callback: RefCell::new(None),
                 search_backwards: Cell::new(false),
                 view: view,
@@ -206,6 +213,11 @@ impl WebView {
         }
     }
 
+    /// Connect the new window event.
+    pub fn connect_new_window<F: Fn(&str) + 'static>(&self, callback: F) {
+        *self.new_window_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
+    }
+
     /// Connect the scrolled event.
     pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
         *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
@@ -223,22 +235,27 @@ impl WebView {
             });
         }
 
-        // Download file whose mime type is not supported.
         {
             let webview = webview.clone();
             let view = webview.view.clone();
             view.connect_decide_policy(move |_, policy_decision, policy_decision_type| {
-                if policy_decision_type == Response {
-                    let policy_decision = policy_decision.clone();
-                    if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
-                        if !policy_decision.is_mime_type_supported() {
-                            policy_decision.download();
-                            return true;
-                        }
+                if policy_decision_type == NavigationAction {
+                    if webview.handle_navigation_action(policy_decision.clone()) {
+                        return true;
                     }
+                }
+                else if policy_decision_type == Response && webview.handle_response(policy_decision.clone()) {
+                    return true;
                 }
                 false
             });
+        }
+    }
+
+    /// Emit the new window event.
+    pub fn emit_new_window_event(&self, url: &str) {
+        if let Some(ref callback) = *self.new_window_callback.borrow() {
+            callback(url);
         }
     }
 
@@ -268,6 +285,36 @@ impl WebView {
     pub fn follow_link(&self, hint_chars: &str) -> AppResult {
         self.message_server.show_hint_on_links(hint_chars)?;
         Ok(())
+    }
+
+    /// Handle follow link in new window.
+    fn handle_navigation_action(&self, policy_decision: PolicyDecision) -> bool {
+        let policy_decision = policy_decision.clone();
+        if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
+            if self.open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
+                policy_decision.ignore();
+                self.open_in_new_window.set(false);
+                let url = policy_decision.get_request()
+                    .and_then(|request| request.get_uri());
+                if let Some(url) = url {
+                    self.emit_new_window_event(&url);
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Download file whose mime type is not supported.
+    fn handle_response(&self, policy_decision: PolicyDecision) -> bool {
+        let policy_decision = policy_decision.clone();
+        if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
+            if !policy_decision.is_mime_type_supported() {
+                policy_decision.download();
+                return true;
+            }
+        }
+        false
     }
 
     /// Hide the hints.
@@ -399,6 +446,12 @@ impl WebView {
         else {
             self.find_controller.search_previous();
         }
+    }
+
+    /// Set open in new window boolean to true to indicate that the next follow link will open a
+    /// new window.
+    pub fn set_open_in_new_window(&self) {
+        self.open_in_new_window.set(true);
     }
 
     /// Adjust the webkit settings.

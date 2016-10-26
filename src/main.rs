@@ -32,7 +32,6 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: follow in new window.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: dialog builder module in mg.
  * TODO: add help text for commands and settings.

@@ -26,7 +26,19 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use glib::Cast;
-use webkit2gtk_webextension::{DOMDOMWindowExtManual, DOMDocumentExt, DOMElement, DOMElementExt, DOMHTMLElement, DOMHTMLElementExt, DOMHTMLInputElement, DOMHTMLSelectElement, DOMHTMLTextAreaElement, DOMNodeExt, WebExtension};
+use webkit2gtk_webextension::{
+    DOMDOMWindowExtManual,
+    DOMDocumentExt,
+    DOMElement,
+    DOMElementExt,
+    DOMHTMLElement,
+    DOMHTMLElementExt,
+    DOMHTMLInputElement,
+    DOMHTMLSelectElement,
+    DOMHTMLTextAreaElement,
+    DOMNodeExt,
+    WebExtension,
+};
 
 use dom::{get_body, mouse_down};
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};

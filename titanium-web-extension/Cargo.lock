@@ -275,7 +275,7 @@ dependencies = [
 [[package]]
 name = "webkit2gtk-webextension"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#be5a449dd6d36a681744f393b1ff1f54d6fa2536"
+source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#fca5791efe026b0ff115e4a83dd8d739b78678ea"
 dependencies = [
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
