@@ -144,6 +144,26 @@ impl App {
         }
     }
 
+    /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
+    fn ask_open_popup(app: &Rc<App>, url: String, base_url: String) {
+        let instance = app.clone();
+        app.app.question(&format!("A popup from {} was blocked. Do you want to open it?", base_url),
+        &['y', 'n', 'a', 'e'], move |answer|
+        {
+            match answer {
+                Some('a') => {
+                    instance.open_in_new_window_handling_error(&url);
+                    instance.whitelist_popup(&url);
+                },
+                Some('y') => instance.open_in_new_window_handling_error(&url),
+                Some('e') => {
+                    instance.blacklist_popup(&url);
+                },
+                _ => (),
+            }
+        });
+    }
+
     /// Save the specified url in the popup blacklist.
     fn blacklist_popup(&self, url: &str) {
         self.handle_error((*self.popup_manager.borrow_mut()).blacklist(url));
@@ -334,11 +354,6 @@ impl App {
 
     /// Handle create window.
     fn handle_create(app: Rc<App>) {
-        // TODO: refactor.
-        fn open(app: &Rc<App>, url: &str) {
-            app.handle_error(app.open_in_new_window(url));
-        }
-
         let webview = app.webview.clone();
         webview.connect_create(move |_, action| {
             if let Some(request) = action.get_request() {
@@ -346,32 +361,16 @@ impl App {
                     // Block popup.
                     let popup_manager = &*app.popup_manager.borrow();
                     let base_url = get_base_url(&url);
-                    // TODO: is_user_gesture() to block popup.
                     if action.get_navigation_type() == Other && !popup_manager.is_whitelisted(&url) {
                         if popup_manager.is_blacklisted(&url) {
                             Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));
                         }
                         else {
-                            let instance = app.clone();
-                            app.app.question(&format!("A popup from {} was blocked. Do you want to open it?", base_url),
-                                &['y', 'n', 'a', 'e'], move |answer|
-                            {
-                                match answer {
-                                    Some('a') => {
-                                        open(&instance, &url);
-                                        instance.whitelist_popup(&url);
-                                    },
-                                    Some('y') => open(&instance, &url),
-                                    Some('e') => {
-                                        instance.blacklist_popup(&url);
-                                    },
-                                    _ => (),
-                                }
-                            });
+                            App::ask_open_popup(&app, url, base_url);
                         }
                     }
                     else {
-                        open(&app, &url);
+                        app.open_in_new_window_handling_error(&url);
                     }
                 }
             }
@@ -547,6 +546,12 @@ impl App {
             .spawn()?;
         Ok(())
     }
+
+    /// Open the given URL in a new window, showing the error if any.
+    fn open_in_new_window_handling_error(&self, url: &str) {
+        self.handle_error(self.open_in_new_window(url));
+    }
+
 
     /// Create the missing config files and parse the config files.
     fn parse_config(&self) {

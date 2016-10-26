@@ -137,7 +137,14 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
 
 /// Get the elements to hint.
 fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
-    // TODO: refactor.
+    let mut elements_to_hint = get_hintable_elements(document);
+    elements_to_hint.append(&mut get_input_elements(document));
+    elements_to_hint.append(&mut get_hintable_elements_from_iframes(document));
+    elements_to_hint
+}
+
+/// Get the hintable elements, except the input.
+fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
     let tag_names = ["a", "button", "select", "textarea"];
     for tag_name in &tag_names {
@@ -155,7 +162,30 @@ fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
             }
         }
     }
+    elements_to_hint
+}
 
+/// Get the hintable elements from the iframes.
+fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement> {
+    let mut elements_to_hint = vec![];
+    if let Some(iframes) = document.get_elements_by_tag_name("iframe") {
+        for i in 0 .. iframes.get_length() {
+            if let Some(iframe) = iframes.item(i) {
+                if let Ok(iframe) = iframe.downcast() {
+                    let iframe: DOMHTMLIFrameElement = iframe;
+                    if let Some(iframe_document) = iframe.get_content_document() {
+                        elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
+                    }
+                }
+            }
+        }
+    }
+    elements_to_hint
+}
+
+/// Get the hintable input elements.
+fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
+    let mut elements_to_hint = vec![];
     let form_elements = document.get_elements_by_tag_name("input");
     if let Some(form_elements) = form_elements {
         for i in 0 .. form_elements.get_length() {
@@ -171,20 +201,6 @@ fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
             }
         }
     }
-
-    if let Some(iframes) = document.get_elements_by_tag_name("iframe") {
-        for i in 0 .. iframes.get_length() {
-            if let Some(iframe) = iframes.item(i) {
-                if let Ok(iframe) = iframe.downcast() {
-                    let iframe: DOMHTMLIFrameElement = iframe;
-                    if let Some(iframe_document) = iframe.get_content_document() {
-                        elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
-                    }
-                }
-            }
-        }
-    }
-
     elements_to_hint
 }
 
