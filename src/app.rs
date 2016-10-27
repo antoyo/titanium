@@ -34,6 +34,8 @@ use gdk::EventKey;
 use gtk::{self, ContainerExt, Inhibit};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
+use mg::dialog::DialogWindow;
+use mg::message::MessageWindow;
 use xdg::BaseDirectories;
 use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::{Finished, Started};
@@ -43,6 +45,8 @@ use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
+use completers::FileCompleter;
+use dialogs::CustomDialog;
 use download_list_view::DownloadListView;
 use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 use popup_manager::PopupManager;
@@ -53,11 +57,11 @@ use webview::WebView;
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 pub type AppResult = Result<(), Box<Error>>;
-type MgApp = Rc<Application<SpecialCommand, AppCommand, AppSettings>>;
+pub type MgApp = Application<SpecialCommand, AppCommand, AppSettings>;
 
 /// Titanium application.
 pub struct App {
-    app: MgApp,
+    app: Rc<MgApp>,
     default_search_engine: Rc<RefCell<Option<String>>>,
     download_list_view: Rc<RefCell<DownloadListView>>,
     popup_manager: Rc<RefCell<PopupManager>>,
@@ -68,11 +72,12 @@ pub struct App {
 }
 
 impl App {
-    fn build() -> MgApp {
+    fn build() -> Rc<MgApp> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let include_path = xdg_dirs.get_config_home();
 
         ApplicationBuilder::new()
+            .completer("file", FileCompleter::new())
             .include_path(include_path)
             .modes(hash! {
                 "f" => "follow",
@@ -151,14 +156,12 @@ impl App {
         &['y', 'n', 'a', 'e'], move |answer|
         {
             match answer {
-                Some('a') => {
+                Some("a") => {
                     instance.open_in_new_window_handling_error(&url);
                     instance.whitelist_popup(&url);
                 },
-                Some('y') => instance.open_in_new_window_handling_error(&url),
-                Some('e') => {
-                    instance.blacklist_popup(&url);
-                },
+                Some("y") => instance.open_in_new_window_handling_error(&url),
+                Some("e") => instance.blacklist_popup(&url),
                 _ => (),
             }
         });
@@ -383,7 +386,7 @@ impl App {
         let application = app.clone();
         (*app.download_list_view.borrow_mut()).connect_decide_destination(move |download, suggested_filename| {
             let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
-            let destination = application.app.blocking_input("Save file to: (<C-x> to open)", &default_path);
+            let destination = application.app.blocking_file_input("Save file to: (<C-x> to open)", &default_path);
             if let Some(destination) = destination {
                 let path = Path::new(&destination);
                 let download_destination =

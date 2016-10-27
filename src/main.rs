@@ -32,15 +32,15 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: do not consider right-click open in new window as a popup.
- * TODO: dialog builder module in mg.
- * TODO: add help text for commands and settings.
- * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
- * TODO: open completions.
+ * TODO: use custom file input as the file chooser.
  * TODO: open file (instead of download).
  * TODO: copy/paste URLs.
- * TODO: add tests.
+ * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
+ * TODO: open completions.
  * TODO: adblock.
+ *
+ * TODO: add help text for commands and settings.
+ * TODO: add tests.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.
@@ -54,6 +54,7 @@
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
  * TODO: handle ctrl-click.
+ * TODO: do not consider right-click open in new window as a popup.
  *
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
@@ -102,6 +103,8 @@ extern crate xdg;
 
 mod app;
 mod commands;
+mod completers;
+mod dialogs;
 mod download_view;
 mod download_list_view;
 mod glib_user_dir;
