@@ -22,7 +22,7 @@
 use std::cell::RefCell;
 use std::char;
 use std::collections::HashMap;
-use std::env;
+use std::env::{self, home_dir, temp_dir};
 use std::error::Error;
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::Write;
@@ -261,6 +261,8 @@ impl App {
             });
         }
 
+        App::handle_file_chooser(app);
+
         {
             let application = app.clone();
             app.webview.connect_download_started(move |_, download| {
@@ -422,6 +424,50 @@ impl App {
         if let Err(error) = error {
             self.show_error(error);
         }
+    }
+
+    /// Show a non-modal file chooser dialog when the user activates a file input.
+    fn handle_file_chooser(app: &Rc<App>) {
+        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
+        let application = app.clone();
+        app.webview.connect_run_file_chooser(move |_, file_chooser_request| {
+            if file_chooser_request.get_select_multiple() {
+                // TODO: support multiple files.
+                false
+            }
+            else {
+                let selected_files = file_chooser_request.get_selected_files();
+                let file =
+                    if selected_files.is_empty() {
+                        let dir = home_dir()
+                            .unwrap_or_else(temp_dir)
+                            .to_str().unwrap()
+                            .to_string();
+                        format!("{}/", dir)
+                    }
+                    else {
+                        selected_files[0].clone()
+                    };
+                if let Some(file) = application.app.blocking_file_input("Select file", &file) {
+                    let path = Path::new(&file);
+                    if !path.exists() {
+                        application.app.error("Please select an existing file");
+                        file_chooser_request.cancel();
+                    }
+                    else if path.is_dir() {
+                        application.app.error("Please select a file, not a directory");
+                        file_chooser_request.cancel();
+                    }
+                    else {
+                        file_chooser_request.select_files(&[&file]);
+                    }
+                }
+                else {
+                    file_chooser_request.cancel();
+                }
+                true
+            }
+        });
     }
 
     /// In follow mode, send the key to the web process.

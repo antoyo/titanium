@@ -32,7 +32,7 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: use custom file input as the file chooser.
+ * TODO: command to select first input.
  * TODO: open file (instead of download).
  * TODO: copy/paste URLs.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
@@ -65,6 +65,8 @@
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
  * FIXME: prompt slow to show.
+ * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
+ * time).
  *
  * FIXME: some dbus calls timeout (seems to be caused by the click method since it triggers an
  * action in the application which is waiting for the answer of the call).
