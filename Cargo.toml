@@ -1,7 +1,7 @@
 [package]
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
 name = "titanium"
 version = "0.1.0"
-authors = ["Antoni Boucher <bouanto@zoho.com>"]
 
 [dependencies]
 docopt = "^0.6"
@@ -12,9 +12,6 @@ rustc-serialize = "^0.3"
 simplelog = "^0.2"
 url = "^1.2"
 xdg = "^2.0"
-
-[features]
-default = ["gtk/v3_12", "webkit2gtk/v2_12"]
 
 [dependencies.gdbus]
 git = "https://github.com/antoyo/gdbus-rs"
@@ -58,3 +55,6 @@ version = "^0.0.1"
 [dependencies.webkit2gtk]
 git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
+
+[features]
+default = ["gtk/v3_16", "webkit2gtk/v2_12"]

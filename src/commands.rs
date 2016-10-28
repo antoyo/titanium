@@ -26,6 +26,8 @@ pub enum AppCommand {
     #[help(text="Go back in the history")]
     Back,
     #[completion(hidden)]
+    CopyUrl,
+    #[completion(hidden)]
     FinishSearch,
     #[completion(hidden)]
     Follow,
@@ -41,6 +43,8 @@ pub enum AppCommand {
     Normal,
     #[help(text="Open an URL")]
     Open(String),
+    #[completion(hidden)]
+    PasteUrl,
     #[help(text="Quit the application")]
     Quit,
     #[help(text="Reload the current page")]
@@ -75,6 +79,8 @@ pub enum AppCommand {
     WinFollow,
     #[help(text="Open an URL in a new window")]
     WinOpen(String),
+    #[completion(hidden)]
+    WinPasteUrl,
     #[help(text="Zoom the current page in")]
     ZoomIn,
     #[help(text="Zoom the current page to 100%")]

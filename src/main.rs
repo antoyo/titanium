@@ -34,7 +34,6 @@
  *
  * TODO: command to select first input.
  * TODO: open file (instead of download).
- * TODO: copy/paste URLs.
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
  * TODO: adblock.
@@ -104,6 +103,7 @@ extern crate webkit2gtk;
 extern crate xdg;
 
 mod app;
+mod clipboard;
 mod commands;
 mod completers;
 mod dialogs;

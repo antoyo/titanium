@@ -31,7 +31,7 @@ use std::process::Command;
 use std::rc::Rc;
 
 use gdk::EventKey;
-use gtk::{self, ContainerExt, Inhibit};
+use gtk::{self, Clipboard, ContainerExt, Inhibit, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
 use mg::dialog::DialogWindow;
@@ -42,6 +42,7 @@ use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
+use clipboard::AppClipboard;
 use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
@@ -273,7 +274,7 @@ impl App {
         {
             let application = app.clone();
             app.webview.connect_new_window(move |url| {
-                application.handle_error(application.open_in_new_window(url));
+                application.open_in_new_window_handling_error(url);
             });
         }
 
@@ -293,12 +294,35 @@ impl App {
         });
     }
 
+    /// Copy the URL in the system clipboard.
+    fn copy_url(&self) {
+        let clipboard = self.webview.get_display()
+            .and_then(|display| Clipboard::get_default(&display));
+        if let Some(clipboard) = clipboard {
+            if let Some(url) = self.webview.get_uri() {
+                clipboard.set_text(&url);
+                Application::info(&self.app, &format!("Copied URL to clipboard: {}", url));
+            }
+            else {
+                self.app.error("No URL to copy");
+            }
+        }
+        else {
+            self.app.error("Cannot get the system clipboard");
+        }
+    }
+
     /// Create the variables accessible from the config files.
     fn create_variables(app: Rc<Self>) {
         let application = app.clone();
         app.app.add_variable("url", move || {
             application.webview.get_uri().unwrap()
         });
+    }
+
+    /// Show an error.
+    pub fn error(&self, error: &str) {
+        self.app.error(error);
     }
 
     /// Get the title or the url if there are no title.
@@ -319,6 +343,7 @@ impl App {
         match command {
             ActivateSelection => self.handle_error(self.webview.activate_selection()),
             Back => self.webview.go_back(),
+            CopyUrl => self.copy_url(),
             FinishSearch => self.webview.finish_search(),
             Follow => {
                 self.app.set_mode("follow");
@@ -330,6 +355,7 @@ impl App {
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
             Open(url) => self.open(&url),
+            PasteUrl => self.paste_url(),
             Quit => self.quit(),
             Reload => self.webview.reload(),
             ReloadBypassCache => self.webview.reload_bypass_cache(),
@@ -350,7 +376,8 @@ impl App {
                 self.app.set_mode("follow");
                 self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
             },
-            WinOpen(url) => self.handle_error(self.open_in_new_window(&url)),
+            WinOpen(url) => self.open_in_new_window_handling_error(&url),
+            WinPasteUrl => self.win_paste_url(),
             ZoomIn => self.zoom_in(),
             ZoomNormal => self.zoom_normal(),
             ZoomOut => self.zoom_out(),
@@ -611,6 +638,13 @@ impl App {
         self.handle_error(self.app.parse_config(config_path));
     }
 
+    /// Open the url from the system clipboard.
+    fn paste_url(&self) {
+        if let Some(url) = self.get_url_from_clipboard() {
+            self.open(&url);
+        }
+    }
+
     /// Try to close the web view and quit the application.
     fn quit(&self) {
         self.webview.try_close();
@@ -684,6 +718,13 @@ impl App {
     /// Save the specified url in the popup whitelist.
     fn whitelist_popup(&self, url: &str) {
         self.handle_error((*self.popup_manager.borrow_mut()).whitelist(url));
+    }
+
+    /// Open in a new window the url from the system clipboard.
+    fn win_paste_url(&self) {
+        if let Some(url) = self.get_url_from_clipboard() {
+            self.open_in_new_window_handling_error(&url);
+        }
     }
 
     /// Zoom in.
