@@ -46,7 +46,11 @@ impl FileCompleter {
 impl Completer for FileCompleter {
     fn complete_result(&self, value: &str) -> String {
         let absolute_path = (*self.current_directory.borrow()).join(value);
-        absolute_path.to_str().unwrap().to_string()
+        // Remove the trailing slash in the completion to avoid updating the completions for a new
+        // directory when selecting a directory.
+        // This means the user needs to type the slash to trigger the completion of the new
+        // directory.
+        absolute_path.to_str().unwrap().trim_right_matches('/').to_string()
     }
 
     fn completions(&self, input: &str) -> Vec<CompletionResult> {
@@ -92,7 +96,9 @@ impl Completer for FileCompleter {
             .map(|path| {
                 let filename = path.file_name().unwrap().to_str().unwrap();
                 if path.is_dir() {
-                    CompletionResult::new_with_foreground(filename, "", "#33FF33")
+                    let mut filename = filename.to_string();
+                    filename.push('/');
+                    CompletionResult::new_with_foreground(&filename, "", "#33FF33")
                 }
                 else {
                     CompletionResult::new(filename, "")
