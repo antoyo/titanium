@@ -21,22 +21,37 @@
 
 //! Custom dialogs.
 
-use mg::dialog::{DialogBuilder, DialogWindow};
+use mg::dialog::{DialogBuilder, DialogResult, DialogWindow};
+use mg_settings::key::Key::{Char, Control};
 
 use app::MgApp;
 
 pub trait CustomDialog : DialogWindow {
+    /// Show a blocking iniput dialog with file completion for download destination selection.
+    /// It contains the C-x shortcut to open the file instead of downloading it.
+    fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult;
+
     /// Show a blocking input dialog with file completion.
     fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String>;
 }
 
 impl CustomDialog for MgApp {
+    fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult {
+        let builder = DialogBuilder::new()
+            .blocking(true)
+            .completer("file")
+            .default_answer(default_answer)
+            .message(message)
+            .shortcut(Control(Box::new(Char('x'))), "download");
+        self.show_dialog(builder)
+    }
+
     fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
         let builder = DialogBuilder::new()
             .blocking(true)
             .completer("file")
             .default_answer(default_answer)
             .message(message);
-        self.show_dialog(builder)
+        self.show_dialog_without_shortcuts(builder)
     }
 }

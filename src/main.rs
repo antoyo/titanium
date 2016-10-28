@@ -32,7 +32,6 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: open file (instead of download).
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
  * TODO: adblock.
@@ -55,6 +54,7 @@
  * TODO: i18n.
  * TODO: handle ctrl-click.
  * TODO: do not consider right-click open in new window as a popup.
+ * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
@@ -64,9 +64,10 @@
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
- * FIXME: prompt slow to show.
+ * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
+ * starting a download when the page is still loading).
  * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
- * time).
+ * time, or perhaps just using a blocking input for popups will do it).
  *
  * FIXME: some dbus calls timeout (seems to be caused by the click method since it triggers an
  * action in the application which is waiting for the answer of the call).
@@ -96,9 +97,11 @@ extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
 extern crate number_prefix;
+extern crate open;
 extern crate regex;
 extern crate rustc_serialize;
 extern crate simplelog;
+extern crate tempfile;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
@@ -110,6 +113,7 @@ mod completers;
 mod dialogs;
 mod download_view;
 mod download_list_view;
+mod file;
 mod glib_user_dir;
 mod message_server;
 mod popup_manager;

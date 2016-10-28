@@ -26,6 +26,7 @@ use gtk::{ContainerExt, FlowBox, SelectionMode, WidgetExt};
 use webkit2gtk::Download;
 
 use download_view::DownloadView;
+use file::open;
 
 type DecideDestinationCallback = Fn(&Download, &str) -> bool;
 
@@ -33,6 +34,7 @@ type DecideDestinationCallback = Fn(&Download, &str) -> bool;
 pub struct DownloadListView {
     decide_destination_callback: Rc<RefCell<Option<Box<DecideDestinationCallback>>>>,
     downloads: Vec<Download>,
+    downloads_to_open: Rc<RefCell<Vec<String>>>,
     view: FlowBox,
 }
 
@@ -46,6 +48,7 @@ impl DownloadListView {
         DownloadListView {
             decide_destination_callback: Rc::new(RefCell::new(None)),
             downloads: vec![],
+            downloads_to_open: Rc::new(RefCell::new(vec![])),
             view: flow_box,
         }
     }
@@ -68,6 +71,20 @@ impl DownloadListView {
             });
         }
 
+        {
+            let downloads_to_open = self.downloads_to_open.clone();
+            download.connect_finished(move |download| {
+                if let Some(destination) = download.get_destination() {
+                    let downloads = &mut *downloads_to_open.borrow_mut();
+                    let index = downloads.iter().position(|download_destination| *download_destination == destination);
+                    if let Some(index) = index {
+                        downloads.remove(index);
+                        open(destination);
+                    }
+                }
+            });
+        }
+
         let download_view = DownloadView::new(download);
 
         self.view.add(&*download_view);
@@ -75,6 +92,12 @@ impl DownloadListView {
             flow_child.set_can_focus(false);
         }
         download_view.show();
+    }
+
+    /// Add a file to be opened when its download finish.
+    pub fn add_file_to_open(&self, path: &str) {
+        let downloads_to_open = &mut *self.downloads_to_open.borrow_mut();
+        downloads_to_open.push(path.to_string());
     }
 
     /// Add a callback for the decide destination event.

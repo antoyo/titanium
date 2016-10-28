@@ -49,7 +49,9 @@ use commands::SpecialCommand::*;
 use completers::FileCompleter;
 use dialogs::CustomDialog;
 use download_list_view::DownloadListView;
+use file::gen_unique_filename;
 use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
+use mg::dialog::DialogResult::{Answer, Shortcut};
 use popup_manager::PopupManager;
 use settings::AppSettings;
 use urls::{get_base_url, is_url};
@@ -425,32 +427,42 @@ impl App {
         let application = app.clone();
         (*app.download_list_view.borrow_mut()).connect_decide_destination(move |download, suggested_filename| {
             let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
-            let destination = application.app.blocking_file_input("Save file to: (<C-x> to open)", &default_path);
-            if let Some(destination) = destination {
-                let path = Path::new(&destination);
-                let download_destination =
-                    if path.is_dir() {
-                        path.join(suggested_filename)
+            let destination = application.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
+            match destination {
+                Answer(Some(destination)) => {
+                    let path = Path::new(&destination);
+                    let download_destination =
+                        if path.is_dir() {
+                            path.join(suggested_filename)
+                        }
+                        else {
+                            path.to_path_buf()
+                        };
+                    let exists = download_destination.exists();
+                    let download_destination = download_destination.to_str().unwrap();
+                    if exists {
+                        let message = &format!("Do you want to overwrite {}?", download_destination);
+                        let answer = application.app.blocking_yes_no_question(message);
+                        if answer {
+                            download.set_allow_overwrite(true);
+                        }
+                        else {
+                            download.cancel();
+                        }
                     }
-                    else {
-                        path.to_path_buf()
-                    };
-                let exists = download_destination.exists();
-                let download_destination = download_destination.to_str().unwrap();
-                if exists {
-                    let message = &format!("Do you want to overwrite {}?", download_destination);
-                    let answer = application.app.blocking_yes_no_question(message);
-                    if answer {
-                        download.set_allow_overwrite(true);
+                    download.set_destination(&format!("file://{}", download_destination));
+                },
+                Shortcut(shortcut) => {
+                    if shortcut == "download" {
+                        let temp_dir = temp_dir();
+                        let download_destination = gen_unique_filename(suggested_filename);
+                        let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
+                        let download_list_view = &*application.download_list_view.borrow_mut();
+                        download_list_view.add_file_to_open(&destination);
+                        download.set_destination(&destination);
                     }
-                    else {
-                        download.cancel();
-                    }
-                }
-                download.set_destination(&format!("file://{}", download_destination));
-            }
-            else {
-                download.cancel();
+                },
+                _ => download.cancel(),
             }
             true
         });
