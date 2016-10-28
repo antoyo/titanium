@@ -57,6 +57,7 @@ use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
+pub type AppBoolResult = Result<bool, Box<Error>>;
 pub type AppResult = Result<(), Box<Error>>;
 pub type MgApp = Application<SpecialCommand, AppCommand, AppSettings>;
 
@@ -325,6 +326,14 @@ impl App {
         self.app.error(error);
     }
 
+    /// Focus the first input element.
+    fn focus_input(&self) {
+        let result = self.webview.focus_input();
+        if let Ok(true) = result {
+            self.app.set_mode("insert")
+        }
+    }
+
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
         let title = self.webview.get_title()
@@ -345,6 +354,7 @@ impl App {
             Back => self.webview.go_back(),
             CopyUrl => self.copy_url(),
             FinishSearch => self.webview.finish_search(),
+            FocusInput => self.focus_input(),
             Follow => {
                 self.app.set_mode("follow");
                 self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))

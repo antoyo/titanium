@@ -40,7 +40,7 @@ use webkit2gtk_webextension::{
     WebExtension,
 };
 
-use dom::{get_body, mouse_down};
+use dom::{ElementIter, get_body, is_enabled, is_hidden, is_text_input, mouse_down};
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use scroll::Scrollable;
 
@@ -128,6 +128,26 @@ dbus_class!("com.titanium.client", class MessageServer
             }
         }
         result
+    }
+
+    // Focus the first input element.
+    // Returns true if an element was focused.
+    fn focus_input(&self) -> bool {
+        let document = get_page!(self)
+            .and_then(|page| page.get_dom_document());
+        if let Some(document) = document {
+            let tag_names = ["input", "textarea"];
+            for tag_name in &tag_names {
+                let iter = ElementIter::new(document.get_elements_by_tag_name(tag_name));
+                for element in iter {
+                    if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element) {
+                        element.focus();
+                        return true;
+                    }
+                }
+            }
+        }
+        false
     }
 
     fn get_scroll_percentage(&self) -> i64 {

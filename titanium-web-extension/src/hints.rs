@@ -31,7 +31,7 @@ use webkit2gtk_webextension::{
     DOMNodeExt,
 };
 
-use dom::{Pos, get_position, hide, is_enabled, is_visible, show};
+use dom::{ElementIter, Pos, get_position, hide, is_enabled, is_visible, show};
 
 pub const HINTS_ID: &'static str = "__titanium_hints";
 
@@ -148,17 +148,11 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
     let tag_names = ["a", "button", "select", "textarea"];
     for tag_name in &tag_names {
-        let elements = document.get_elements_by_tag_name(tag_name);
-        if let Some(elements) = elements {
-            for i in 0 .. elements.get_length() {
-                if let Some(element) = elements.item(i) {
-                    if let Ok(element) = element.downcast() {
-                        // Only show the hints for visible elements that are not disabled.
-                        if is_visible(&document, &element) && is_enabled(&element) {
-                            elements_to_hint.push(element);
-                        }
-                    }
-                }
+        let elements = ElementIter::new(document.get_elements_by_tag_name(tag_name));
+        for element in elements {
+            // Only show the hints for visible elements that are not disabled.
+            if is_visible(&document, &element) && is_enabled(&element) {
+                elements_to_hint.push(element);
             }
         }
     }
@@ -186,18 +180,12 @@ fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement>
 /// Get the hintable input elements.
 fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
-    let form_elements = document.get_elements_by_tag_name("input");
-    if let Some(form_elements) = form_elements {
-        for i in 0 .. form_elements.get_length() {
-            if let Some(element) = form_elements.item(i) {
-                if let Ok(element) = element.downcast() {
-                    if is_visible(&document, &element) && is_enabled(&element) {
-                        // Do not show hints for hidden form elements.
-                        if element.get_attribute("type") != Some("hidden".to_string()) {
-                            elements_to_hint.push(element);
-                        }
-                    }
-                }
+    let form_elements = ElementIter::new(document.get_elements_by_tag_name("input"));
+    for element in form_elements {
+        if is_visible(&document, &element) && is_enabled(&element) {
+            // Do not show hints for hidden form elements.
+            if element.get_attribute("type") != Some("hidden".to_string()) {
+                elements_to_hint.push(element);
             }
         }
     }

@@ -27,6 +27,7 @@ interface MessageServer {
     fn activate_hint(&mut self) -> bool;
     fn activate_selection(&self);
     fn enter_hint_key(&mut self, key: char) -> bool;
+    fn focus_input(&self) -> bool;
     fn get_scroll_percentage(&self) -> i64;
     fn hide_hints(&self);
     fn scroll_bottom(&self);

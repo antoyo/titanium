@@ -32,14 +32,15 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: command to select first input.
  * TODO: open file (instead of download).
  * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
  * TODO: open completions.
  * TODO: adblock.
  *
- * TODO: add help text for commands and settings.
  * TODO: add tests.
+ * TODO: create a declarative GUI library to avoid having all these RefCells.
+ *
+ * TODO: add help text for commands and settings.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.

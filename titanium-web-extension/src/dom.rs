@@ -38,6 +38,7 @@ use webkit2gtk_webextension::{
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
     DOMNodeExt,
+    DOMNodeList,
     WebPage,
 };
 
@@ -51,6 +52,42 @@ macro_rules! return_if_disabled {
             }
         }
     };
+}
+
+/// A DOMElement iterator for a node list.
+pub struct ElementIter {
+    index: u64,
+    node_list: Option<DOMNodeList>,
+}
+
+impl ElementIter {
+    /// Create a new dom element iterator.
+    pub fn new(node_list: Option<DOMNodeList>) -> Self {
+        ElementIter {
+            index: 0,
+            node_list: node_list,
+        }
+    }
+}
+
+impl Iterator for ElementIter {
+    type Item = DOMElement;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.node_list {
+            Some(ref list) => {
+                if self.index < list.get_length() {
+                    let element = list.item(self.index);
+                    self.index += 1;
+                    element.and_then(|element| element.downcast::<DOMElement>().ok())
+                }
+                else {
+                    None
+                }
+            },
+            None => None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -169,7 +206,43 @@ pub fn is_enabled(element: &DOMElement) -> bool {
     true
 }
 
-/// Check if an element is visible.
+/// Check if an element is hidden.
+/// This is not exactly the opposite as is_visible since is_hidden returns false for element that
+/// are visible, but outside the viewport.
+pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
+    if let Some(window) = document.get_default_view() {
+        let mut element = Some(element.clone());
+        while let Some(el) = element {
+            if el.get_tag_name() == Some("BODY".to_string()) {
+                return false;
+            }
+            if let Some(style) = window.get_computed_style(&el, None) {
+                if style.get_property_value("display") == Some("none".to_string()) ||
+                    style.get_property_value("visibility") == Some("hidden".to_string()) ||
+                    style.get_property_value("opacity") == Some("0".to_string())
+                {
+                    return true;
+                }
+            }
+            element = el.get_offset_parent();
+        }
+    }
+    true
+}
+
+/// Check if an element is a text input element (including all its variant like number, tel,
+/// search, …).
+pub fn is_text_input(element: &DOMElement) -> bool {
+    let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
+        .and_then(|input_element| input_element.get_input_type())
+        .unwrap_or("text".to_string());
+    match input_type.as_ref() {
+        "button" | "checkbox" | "color" | "file" | "hidden" | "image" | "radio" | "reset" | "submit" => false,
+        _ => true,
+    }
+}
+
+/// Check if an element is visible and in the viewport.
 pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
     if let Some(window) = document.get_default_view() {
         if let Some(document_element) = document.get_document_element() {

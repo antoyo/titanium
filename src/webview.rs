@@ -58,7 +58,7 @@ use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 use xdg::BaseDirectories;
 
-use app::{AppResult, APP_NAME};
+use app::{AppBoolResult, AppResult, APP_NAME};
 use message_server::MessageServer;
 use settings::{AppSettings, CookieAcceptPolicy};
 use settings::AppSettingsVariant::{
@@ -157,7 +157,7 @@ impl WebView {
     }
 
     /// Activate the selected hint.
-    pub fn activate_hint(&self) -> Result<bool, Box<Error>> {
+    pub fn activate_hint(&self) -> AppBoolResult {
         self.view.grab_focus();
         self.message_server.activate_hint()
             .map_err(From::from)
@@ -279,6 +279,13 @@ impl WebView {
     pub fn finish_search(&self) {
         self.search("");
         self.find_controller.search_finish();
+    }
+
+    /// Focus the first input element.
+    pub fn focus_input(&self) -> AppBoolResult {
+        self.view.grab_focus();
+        self.message_server.focus_input()
+            .map_err(From::from)
     }
 
     /// Follow a link.

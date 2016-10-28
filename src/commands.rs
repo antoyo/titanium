@@ -30,6 +30,8 @@ pub enum AppCommand {
     #[completion(hidden)]
     FinishSearch,
     #[completion(hidden)]
+    FocusInput,
+    #[completion(hidden)]
     Follow,
     #[help(text="Go forward in the history")]
     Forward,
