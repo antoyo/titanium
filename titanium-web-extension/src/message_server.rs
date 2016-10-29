@@ -40,7 +40,7 @@ use webkit2gtk_webextension::{
     WebExtension,
 };
 
-use dom::{ElementIter, get_body, is_enabled, is_hidden, is_text_input, mouse_down};
+use dom::{ElementIter, get_body, is_enabled, is_hidden, is_text_input, mouse_down, mouse_out, mouse_over};
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use scroll::Scrollable;
 
@@ -55,16 +55,12 @@ dbus_class!("com.titanium.client", class MessageServer
     , extension: WebExtension
     , hint_keys: String
     , hint_map: HashMap<String, DOMElement>
+    , last_hovered_element: Option<DOMElement>
     )
 {
     // Return true if a text element has been focused.
-    fn activate_hint(&mut self) -> bool {
-        let element = self.hint_map.get(&self.hint_keys)
-            .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
-        if let Some(element) = element {
-            self.hide_hints();
-            self.hint_map.clear();
-            self.hint_keys.clear();
+    fn activate_hint(&mut self, follow_mode: &str) -> bool {
+        fn click(_server: &mut DBusObject, element: DOMHTMLElement) -> bool {
             if element.is::<DOMHTMLInputElement>() {
                 let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
                     .and_then(|input_element| input_element.get_input_type());
@@ -73,7 +69,7 @@ dbus_class!("com.titanium.client", class MessageServer
                         "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
                         // FIXME: file and color not opening.
                         "color" | "file" => {
-                            mouse_down(element.upcast());
+                            mouse_down(&element.upcast());
                         },
                         _ => {
                             element.focus();
@@ -87,11 +83,38 @@ dbus_class!("com.titanium.client", class MessageServer
                 return true;
             }
             else if element.is::<DOMHTMLSelectElement>() {
-                mouse_down(element.upcast());
+                mouse_down(&element.upcast());
             }
             else {
                 element.click();
             }
+            false
+        }
+
+        fn hover(server: &mut DBusObject, element: DOMHTMLElement) -> bool {
+            if let Some(ref element) = server.last_hovered_element {
+                mouse_out(element);
+            }
+            server.last_hovered_element = Some(element.clone().upcast());
+            mouse_over(&element.upcast());
+            false
+        }
+
+        let follow =
+            if follow_mode == "hover" {
+                hover
+            }
+            else {
+                click
+            };
+
+        let element = self.hint_map.get(&self.hint_keys)
+            .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
+        if let Some(element) = element {
+            self.hide_hints();
+            self.hint_map.clear();
+            self.hint_keys.clear();
+            return follow(self, element);
         }
         false
     }
@@ -188,7 +211,7 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
-    fn show_hint_on_links(&mut self, hint_chars: &str) -> () {
+    fn show_hints(&mut self, hint_chars: &str) -> () {
         self.hint_keys.clear();
         let page = get_page!(self);
         let body = page.as_ref().and_then(|page| get_body(page));

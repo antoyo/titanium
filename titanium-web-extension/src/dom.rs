@@ -273,14 +273,29 @@ pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
 }
 
 /// Trigger a mouse down event on the element.
-pub fn mouse_down(element: DOMElement) {
+pub fn mouse_down(element: &DOMElement) {
+    mouse_event("mousedown", element);
+}
+
+/// Trigger a mouse event on the element.
+pub fn mouse_event(event_name: &str, element: &DOMElement) {
     let event = element.get_owner_document()
         .and_then(|document| document.create_event("MouseEvents").ok());
     if let Some(event) = event {
-        event.init_event("mousedown", true, true);
+        event.init_event(event_name, true, true);
         let element: DOMEventTarget = element.clone().upcast();
         element.dispatch_event(&event).ok();
     }
+}
+
+/// Trigger a mouse out event on the element.
+pub fn mouse_out(element: &DOMElement) {
+    mouse_event("mouseout", element);
+}
+
+/// Trigger a mouse over event on the element.
+pub fn mouse_over(element: &DOMElement) {
+    mouse_event("mouseover", element);
 }
 
 /// Show an element.

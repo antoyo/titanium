@@ -24,7 +24,7 @@
 dbus_interface!(
 #[dbus("com.titanium.client")]
 interface MessageServer {
-    fn activate_hint(&mut self) -> bool;
+    fn activate_hint(&mut self, follow_mode: &str) -> bool;
     fn activate_selection(&self);
     fn enter_hint_key(&mut self, key: char) -> bool;
     fn focus_input(&self) -> bool;
@@ -33,6 +33,6 @@ interface MessageServer {
     fn scroll_bottom(&self);
     fn scroll_by(&self, pixels: i64);
     fn scroll_top(&self);
-    fn show_hint_on_links(&mut self, hint_chars: &str);
+    fn show_hints(&mut self, hint_chars: &str);
 }
 );

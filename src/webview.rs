@@ -157,9 +157,9 @@ impl WebView {
     }
 
     /// Activate the selected hint.
-    pub fn activate_hint(&self) -> AppBoolResult {
+    pub fn activate_hint(&self, follow_mode: String) -> AppBoolResult {
         self.view.grab_focus();
-        self.message_server.activate_hint()
+        self.message_server.activate_hint(&follow_mode)
             .map_err(From::from)
     }
 
@@ -290,7 +290,7 @@ impl WebView {
 
     /// Follow a link.
     pub fn follow_link(&self, hint_chars: &str) -> AppResult {
-        self.message_server.show_hint_on_links(hint_chars)?;
+        self.message_server.show_hints(hint_chars)?;
         Ok(())
     }
 

@@ -19,11 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::char;
 use std::collections::HashMap;
 use std::env::{self, home_dir, temp_dir};
 use std::error::Error;
+use std::fmt::{self, Display, Formatter};
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::Write;
 use std::path::Path;
@@ -63,11 +64,29 @@ pub type AppBoolResult = Result<bool, Box<Error>>;
 pub type AppResult = Result<(), Box<Error>>;
 pub type MgApp = Application<SpecialCommand, AppCommand, AppSettings>;
 
+#[derive(Clone, Copy)]
+enum FollowMode {
+    Click,
+    Hover,
+}
+
+impl Display for FollowMode {
+    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
+        let string =
+            match *self {
+                FollowMode::Click => "click",
+                FollowMode::Hover => "hover",
+            };
+        write!(formatter, "{}", string)
+    }
+}
+
 /// Titanium application.
 pub struct App {
     app: Rc<MgApp>,
     default_search_engine: Rc<RefCell<Option<String>>>,
     download_list_view: Rc<RefCell<DownloadListView>>,
+    follow_mode: Cell<FollowMode>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
     search_engines: Rc<RefCell<HashMap<String, String>>>,
@@ -115,6 +134,7 @@ impl App {
             app: mg_app,
             default_search_engine: Rc::new(RefCell::new(None)),
             download_list_view: Rc::new(RefCell::new(download_list_view)),
+            follow_mode: Cell::new(FollowMode::Click),
             popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
             search_engines: Rc::new(RefCell::new(HashMap::new())),
@@ -358,11 +378,17 @@ impl App {
             FinishSearch => self.webview.finish_search(),
             FocusInput => self.focus_input(),
             Follow => {
+                self.follow_mode.set(FollowMode::Click);
                 self.app.set_mode("follow");
                 self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
             },
             Forward => self.webview.go_forward(),
             HideHints => self.hide_hints(),
+            Hover => {
+                self.follow_mode.set(FollowMode::Hover);
+                self.app.set_mode("follow");
+                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
+            },
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
@@ -384,6 +410,7 @@ impl App {
             SearchPrevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
             WinFollow => {
+                self.follow_mode.set(FollowMode::Click);
                 self.webview.set_open_in_new_window();
                 self.app.set_mode("follow");
                 self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
@@ -527,7 +554,7 @@ impl App {
                     match self.webview.enter_hint_key(key_char) {
                         Ok(should_click) => {
                             if should_click {
-                                let result = self.webview.activate_hint();
+                                let result = self.webview.activate_hint(self.follow_mode.get().to_string());
                                 self.hide_hints();
                                 if let Ok(true) = result {
                                     self.app.set_mode("insert")

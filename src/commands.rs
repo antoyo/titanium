@@ -38,6 +38,8 @@ pub enum AppCommand {
     #[completion(hidden)]
     HideHints,
     #[completion(hidden)]
+    Hover,
+    #[completion(hidden)]
     Insert,
     #[help(text="Open the web inspector")]
     Inspector,
