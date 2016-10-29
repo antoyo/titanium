@@ -21,6 +21,7 @@
 
 use regex::Regex;
 use url::Url;
+use url::percent_encoding::percent_decode;
 
 /// Get the base URL (domain and tld) of an URL.
 /// Returns an empty string in case there are no hosts.
@@ -41,7 +42,8 @@ pub fn get_filename(url: &str) -> Option<String> {
     let parsed_url = Url::parse(url).unwrap();
     parsed_url.path_segments()
         .and_then(|segments| segments.last())
-        .map(|filename| filename.to_string())
+        .and_then(|filename| percent_decode(filename.as_bytes()).decode_utf8().ok())
+        .map(|string| string.into_owned())
 }
 
 /// Check if the input string looks like a URL.
