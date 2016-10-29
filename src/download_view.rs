@@ -36,6 +36,7 @@ const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2000;
 
 /// Download view.
 pub struct DownloadView {
+    pub filename_callback: Rc<Fn(String)>,
     view: Rc<ProgressBar>,
 }
 
@@ -47,48 +48,34 @@ impl DownloadView {
 
         DownloadView::add_events(download, progress_bar.clone());
 
+        let callback = {
+            let progress_bar = progress_bar.clone();
+            Rc::new(move |suggested_filename| {
+                progress_bar.set_text(Some(&format!("{} 0%", suggested_filename)));
+            })
+        };
+
         DownloadView {
+            filename_callback: callback,
             view: progress_bar,
         }
     }
 
     /// Add the events.
     fn add_events(download: &Download, progress_bar: Rc<ProgressBar>) {
-        // TODO: show the suggested filename at the start.
         // TODO: show errors.
         // TODO: add a command to download the current page.
         // TODO: add commands to cancel, delete (on disk), open, retry, remove from list, clear all
         // the list
-        // FIXME: some downloads do not start (fixed with clear_cache()).
         let last_update = Rc::new(RefCell::new(SystemTime::now()));
-        // TODO: rename this variable.
-        let never_shown = Rc::new(Cell::new(false));
+        let was_shown = Rc::new(Cell::new(false));
+        DownloadView::update_progress_bar(download, &progress_bar, &last_update, &was_shown);
         {
             let progress_bar = progress_bar.clone();
+            let last_update = last_update.clone();
+            let was_shown = was_shown.clone();
             download.connect_received_data(move |download, _| {
-                let filename = download.get_destination()
-                    .and_then(|url| get_filename(&url))
-                    .unwrap_or_default();
-                let progress = download.get_estimated_progress();
-                progress_bar.set_fraction(progress);
-                let percent = (progress * 100.0) as i32;
-                let (downloaded_size, total_size) = get_data_sizes(download);
-                // TODO: show the speed (downloaded data over the last 5 seconds).
-                let mut updated = false;
-                if percent == 100 {
-                    progress_bar.set_text(Some(&format!("{} {}% [{}]", filename, percent, total_size)));
-                }
-                else if let Ok(duration) = (*last_update.borrow()).elapsed() {
-                    if duration.as_secs() >= 1 || !never_shown.get() {
-                        updated = true;
-                        let time_remaining = get_remaining_time(download);
-                        progress_bar.set_text(Some(&format!("{} {}%, {} [{}/{}]", filename, percent, time_remaining, downloaded_size, total_size)));
-                        never_shown.set(true);
-                    }
-                }
-                if updated {
-                    *last_update.borrow_mut() = SystemTime::now();
-                }
+                DownloadView::update_progress_bar(download, &progress_bar, &last_update, &was_shown);
             });
         }
 
@@ -114,6 +101,38 @@ impl DownloadView {
                 });
             }
         });
+    }
+
+    /// Update the progress and the text of the progress bar.
+    fn update_progress_bar(download: &Download, progress_bar: &Rc<ProgressBar>, last_update: &Rc<RefCell<SystemTime>>, was_shown: &Rc<Cell<bool>>) {
+        let suggested_filename =
+            download.get_request()
+                .and_then(|request| request.get_uri())
+                .and_then(|url| get_filename(&url));
+        let filename = download.get_destination()
+            .and_then(|url| get_filename(&url))
+            .unwrap_or(suggested_filename.clone().unwrap_or_default());
+        let progress = download.get_estimated_progress();
+        progress_bar.set_fraction(progress);
+        let percent = (progress * 100.0) as i32;
+        let (downloaded_size, total_size) = get_data_sizes(download);
+        // TODO: show the speed (downloaded data over the last 5 seconds).
+        let mut updated = false;
+        if percent == 100 {
+            progress_bar.set_text(Some(&format!("{} {}% [{}]", filename, percent, total_size)));
+        }
+        else if let Ok(duration) = (*last_update.borrow()).elapsed() {
+            // Update the text once per second.
+            if duration.as_secs() >= 1 || !was_shown.get() {
+                updated = true;
+                let time_remaining = get_remaining_time(download);
+                progress_bar.set_text(Some(&format!("{} {}%, {} [{}/{}]", filename, percent, time_remaining, downloaded_size, total_size)));
+                was_shown.set(true);
+            }
+        }
+        if updated {
+            *last_update.borrow_mut() = SystemTime::now();
+        }
     }
 }
 

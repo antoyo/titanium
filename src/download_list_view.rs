@@ -57,11 +57,15 @@ impl DownloadListView {
     pub fn add(&mut self, download: &Download) {
         self.downloads.push(download.clone());
 
+        let download_view = DownloadView::new(download);
+
         {
             let callback = self.decide_destination_callback.clone();
+            let filename_callback = download_view.filename_callback.clone();
             // TODO: instead of requiring to call connect_decide_destination, add the callback as a
             // parameter to the constructor.
             download.connect_decide_destination(move |download, suggested_filename| {
+                filename_callback(suggested_filename.to_string());
                 if let Some(ref callback) = *callback.borrow() {
                     callback(download, suggested_filename)
                 }
@@ -84,8 +88,6 @@ impl DownloadListView {
                 }
             });
         }
-
-        let download_view = DownloadView::new(download);
 
         self.view.add(&*download_view);
         if let Some(flow_child) = self.view.get_children().last() {

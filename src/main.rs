@@ -52,6 +52,7 @@
  * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
+ * TODO: block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
  * TODO: handle ctrl-click.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
