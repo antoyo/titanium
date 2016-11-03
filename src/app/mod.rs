@@ -20,45 +20,39 @@
  */
 
 mod bookmarks;
+mod config;
+mod copy_paste;
+mod dialog;
+mod download;
+mod hints;
+mod popup;
+mod search_engine;
 
 use std::cell::{Cell, RefCell};
-use std::char;
 use std::collections::HashMap;
-use std::env::{self, home_dir, temp_dir};
+use std::env;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
-use std::fs::{File, OpenOptions, create_dir_all};
-use std::io::Write;
-use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 
 use gdk::EventKey;
-use gtk::{self, Clipboard, ContainerExt, Inhibit, WidgetExt};
+use gtk::{self, ContainerExt, Inhibit};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
-use mg::dialog::DialogWindow;
 use mg::message::MessageWindow;
 use xdg::BaseDirectories;
-use webkit2gtk::ScriptDialog;
 use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
-use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
 use bookmarks::BookmarkManager;
-use clipboard::AppClipboard;
 use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
-use dialogs::CustomDialog;
 use download_list_view::DownloadListView;
-use file::gen_unique_filename;
-use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
-use mg::dialog::DialogResult::{Answer, Shortcut};
 use popup_manager::PopupManager;
 use settings::AppSettings;
-use urls::{get_base_url, is_url};
 use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -168,80 +162,6 @@ impl App {
         app
     }
 
-    /// Add a search engine.
-    fn add_search_engine(&self, args: &str) {
-        let args: Vec<_> = args.split_whitespace().collect();
-        if args.len() == 2 {
-            let keyword = args[0].to_string();
-            if (*self.default_search_engine.borrow()).is_none() {
-                *self.default_search_engine.borrow_mut() = Some(keyword.clone());
-            }
-            (*self.search_engines.borrow_mut()).insert(keyword, args[1].to_string());
-        }
-        else {
-            self.app.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));
-        }
-    }
-
-    /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
-    fn ask_open_popup(app: &Rc<App>, url: String, base_url: String) {
-        let instance = app.clone();
-        app.app.question(&format!("A popup from {} was blocked. Do you want to open it?", base_url),
-        &['y', 'n', 'a', 'e'], move |answer|
-        {
-            match answer {
-                Some("a") => {
-                    instance.open_in_new_window_handling_error(&url);
-                    instance.whitelist_popup(&url);
-                },
-                Some("y") => instance.open_in_new_window_handling_error(&url),
-                Some("e") => instance.blacklist_popup(&url),
-                _ => (),
-            }
-        });
-    }
-
-    /// Save the specified url in the popup blacklist.
-    fn blacklist_popup(&self, url: &str) {
-        self.handle_error((*self.popup_manager.borrow_mut()).blacklist(url));
-    }
-
-    /// Create the default configuration files and directories if it does not exist.
-    fn create_config_files(&self, config_path: &Path) -> AppResult {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
-
-        let bookmarks_path = BookmarkManager::config_path();
-
-        let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
-        let scripts_path = xdg_dirs.place_config_file("scripts")?;
-        create_dir_all(stylesheets_path)?;
-        create_dir_all(scripts_path)?;
-
-        let keys_path = xdg_dirs.place_config_file("keys")?;
-        let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
-        let hints_css_path = xdg_dirs.place_config_file("stylesheets/hints.css")?;
-        self.create_default_config_file(config_path, include_str!("../../config/config"))?;
-        self.create_default_config_file(&keys_path, include_str!("../../config/keys"))?;
-        self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
-        self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
-        self.create_default_config_file(&bookmarks_path, include_str!("../../config/bookmarks"))?;
-
-        let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
-        OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
-        OpenOptions::new().create(true).write(true).open(&popup_blacklist_path)?;
-
-        Ok(())
-    }
-
-    /// Create the config file with its default content if it does not exist.
-    fn create_default_config_file(&self, path: &Path, content: &'static str) -> AppResult {
-        if !path.exists() {
-            let mut file = File::create(path)?;
-            write!(file, "{}", content)?;
-        }
-        Ok(())
-    }
-
     /// Create the events.
     fn create_events(app: &Rc<Self>) {
         {
@@ -330,32 +250,6 @@ impl App {
         });
     }
 
-    /// Copy the URL in the system clipboard.
-    fn copy_url(&self) {
-        let clipboard = self.webview.get_display()
-            .and_then(|display| Clipboard::get_default(&display));
-        if let Some(clipboard) = clipboard {
-            if let Some(url) = self.webview.get_uri() {
-                clipboard.set_text(&url);
-                Application::info(&self.app, &format!("Copied URL to clipboard: {}", url));
-            }
-            else {
-                self.app.error("No URL to copy");
-            }
-        }
-        else {
-            self.app.error("Cannot get the system clipboard");
-        }
-    }
-
-    /// Create the variables accessible from the config files.
-    fn create_variables(app: Rc<Self>) {
-        let application = app.clone();
-        app.app.add_variable("url", move || {
-            application.webview.get_uri().unwrap()
-        });
-    }
-
     /// Show an error.
     pub fn error(&self, error: &str) {
         self.app.error(error);
@@ -396,14 +290,14 @@ impl App {
             Follow => {
                 self.follow_mode.set(FollowMode::Click);
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
+                self.handle_error(self.webview.follow_link(self.hint_chars()))
             },
             Forward => self.webview.go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
                 self.follow_mode.set(FollowMode::Hover);
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
+                self.handle_error(self.webview.follow_link(self.hint_chars()))
             },
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
@@ -429,7 +323,7 @@ impl App {
                 self.follow_mode.set(FollowMode::Click);
                 self.webview.set_open_in_new_window();
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(&self.app.settings().hint_chars))
+                self.handle_error(self.webview.follow_link(self.hint_chars()))
             },
             WinOpen(url) => self.open_in_new_window_handling_error(&url),
             WinPasteUrl => self.win_paste_url(),
@@ -445,16 +339,9 @@ impl App {
         webview.connect_create(move |_, action| {
             if let Some(request) = action.get_request() {
                 if let Some(url) = request.get_uri() {
-                    // Block popup.
                     let popup_manager = &*app.popup_manager.borrow();
-                    let base_url = get_base_url(&url);
                     if action.get_navigation_type() == Other && !popup_manager.is_whitelisted(&url) {
-                        if popup_manager.is_blacklisted(&url) {
-                            Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));
-                        }
-                        else {
-                            App::ask_open_popup(&app, url, base_url);
-                        }
+                        App::handle_popup(&app, url);
                     }
                     else {
                         app.open_in_new_window_handling_error(&url);
@@ -465,124 +352,11 @@ impl App {
         });
     }
 
-    /// Handle the download decide destination event.
-    fn handle_decide_destination(app: Rc<App>) {
-        let application = app.clone();
-        (*app.download_list_view.borrow_mut()).connect_decide_destination(move |download, suggested_filename| {
-            let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
-            let destination = application.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
-            match destination {
-                Answer(Some(destination)) => {
-                    let path = Path::new(&destination);
-                    let download_destination =
-                        if path.is_dir() {
-                            path.join(suggested_filename)
-                        }
-                        else {
-                            path.to_path_buf()
-                        };
-                    let exists = download_destination.exists();
-                    let download_destination = download_destination.to_str().unwrap();
-                    if exists {
-                        let message = &format!("Do you want to overwrite {}?", download_destination);
-                        let answer = application.app.blocking_yes_no_question(message);
-                        if answer {
-                            download.set_allow_overwrite(true);
-                        }
-                        else {
-                            download.cancel();
-                        }
-                    }
-                    download.set_destination(&format!("file://{}", download_destination));
-                },
-                Shortcut(shortcut) => {
-                    if shortcut == "download" {
-                        let temp_dir = temp_dir();
-                        let download_destination = gen_unique_filename(suggested_filename);
-                        let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
-                        let download_list_view = &*application.download_list_view.borrow_mut();
-                        download_list_view.add_file_to_open(&destination);
-                        download.set_destination(&destination);
-                    }
-                },
-                _ => download.cancel(),
-            }
-            true
-        });
-    }
-
     /// Show an error in the result is an error.
     fn handle_error(&self, error: AppResult) {
         if let Err(error) = error {
             self.show_error(error);
         }
-    }
-
-    /// Show a non-modal file chooser dialog when the user activates a file input.
-    fn handle_file_chooser(app: &Rc<App>) {
-        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
-        let application = app.clone();
-        app.webview.connect_run_file_chooser(move |_, file_chooser_request| {
-            if file_chooser_request.get_select_multiple() {
-                // TODO: support multiple files.
-                false
-            }
-            else {
-                let selected_files = file_chooser_request.get_selected_files();
-                let file =
-                    if selected_files.is_empty() {
-                        let dir = home_dir()
-                            .unwrap_or_else(temp_dir)
-                            .to_str().unwrap()
-                            .to_string();
-                        format!("{}/", dir)
-                    }
-                    else {
-                        selected_files[0].clone()
-                    };
-                if let Some(file) = application.app.blocking_file_input("Select file", &file) {
-                    let path = Path::new(&file);
-                    if !path.exists() {
-                        application.app.error("Please select an existing file");
-                        file_chooser_request.cancel();
-                    }
-                    else if path.is_dir() {
-                        application.app.error("Please select a file, not a directory");
-                        file_chooser_request.cancel();
-                    }
-                    else {
-                        file_chooser_request.select_files(&[&file]);
-                    }
-                }
-                else {
-                    file_chooser_request.cancel();
-                }
-                true
-            }
-        });
-    }
-
-    /// In follow mode, send the key to the web process.
-    fn handle_follow_key_press(&self, event_key: &EventKey) -> Inhibit {
-        if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
-            if key_char.is_alphanumeric() {
-                if let Some(key_char) = key_char.to_lowercase().next() {
-                    match self.webview.enter_hint_key(key_char) {
-                        Ok(should_click) => {
-                            if should_click {
-                                let result = self.webview.activate_hint(self.follow_mode.get().to_string());
-                                self.hide_hints();
-                                if let Ok(true) = result {
-                                    self.app.set_mode("insert")
-                                }
-                            }
-                        },
-                        Err(error) => self.show_error(error),
-                    }
-                }
-            }
-        }
-        Inhibit(true)
     }
 
     /// Handle the key press event.
@@ -628,30 +402,6 @@ impl App {
         });
     }
 
-    /// Handle the script dialog event.
-    fn handle_script_dialog(&self, script_dialog: ScriptDialog) {
-        match script_dialog.get_dialog_type() {
-            Alert => {
-                self.app.message(&format!("[JavaScript] {}", script_dialog.get_message()));
-            },
-            Confirm => {
-                let confirmed = self.app.blocking_yes_no_question(&format!("[JavaScript] {}", script_dialog.get_message()));
-                script_dialog.confirm_set_confirmed(confirmed);
-            },
-            BeforeUnloadConfirm => {
-                let confirmed = self.app.blocking_yes_no_question("[JavaScript] Do you really want to leave this page?");
-                script_dialog.confirm_set_confirmed(confirmed);
-            },
-            Prompt => {
-                let default_answer = script_dialog.prompt_get_default_text().to_string();
-                let input = self.app.blocking_input(&format!("[JavaScript] {}", script_dialog.get_message()), &default_answer);
-                let input = input.unwrap_or_default();
-                script_dialog.prompt_set_text(&input);
-            },
-            _ => (),
-        }
-    }
-
     /// Handle the special command.
     fn handle_special_command(&self, command: SpecialCommand) {
         match command {
@@ -664,17 +414,6 @@ impl App {
                 self.webview.search(&input);
             },
         }
-    }
-
-    /// Hide the hints and return to normal mode.
-    fn hide_hints(&self) {
-        self.handle_error(self.webview.hide_hints());
-        self.app.set_mode("normal");
-    }
-
-    /// Show an information message to tell that the current page is not in the bookmarks.
-    fn info_page_not_in_bookmarks(&self) {
-        Application::info(&self.app, &format!("The current page is not in the bookmarks"));
     }
 
     /// Open the given URL in the web view.
@@ -696,23 +435,6 @@ impl App {
     /// Open the given URL in a new window, showing the error if any.
     fn open_in_new_window_handling_error(&self, url: &str) {
         self.handle_error(self.open_in_new_window(url));
-    }
-
-
-    /// Create the missing config files and parse the config files.
-    fn parse_config(&self) {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        let config_path = xdg_dirs.place_config_file("config")
-            .expect("cannot create configuration directory");
-        self.handle_error(self.create_config_files(config_path.as_path()));
-        self.handle_error(self.app.parse_config(config_path));
-    }
-
-    /// Open the url from the system clipboard.
-    fn paste_url(&self) {
-        if let Some(url) = self.get_url_from_clipboard() {
-            self.open(&url);
-        }
     }
 
     /// Try to close the web view and quit the application.
@@ -759,35 +481,6 @@ impl App {
     /// Show the zoom level in the status bar.
     fn show_zoom(&self, level: i32) {
         Application::info(&self.app, &format!("Zoom level: {}%", level));
-    }
-
-    /// If the url starts with a search engine keyword, transform the url to the URL of the search
-    /// engine.
-    fn transform_url(&self, url: &str) -> String {
-        let words: Vec<_> = url.split_whitespace().collect();
-        let (engine_prefix, rest) =
-            if words.len() > 1 && (*self.search_engines.borrow()).contains_key(words[0]) {
-                let rest = url.chars().skip_while(|&c| c != ' ').collect::<String>();
-                let rest = rest.trim().to_string();
-                (Some(words[0].to_string()), rest)
-            }
-            else if !is_url(url) {
-                ((*self.default_search_engine.borrow()).clone(), url.to_string())
-            }
-            else {
-                (None, String::new())
-            };
-        if let Some(ref prefix) = engine_prefix {
-            if let Some(engine_url) = (*self.search_engines.borrow()).get(prefix) {
-                return engine_url.replace("{}", &rest);
-            }
-        }
-        url.to_string()
-    }
-
-    /// Save the specified url in the popup whitelist.
-    fn whitelist_popup(&self, url: &str) {
-        self.handle_error((*self.popup_manager.borrow_mut()).whitelist(url));
     }
 
     /// Open in a new window the url from the system clipboard.

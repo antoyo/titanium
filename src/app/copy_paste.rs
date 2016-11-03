@@ -19,37 +19,37 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//! Application clipboard utility functions.
+//! Handle copy/paste of URLs withing the application.
 
-use gdk::Display;
-use gtk::Clipboard;
-use url::Url;
+use gtk::{Clipboard, WidgetExt};
+use mg::Application;
+use mg::message::MessageWindow;
 
-use app::App;
+use super::App;
 
 impl App {
-    /// Get the URL from the clipboard if there is one.
-    /// If there are no URLs in the clipboard, this will show errors.
-    pub fn get_url_from_clipboard(&self) -> Option<String> {
-        let clipboard = Display::get_default()
+    /// Copy the URL in the system clipboard.
+    pub fn copy_url(&self) {
+        let clipboard = self.webview.get_display()
             .and_then(|display| Clipboard::get_default(&display));
         if let Some(clipboard) = clipboard {
-            let mut urls = clipboard.wait_for_uris();
-            let url = urls.pop()
-                .or_else(|| {
-                    let text = clipboard.wait_for_text();
-                    text.and_then(|text| Url::parse(&text).ok().map(|_| text))
-                });
-            if let Some(url) = url {
-                return Some(url);
+            if let Some(url) = self.webview.get_uri() {
+                clipboard.set_text(&url);
+                Application::info(&self.app, &format!("Copied URL to clipboard: {}", url));
             }
             else {
-                self.error("No URLs in the clipboard");
+                self.app.error("No URL to copy");
             }
         }
         else {
-            self.error("Cannot get the system clipboard");
+            self.app.error("Cannot get the system clipboard");
         }
-        None
+    }
+
+    /// Open the url from the system clipboard.
+    pub fn paste_url(&self) {
+        if let Some(url) = self.get_url_from_clipboard() {
+            self.open(&url);
+        }
     }
 }

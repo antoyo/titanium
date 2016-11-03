@@ -362,7 +362,7 @@ dependencies = [
 [[package]]
 name = "mg-settings"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg-settings#ca979c12cb70a1b1eca02f746071e5a071ef50c9"
+source = "git+https://github.com/antoyo/mg-settings#944220527cf9ace4dcbf3c688e0df8d1ed4ef7fe"
 dependencies = [
  "mg-settings-macros 0.0.1 (git+https://github.com/antoyo/mg-settings)",
 ]
@@ -370,7 +370,7 @@ dependencies = [
 [[package]]
 name = "mg-settings-macros"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/mg-settings#ca979c12cb70a1b1eca02f746071e5a071ef50c9"
+source = "git+https://github.com/antoyo/mg-settings#944220527cf9ace4dcbf3c688e0df8d1ed4ef7fe"
 dependencies = [
  "quote 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",

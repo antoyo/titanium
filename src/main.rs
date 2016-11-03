@@ -22,13 +22,14 @@
 /*
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: quitting the parent process (newsbeuter) seems to crash the extension process.
+ * FIXME: panic when clicking the link at the bottom of developpeur.cool.
+ * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
+ *
  * FIXME: page scrolling scrolls too much (http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
  * FIXME: a too large status bar increase the window width (yank on http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
- * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  *
  * TODO: show an error when there are no hints.
- * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
@@ -39,7 +40,6 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: separate the features into an app sub-module.
  * TODO: adblock (whitelist-based, including web sockets).
  *
  * TODO: add tests.
