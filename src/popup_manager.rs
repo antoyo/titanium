@@ -59,9 +59,9 @@ impl PopupManager {
     /// Get the whitelist and blacklist path.
     pub fn config_path() -> (PathBuf, PathBuf) {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        ( xdg_dirs.place_config_file("whitelist")
+        ( xdg_dirs.place_config_file("popups/whitelist")
             .expect("cannot create configuration directory")
-        , xdg_dirs.place_config_file("blacklist")
+        , xdg_dirs.place_config_file("popups/blacklist")
             .expect("cannot create configuration directory")
         )
 

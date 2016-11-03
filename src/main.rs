@@ -25,7 +25,6 @@
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
- * FIXME: a too large status bar increase the window width (yank on http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  *
  * TODO: show an error when there are no hints.
@@ -39,7 +38,7 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: adblock (whitelist-based, including web sockets).
+ * TODO: adblock (including web sockets).
  *
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
@@ -63,6 +62,7 @@
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
+ * TODO: create a whitelist-based adblocker.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: disable the tab key in the status bar input.

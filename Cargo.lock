@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#85d99c8057179789b9371a973925cc63022a5610"
+source = "git+https://github.com/antoyo/mg#5abe8405d631965dbf2bb4872d0ef711dd11afd1"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -357,6 +357,7 @@ dependencies = [
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "mg-settings 0.0.5-pre (git+https://github.com/antoyo/mg-settings)",
+ "pango-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
 ]
 
 [[package]]

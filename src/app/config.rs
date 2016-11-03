@@ -22,7 +22,7 @@
 //! Manage the configuration of the application.
 
 use std::fs::{File, OpenOptions, create_dir_all};
-use std::io::Write;
+use std::io::{self, Write};
 use std::path::Path;
 use std::rc::Rc;
 
@@ -41,8 +41,10 @@ impl App {
 
         let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
         let scripts_path = xdg_dirs.place_config_file("scripts")?;
+        let popups_path = xdg_dirs.place_config_file("popups")?;
         create_dir_all(stylesheets_path)?;
         create_dir_all(scripts_path)?;
+        create_dir_all(popups_path)?;
 
         let keys_path = xdg_dirs.place_config_file("keys")?;
         let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
@@ -54,8 +56,8 @@ impl App {
         self.create_default_config_file(&bookmarks_path, include_str!("../../config/bookmarks"))?;
 
         let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
-        OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
-        OpenOptions::new().create(true).write(true).open(&popup_blacklist_path)?;
+        create_file(&popup_whitelist_path)?;
+        create_file(&popup_blacklist_path)?;
 
         Ok(())
     }
@@ -85,4 +87,10 @@ impl App {
         self.handle_error(self.create_config_files(config_path.as_path()));
         self.handle_error(self.app.parse_config(config_path));
     }
+}
+
+/// Create a file.
+fn create_file(path: &Path) -> io::Result<()> {
+    OpenOptions::new().create(true).write(true).open(path)?;
+    Ok(())
 }
