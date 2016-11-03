@@ -27,7 +27,77 @@ use std::rc::Rc;
 
 use mg::completion::{Completer, CompletionResult};
 
+use bookmarks::{BookmarkInput, BookmarkManager};
 use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
+
+/// A bookmark completer.
+pub struct BookmarkCompleter {
+    bookmarks: Rc<RefCell<BookmarkManager>>,
+    prefix: &'static str,
+}
+
+impl BookmarkCompleter {
+    /// Create a new bookmark completer.
+    pub fn new(bookmarks: Rc<RefCell<BookmarkManager>>, prefix: &'static str) -> Self {
+        BookmarkCompleter {
+            bookmarks: bookmarks,
+            prefix: prefix,
+        }
+    }
+
+    /// Parse the tags and the words from the input.
+    fn parse_input(input: &str) -> BookmarkInput {
+        let mut tags = vec![];
+        let mut words = vec![];
+        let splitted_words = split_whitespace_and_hash(&input.to_lowercase());
+
+        for word in splitted_words {
+            if word.starts_with('#') {
+                let mut tag = word.to_string();
+                tag.remove(0); // Remove the #.
+                tags.push(tag);
+            }
+            else {
+                words.push(word);
+            }
+        }
+
+        BookmarkInput {
+            tags: tags,
+            words: words,
+        }
+    }
+}
+
+impl Completer for BookmarkCompleter {
+    fn complete_result(&self, value: &str) -> String {
+        format!("{} {}", self.prefix, value)
+    }
+
+    fn completions(&self, input: &str) -> Vec<CompletionResult> {
+        let bookmarks = &*self.bookmarks.borrow();
+        let mut results = vec![];
+        let query = BookmarkCompleter::parse_input(input);
+
+        for bookmark in bookmarks.query(query) {
+            let separator =
+                if bookmark.tags.is_empty() {
+                    ""
+                }
+                else {
+                    " #"
+                };
+            let col1 = format!("{}{}{}", bookmark.title, separator, bookmark.tags.join(" #"));
+            results.push(CompletionResult::new(&col1, &bookmark.url));
+        }
+
+        results
+    }
+
+    fn text_column(&self) -> i32 {
+        1
+    }
+}
 
 /// A file completer.
 pub struct FileCompleter {
@@ -35,7 +105,8 @@ pub struct FileCompleter {
 }
 
 impl FileCompleter {
-    pub fn new() -> FileCompleter {
+    /// Create a new file completer.
+    pub fn new() -> Self {
         let path = Path::new(&get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD)).to_path_buf();
         FileCompleter {
             current_directory: Rc::new(RefCell::new(path)),
@@ -106,4 +177,33 @@ impl Completer for FileCompleter {
             })
             .collect()
     }
+}
+
+/// Split at whitespaces and at the # character.
+/// The # character will be kept in the words while the spaces are dropped.
+fn split_whitespace_and_hash(input: &str) -> Vec<String> {
+    let mut words = vec![];
+    let mut buffer = String::new();
+    for character in input.chars() {
+        if character == '#' {
+            if !buffer.is_empty() {
+                words.push(buffer.clone());
+                buffer.clear();
+            }
+            buffer.push('#');
+        }
+        else if character == ' ' {
+            if !buffer.is_empty() {
+                words.push(buffer.clone());
+                buffer.clear();
+            }
+        }
+        else {
+            buffer.push(character);
+        }
+    }
+    if !buffer.is_empty() {
+        words.push(buffer.clone());
+    }
+    words
 }

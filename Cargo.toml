@@ -10,6 +10,9 @@ number_prefix = "^0.2"
 open = "^1.1"
 regex = "^0.1"
 rustc-serialize = "^0.3"
+serde = "^0.8.16"
+serde_derive = "^0.8.16"
+serde_yaml = "^0.5.0"
 simplelog = "^0.2"
 tempfile = "^2.1"
 url = "^1.2"
@@ -57,6 +60,9 @@ version = "^0.0.1"
 [dependencies.webkit2gtk]
 git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
+
+[replace]
+"yaml-rust:0.3.4" = { git = "https://github.com/antoyo/yaml-rust", branch = "avoid-quotes" }
 
 [features]
 default = ["gtk/v3_16", "webkit2gtk/v2_12"]

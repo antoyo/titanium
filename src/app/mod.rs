@@ -19,6 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+mod bookmarks;
+
 use std::cell::{Cell, RefCell};
 use std::char;
 use std::collections::HashMap;
@@ -43,11 +45,12 @@ use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
+use bookmarks::BookmarkManager;
 use clipboard::AppClipboard;
 use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
-use completers::FileCompleter;
+use completers::{BookmarkCompleter, FileCompleter};
 use dialogs::CustomDialog;
 use download_list_view::DownloadListView;
 use file::gen_unique_filename;
@@ -84,6 +87,7 @@ impl Display for FollowMode {
 /// Titanium application.
 pub struct App {
     app: Rc<MgApp>,
+    bookmark_manager: Rc<RefCell<BookmarkManager>>,
     default_search_engine: Rc<RefCell<Option<String>>>,
     download_list_view: Rc<RefCell<DownloadListView>>,
     follow_mode: Cell<FollowMode>,
@@ -95,12 +99,14 @@ pub struct App {
 }
 
 impl App {
-    fn build() -> Rc<MgApp> {
+    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>) -> Rc<MgApp> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let include_path = xdg_dirs.get_config_home();
 
         ApplicationBuilder::new()
             .completer("file", FileCompleter::new())
+            .completer("open", BookmarkCompleter::new(bookmark_manager.clone(), "open"))
+            .completer("win-open", BookmarkCompleter::new(bookmark_manager.clone(), "win-open"))
             .include_path(include_path)
             .modes(hash! {
                 "f" => "follow",
@@ -111,7 +117,8 @@ impl App {
     }
 
     pub fn new(homepage: Option<String>) -> Rc<Self> {
-        let mg_app = App::build();
+        let bookmark_manager = Rc::new(RefCell::new(BookmarkManager::new()));
+        let mg_app = App::build(&bookmark_manager);
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -132,6 +139,7 @@ impl App {
 
         let app = Rc::new(App {
             app: mg_app,
+            bookmark_manager: bookmark_manager,
             default_search_engine: Rc::new(RefCell::new(None)),
             download_list_view: Rc::new(RefCell::new(download_list_view)),
             follow_mode: Cell::new(FollowMode::Click),
@@ -150,6 +158,8 @@ impl App {
 
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
         app.webview.open(&url);
+
+        app.handle_error((*app.bookmark_manager.borrow_mut()).load());
 
         app.handle_error((*app.popup_manager.borrow_mut()).load());
 
@@ -200,6 +210,8 @@ impl App {
     fn create_config_files(&self, config_path: &Path) -> AppResult {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
 
+        let bookmarks_path = BookmarkManager::config_path();
+
         let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
         let scripts_path = xdg_dirs.place_config_file("scripts")?;
         create_dir_all(stylesheets_path)?;
@@ -208,10 +220,11 @@ impl App {
         let keys_path = xdg_dirs.place_config_file("keys")?;
         let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
         let hints_css_path = xdg_dirs.place_config_file("stylesheets/hints.css")?;
-        self.create_default_config_file(config_path, include_str!("../config/config"))?;
-        self.create_default_config_file(&keys_path, include_str!("../config/keys"))?;
-        self.create_default_config_file(&webkit_config_path, include_str!("../config/webkit"))?;
-        self.create_default_config_file(&hints_css_path, include_str!("../config/stylesheets/hints.css"))?;
+        self.create_default_config_file(config_path, include_str!("../../config/config"))?;
+        self.create_default_config_file(&keys_path, include_str!("../../config/keys"))?;
+        self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
+        self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
+        self.create_default_config_file(&bookmarks_path, include_str!("../../config/bookmarks"))?;
 
         let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
         OpenOptions::new().create(true).write(true).open(&popup_whitelist_path)?;
@@ -374,6 +387,9 @@ impl App {
         match command {
             ActivateSelection => self.handle_error(self.webview.activate_selection()),
             Back => self.webview.go_back(),
+            Bookmark => self.bookmark(),
+            BookmarkDel => self.delete_bookmark(),
+            BookmarkEditTags => self.edit_bookmark_tags(),
             CopyUrl => self.copy_url(),
             FinishSearch => self.webview.finish_search(),
             FocusInput => self.focus_input(),
@@ -654,6 +670,11 @@ impl App {
     fn hide_hints(&self) {
         self.handle_error(self.webview.hide_hints());
         self.app.set_mode("normal");
+    }
+
+    /// Show an information message to tell that the current page is not in the bookmarks.
+    fn info_page_not_in_bookmarks(&self) {
+        Application::info(&self.app, &format!("The current page is not in the bookmarks"));
     }
 
     /// Open the given URL in the web view.

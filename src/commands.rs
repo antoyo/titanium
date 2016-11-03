@@ -25,6 +25,12 @@ pub enum AppCommand {
     ActivateSelection,
     #[help(text="Go back in the history")]
     Back,
+    #[help(text="Add the current page to the bookmarks")]
+    Bookmark,
+    #[help(text="Delete the current page from the bookmarks")]
+    BookmarkDel,
+    #[help(text="Edit the bookmark tags of the current page")]
+    BookmarkEditTags,
     #[completion(hidden)]
     CopyUrl,
     #[completion(hidden)]

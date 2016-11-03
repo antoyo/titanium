@@ -20,26 +20,33 @@
  */
 
 /*
+ * TODO: check if an extension process crashing causes issues in other extension process.
+ * FIXME: quitting the parent process (newsbeuter) seems to crash the extension process.
+ * FIXME: page scrolling scrolls too much (http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
+ * FIXME: a too large status bar increase the window width (yank on http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
+ * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
+ * FIXME: panic when clicking the link at the bottom of developpeur.cool.
+ *
  * TODO: show an error when there are no hints.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
- * FIXME: font color, family, size for hints (https://developer.mozilla.org/en-US/docs/Web/API/Window/open).
+ * FIXME: font color, family, size for hints (https://developer.mozilla.org/en-US/docs/Web/API/Window/open, https://www.chessbomb.com/).
  *
  * TODO: handle the errors instead of unwrap().
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: support bookmarks with tags (shortcut to delete bookmark by current URL).
- * TODO: open completions.
- * TODO: adblock.
+ * TODO: separate the features into an app sub-module.
+ * TODO: adblock (whitelist-based, including web sockets).
  *
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
  * TODO: add help text for commands and settings.
+ * TODO: allow to delete bookmarks in completion.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.
@@ -101,6 +108,10 @@ extern crate number_prefix;
 extern crate open;
 extern crate regex;
 extern crate rustc_serialize;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_yaml;
 extern crate simplelog;
 extern crate tempfile;
 extern crate url;
@@ -108,6 +119,7 @@ extern crate webkit2gtk;
 extern crate xdg;
 
 mod app;
+mod bookmarks;
 mod clipboard;
 mod commands;
 mod completers;
