@@ -25,7 +25,6 @@
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
- * FIXME: page scrolling scrolls too much (http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
  * FIXME: a too large status bar increase the window width (yank on http://smallcultfollowing.com/babysteps/blog/2016/11/02/associated-type-constructors-part-1-basic-concepts-and-introduction/).
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  *

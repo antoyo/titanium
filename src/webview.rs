@@ -394,7 +394,7 @@ impl WebView {
     /// Scroll down by one page.
     pub fn scroll_down_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(allocation.height)
+        self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
     }
 
     /// Scroll to the top of the page.
@@ -417,7 +417,7 @@ impl WebView {
     /// Scroll up by one page.
     pub fn scroll_up_page(&self) -> AppResult {
         let allocation = self.view.get_allocation();
-        self.scroll(-allocation.height)
+        self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
     }
 
     /// Search some text.

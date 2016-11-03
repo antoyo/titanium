@@ -58,6 +58,7 @@ dbus_class!("com.titanium.client", class MessageServer
     , last_hovered_element: Option<DOMElement>
     )
 {
+    // Activate (click, focus, hover) the selected hint.
     // Return true if a text element has been focused.
     fn activate_hint(&mut self, follow_mode: &str) -> bool {
         fn click(_server: &mut DBusObject, element: DOMHTMLElement) -> bool {
@@ -119,6 +120,7 @@ dbus_class!("com.titanium.client", class MessageServer
         false
     }
 
+    // Click on the link of the selected text.
     fn activate_selection(&self) -> () {
         let result = get_page!(self)
             .and_then(|page| page.get_dom_document())
@@ -132,6 +134,8 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
+    // Handle the key press event for the hint mode.
+    // This hides the hints that are not relevant anymore.
     // Return true if an element should be clicked.
     fn enter_hint_key(&mut self, key: char) -> bool {
         self.hint_keys.push(key);
@@ -173,6 +177,7 @@ dbus_class!("com.titanium.client", class MessageServer
         false
     }
 
+    // Get the page scroll percentage.
     fn get_scroll_percentage(&self) -> i64 {
         if let Some(page) = get_page!(self) {
             page.scroll_percentage()
@@ -182,6 +187,7 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
+    // Hide all the hints.
     fn hide_hints(&self) -> () {
         let page = get_page!(self);
         let elements = page.as_ref()
@@ -193,24 +199,28 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
+    // Scroll to the bottom of the page.
     fn scroll_bottom(&self) -> () {
         if let Some(page) = get_page!(self) {
             page.scroll_bottom();
         }
     }
 
+    // Scroll by the specified amount of pixels.
     fn scroll_by(&self, pixels: i64) -> () {
         if let Some(page) = get_page!(self) {
             page.scroll_by(pixels);
         }
     }
 
+    // Scroll to the top of the page.
     fn scroll_top(&self) -> () {
         if let Some(page) = get_page!(self) {
             page.scroll_top();
         }
     }
 
+    // Show the hint of elements using the hint characters.
     fn show_hints(&mut self, hint_chars: &str) -> () {
         self.hint_keys.clear();
         let page = get_page!(self);
