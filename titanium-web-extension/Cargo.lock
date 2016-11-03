@@ -169,12 +169,18 @@ dependencies = [
 [[package]]
 name = "glib-sys"
 version = "0.3.1"
-source = "git+https://github.com/gtk-rs/sys#774929a264759e2dd358ffc491889b25e0615cf9"
+source = "git+https://github.com/antoyo/sys#23062d18c9af478a41710f44cb1eee45e12ee4c2"
 dependencies = [
  "bitflags 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "glib-sys"
+version = "0.3.1"
+source = "git+https://github.com/gtk-rs/sys#774929a264759e2dd358ffc491889b25e0615cf9"
+replace = "glib-sys 0.3.1 (git+https://github.com/antoyo/sys)"
 
 [[package]]
 name = "gobject-sys"
@@ -315,6 +321,7 @@ dependencies = [
 "checksum gio 0.1.0 (git+https://github.com/gtk-rs/gio)" = "<none>"
 "checksum gio-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"
 "checksum glib 0.1.0 (git+https://github.com/gtk-rs/glib)" = "<none>"
+"checksum glib-sys 0.3.1 (git+https://github.com/antoyo/sys)" = "<none>"
 "checksum glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"
 "checksum gobject-sys 0.3.1 (git+https://github.com/gtk-rs/sys)" = "<none>"
 "checksum gtk 0.1.0 (git+https://github.com/gtk-rs/gtk)" = "<none>"

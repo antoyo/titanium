@@ -34,3 +34,6 @@ version = "^0.1"
 [dependencies.webkit2gtk-webextension-sys]
 git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
 version = "^0.2"
+
+[replace]
+"glib-sys:0.3.1" = { git = "https://github.com/antoyo/sys" }
