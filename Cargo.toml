@@ -65,5 +65,4 @@ version = "^0.1"
 default = ["gtk/v3_16", "webkit2gtk/v2_12"]
 
 [replace."yaml-rust:0.3.4"]
-branch = "avoid-quotes"
-git = "https://github.com/antoyo/yaml-rust"
+git = "https://github.com/chyh1990/yaml-rust"

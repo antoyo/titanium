@@ -20,12 +20,11 @@
  */
 
 /*
- * TODO: file watcher to sync bookmarks between windows.
- *
- * FIXME: log macros not working.
- *
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
+ *
+ * TODO: file watcher to sync bookmarks between windows.
+ * TODO: lock the file read/write.
  *
  * TODO: password fillers.
  *
@@ -66,6 +65,8 @@
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
+ * TODO: command to update adblocker hosts file.
+ * TODO: option to disable the adblocker.
  * TODO: block ads coming from websocket.
  * TODO: create a whitelist-based adblocker.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".

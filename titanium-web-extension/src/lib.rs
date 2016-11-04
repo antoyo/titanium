@@ -25,6 +25,7 @@ extern crate gdbus;
 extern crate gio_sys;
 #[macro_use]
 extern crate log;
+extern crate simplelog;
 extern crate url;
 extern crate xdg;
 #[macro_use]
@@ -42,6 +43,8 @@ use std::mem::forget;
 use std::rc::Rc;
 
 use glib::variant::Variant;
+use simplelog::TermLogger;
+use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::WebExtension;
 
 use adblocker::Adblocker;
@@ -53,6 +56,8 @@ pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
+    TermLogger::init(LogLevelFilter::max()).ok();
+
     let current_page_id = Rc::new(Cell::new(0));
 
     {

@@ -200,7 +200,7 @@ dependencies = [
 [[package]]
 name = "glib"
 version = "0.1.0"
-source = "git+https://github.com/gtk-rs/glib#8add40da937dc66deb27f7b9fd7253a6b68ff01d"
+source = "git+https://github.com/gtk-rs/glib#181ab6eda14ac7e6b966607f3eab96d0fc0e0bbd"
 dependencies = [
  "bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -705,7 +705,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "yaml-rust"
 version = "0.3.4"
-source = "git+https://github.com/antoyo/yaml-rust?branch=avoid-quotes#be37bde658ed3df1d5a0336eea031474f0b2557f"
+source = "git+https://github.com/chyh1990/yaml-rust#9bd9edcc85f6bb2d1aebff5f018e666a4b3ccbba"
 dependencies = [
  "linked-hash-map 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -714,7 +714,7 @@ dependencies = [
 name = "yaml-rust"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-replace = "yaml-rust 0.3.4 (git+https://github.com/antoyo/yaml-rust?branch=avoid-quotes)"
+replace = "yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)"
 
 [metadata]
 "checksum aho-corasick 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca972c2ea5f742bfce5687b9aef75506a764f61d37f8f649047846a9686ddb66"
@@ -791,5 +791,5 @@ replace = "yaml-rust 0.3.4 (git+https://github.com/antoyo/yaml-rust?branch=avoid
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
 "checksum xdg 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "77b831a5ba77110f438f0ac5583aafeb087f70432998ba6b7dcb1d32185db453"
-"checksum yaml-rust 0.3.4 (git+https://github.com/antoyo/yaml-rust?branch=avoid-quotes)" = "<none>"
+"checksum yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)" = "<none>"
 "checksum yaml-rust 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "371cea3a33a58d11dc83c0992fb37e44f651ebdf2df12f9d939f6cb24be2a8fd"
