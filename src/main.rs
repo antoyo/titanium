@@ -20,6 +20,15 @@
  */
 
 /*
+ * TODO: file watcher to sync bookmarks between windows.
+ *
+ * FIXME: log macros not working.
+ *
+ * TODO: add tests.
+ * TODO: create a declarative GUI library to avoid having all these RefCells.
+ *
+ * TODO: password fillers.
+ *
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: quitting the parent process (newsbeuter) seems to crash the extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
@@ -37,11 +46,6 @@
  * TODO: handle the errors instead of unwrap().
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
- *
- * TODO: adblock (including web sockets).
- *
- * TODO: add tests.
- * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
@@ -62,6 +66,7 @@
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
+ * TODO: block ads coming from websocket.
  * TODO: create a whitelist-based adblocker.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).

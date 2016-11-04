@@ -64,7 +64,6 @@ impl PopupManager {
         , xdg_dirs.place_config_file("popups/blacklist")
             .expect("cannot create configuration directory")
         )
-
     }
 
     /// Check if the specified url is blacklisted.

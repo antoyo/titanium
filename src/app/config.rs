@@ -49,11 +49,13 @@ impl App {
         let keys_path = xdg_dirs.place_config_file("keys")?;
         let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
         let hints_css_path = xdg_dirs.place_config_file("stylesheets/hints.css")?;
+        let hosts_path = xdg_dirs.place_data_file("hosts")?;
         self.create_default_config_file(config_path, include_str!("../../config/config"))?;
         self.create_default_config_file(&keys_path, include_str!("../../config/keys"))?;
         self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
         self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
         self.create_default_config_file(&bookmarks_path, include_str!("../../config/bookmarks"))?;
+        self.create_default_config_file(&hosts_path, include_str!("../../config/hosts"))?;
 
         let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
         create_file(&popup_whitelist_path)?;

@@ -10,6 +10,10 @@ crate-type = ["dylib"]
 default = ["webkit2gtk-webextension/v2_12"]
 
 [dependencies]
+log = "^0.3"
+regex = "^0.1"
+url = "^1.2"
+xdg = "^2.0"
 
 [dependencies.gdbus]
 git = "https://github.com/antoyo/gdbus-rs"

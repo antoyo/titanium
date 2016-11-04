@@ -24,8 +24,13 @@
 extern crate gdbus;
 extern crate gio_sys;
 #[macro_use]
+extern crate log;
+extern crate url;
+extern crate xdg;
+#[macro_use]
 extern crate webkit2gtk_webextension;
 
+mod adblocker;
 mod dom;
 mod hints;
 mod scroll;
@@ -39,9 +44,12 @@ use std::rc::Rc;
 use glib::variant::Variant;
 use webkit2gtk_webextension::WebExtension;
 
+use adblocker::Adblocker;
 use message_server::MessageServer;
 
 web_extension_init!();
+
+pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
@@ -51,6 +59,13 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
         let current_page_id = current_page_id.clone();
         extension.connect_page_created(move |_, page| {
             current_page_id.set(page.get_id());
+            let adblocker = Adblocker::new();
+            page.connect_send_request(move |_, request, _| {
+                if let Some(url) = request.get_uri() {
+                    return adblocker.should_block(&url);
+                }
+                false
+            });
         });
     }
 

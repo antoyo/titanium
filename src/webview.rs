@@ -299,11 +299,11 @@ impl WebView {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
             if self.open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
-                policy_decision.ignore();
-                self.open_in_new_window.set(false);
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());
                 if let Some(url) = url {
+                    policy_decision.ignore();
+                    self.open_in_new_window.set(false);
                     self.emit_new_window_event(&url);
                     return true;
                 }
