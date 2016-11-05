@@ -23,8 +23,13 @@
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
+ * FIXME: do not send Escape key in insert mode (type in the search entry of http://gtk-rs.org/docs/gtk/ then press Escape).
+ *
  * TODO: file watcher to sync bookmarks between windows.
  * TODO: lock the file read/write.
+ * TODO: sort bookmark completion with number of access (the most accessed URLs come first).
+ * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
+ * property="og:article:tag"/> is a start).
  *
  * TODO: password fillers.
  *
@@ -40,12 +45,19 @@
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  * FIXME: go to insert mode for hints of multiple selection combo box.
- * FIXME: font color, family, size for hints (https://developer.mozilla.org/en-US/docs/Web/API/Window/open, https://www.chessbomb.com/).
  *
  * TODO: handle the errors instead of unwrap().
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * TODO: shortcut to open the selected (searched) word.
+ * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
+ * TODO: message when search fails.
+ * TODO: use markup in open completion to show the tags in a different color.
+ * TODO: hide the scroolbars?
+ * TODO: shortcut to focus frames (to be able to scroll other frames).
+ * FIXME: select dropdown can open in the other screen (move the move before clicking?).
+ * TODO: unselect text when focusing a field.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
  * TODO: handle network errors.
