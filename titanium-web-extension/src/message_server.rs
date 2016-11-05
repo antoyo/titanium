@@ -84,7 +84,13 @@ dbus_class!("com.titanium.client", class MessageServer
                 return true;
             }
             else if element.is::<DOMHTMLSelectElement>() {
-                mouse_down(&element.upcast());
+                if element.get_attribute("multiple").is_some() {
+                    element.focus();
+                    return true;
+                }
+                else {
+                    mouse_down(&element.upcast());
+                }
             }
             else {
                 element.click();

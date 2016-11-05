@@ -44,7 +44,6 @@
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
  * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
- * FIXME: go to insert mode for hints of multiple selection combo box.
  *
  * TODO: handle the errors instead of unwrap().
  * TODO: continue to parse the config files even when there are errors.
@@ -56,7 +55,7 @@
  * TODO: use markup in open completion to show the tags in a different color.
  * TODO: hide the scroolbars?
  * TODO: shortcut to focus frames (to be able to scroll other frames).
- * FIXME: select dropdown can open in the other screen (move the move before clicking?).
+ * FIXME: select dropdown can open in the other screen (move the cursor before clicking?).
  * TODO: unselect text when focusing a field.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
