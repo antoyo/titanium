@@ -30,7 +30,7 @@ use mg::dialog::DialogWindow;
 
 use dialogs::CustomDialog;
 use file::gen_unique_filename;
-use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
+use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 use super::App;
 
 impl App {

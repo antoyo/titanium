@@ -27,14 +27,14 @@
  *
  * TODO: file watcher to sync bookmarks between windows.
  * TODO: lock the file read/write.
- * TODO: sort bookmark completion with number of access (the most accessed URLs come first).
+ * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
+ * alphebetical order).
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
  * property="og:article:tag"/> is a start).
  *
  * TODO: password fillers.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
- * FIXME: quitting the parent process (newsbeuter) seems to crash the extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
@@ -52,8 +52,7 @@
  * TODO: shortcut to open the selected (searched) word.
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
  * TODO: message when search fails.
- * TODO: use markup in open completion to show the tags in a different color.
- * TODO: hide the scroolbars?
+ * TODO: hide the scrollbars?
  * TODO: shortcut to focus frames (to be able to scroll other frames).
  * FIXME: select dropdown can open in the other screen (move the cursor before clicking?).
  * TODO: unselect text when focusing a field.
@@ -143,7 +142,7 @@ mod dialogs;
 mod download_view;
 mod download_list_view;
 mod file;
-mod glib_user_dir;
+mod glib_ext;
 mod message_server;
 mod popup_manager;
 mod settings;

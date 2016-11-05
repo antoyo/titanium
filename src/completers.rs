@@ -28,7 +28,7 @@ use std::rc::Rc;
 use mg::completion::{Completer, CompletionResult};
 
 use bookmarks::{BookmarkInput, BookmarkManager};
-use glib_user_dir::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
+use glib_ext::{get_user_special_dir, markup_escape_text, G_USER_DIRECTORY_DOWNLOAD};
 
 /// A bookmark completer.
 pub struct BookmarkCompleter {
@@ -87,8 +87,10 @@ impl Completer for BookmarkCompleter {
                 else {
                     " #"
                 };
-            let col1 = format!("{}{}{}", bookmark.title, separator, bookmark.tags.join(" #"));
-            results.push(CompletionResult::new(&col1, &bookmark.url));
+            let title = markup_escape_text(&bookmark.title);
+            let url = markup_escape_text(&bookmark.url);
+            let col1 = format!("{}<span foreground=\"#33DD00\">{}{}</span>", title, separator, bookmark.tags.join(" #"));
+            results.push(CompletionResult::new(&col1, &url));
         }
 
         results
