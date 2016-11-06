@@ -20,6 +20,9 @@
  */
 
 /*
+ * FIXME: cannot open localhost.
+ * FIXME: do not show # in completion when there are not tags.
+ *
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
@@ -87,6 +90,7 @@
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
+ * TODO: show URL in title when the title is not available.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
  * FIXME: cannot scroll on http://dudzik.co/digress-into-development/syntax-off/.

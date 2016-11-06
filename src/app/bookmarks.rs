@@ -63,6 +63,7 @@ impl App {
                 let input = input.unwrap_or_default();
                 let tags: Vec<_> = input.split(',')
                     .map(|tag| tag.trim().to_lowercase())
+                    .filter(|tag| !tag.is_empty())
                     .collect();
                 if let Err(error) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
                     self.show_error(error);
