@@ -25,10 +25,11 @@ use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use mg::completion::{Completer, CompletionResult};
+use mg::completion::{Completer, CompletionCell, CompletionResult};
+use mg::completion::Column::{self, AllVisible, Expand};
 
 use bookmarks::{BookmarkInput, BookmarkManager};
-use glib_ext::{get_user_special_dir, markup_escape_text, G_USER_DIRECTORY_DOWNLOAD};
+use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 
 /// A bookmark completer.
 pub struct BookmarkCompleter {
@@ -70,6 +71,10 @@ impl BookmarkCompleter {
 }
 
 impl Completer for BookmarkCompleter {
+    fn columns(&self) -> Vec<Column> {
+        vec![Expand, AllVisible, Expand]
+    }
+
     fn complete_result(&self, value: &str) -> String {
         format!("{} {}", self.prefix, value)
     }
@@ -80,24 +85,17 @@ impl Completer for BookmarkCompleter {
         let query = BookmarkCompleter::parse_input(input);
 
         for bookmark in bookmarks.query(query) {
-            let separator =
-                if bookmark.tags.is_empty() {
-                    ""
-                }
-                else {
-                    " #"
-                };
-            let title = markup_escape_text(&bookmark.title);
-            let url = markup_escape_text(&bookmark.url);
-            let col1 = format!("{}<span foreground=\"#33DD00\">{}{}</span>", title, separator, bookmark.tags.join(" #"));
-            results.push(CompletionResult::new(&col1, &url));
+            let tags = format!("#{}", bookmark.tags.join(" #"));
+            results.push(CompletionResult::from_cells(
+                &[&bookmark.title, &CompletionCell::new(&tags).foreground("#33DD00"), &bookmark.url],
+            ));
         }
 
         results
     }
 
     fn text_column(&self) -> i32 {
-        1
+        2
     }
 }
 
@@ -117,6 +115,10 @@ impl FileCompleter {
 }
 
 impl Completer for FileCompleter {
+    fn columns(&self) -> Vec<Column> {
+        vec![Expand]
+    }
+
     fn complete_result(&self, value: &str) -> String {
         let absolute_path = (*self.current_directory.borrow()).join(value);
         // Remove the trailing slash in the completion to avoid updating the completions for a new
@@ -171,10 +173,10 @@ impl Completer for FileCompleter {
                 if path.is_dir() {
                     let mut filename = filename.to_string();
                     filename.push('/');
-                    CompletionResult::new_with_foreground(&filename, "", "#33FF33")
+                    CompletionResult::from_cells(&[&CompletionCell::new(&filename).foreground("#33FF33")])
                 }
                 else {
-                    CompletionResult::new(filename, "")
+                    CompletionResult::new(&[&filename.to_string()])
                 }
             })
             .collect()

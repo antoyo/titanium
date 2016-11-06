@@ -49,6 +49,7 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * FIXME: sometimes does not go to insert mode after focusing first input.
  * TODO: shortcut to open the selected (searched) word.
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
  * TODO: message when search fails.
