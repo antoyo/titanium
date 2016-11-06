@@ -120,7 +120,7 @@ dependencies = [
 [[package]]
 name = "gdk"
 version = "0.5.0"
-source = "git+https://github.com/gtk-rs/gdk#d58cc4d3621148703669dac5435a5e8467cbf2f7"
+source = "git+https://github.com/gtk-rs/gdk#68d624b5a4d7ffa13518229ec249cd566a93143e"
 dependencies = [
  "bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-rs 0.1.0 (git+https://github.com/gtk-rs/cairo)",
@@ -200,7 +200,7 @@ dependencies = [
 [[package]]
 name = "glib"
 version = "0.1.0"
-source = "git+https://github.com/gtk-rs/glib#181ab6eda14ac7e6b966607f3eab96d0fc0e0bbd"
+source = "git+https://github.com/gtk-rs/glib#768a969d86aa18378d0c1b78cde3579aa79936f0"
 dependencies = [
  "bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#dfeaedb0cefb277a324581663707ff268f4d8571"
+source = "git+https://github.com/antoyo/mg#0a880c7f2a7f05b7228a94e37fa94d319f2977b8"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",

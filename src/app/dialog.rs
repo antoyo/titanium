@@ -38,7 +38,7 @@ impl App {
         let application = app.clone();
         app.webview.connect_run_file_chooser(move |_, file_chooser_request| {
             if file_chooser_request.get_select_multiple() {
-                // TODO: support multiple files.
+                // TODO: support multiple files (use a boolean column that is converted to a pixmap).
                 false
             }
             else {

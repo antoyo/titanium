@@ -23,8 +23,6 @@
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
- * FIXME: do not send Escape key in insert mode (type in the search entry of http://gtk-rs.org/docs/gtk/ then press Escape).
- *
  * TODO: file watcher to sync bookmarks between windows.
  * TODO: lock the file read/write.
  * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
@@ -32,7 +30,7 @@
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
  * property="og:article:tag"/> is a start).
  *
- * TODO: password fillers.
+ * TODO: password filler.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
@@ -55,7 +53,7 @@
  * TODO: message when search fails.
  * TODO: hide the scrollbars?
  * TODO: shortcut to focus frames (to be able to scroll other frames).
- * FIXME: select dropdown can open in the other screen (move the cursor before clicking?).
+ * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
  * TODO: unselect text when focusing a field.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
@@ -71,7 +69,7 @@
  * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
- * TODO: block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
+ * TODO: plugin to block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
  * TODO: handle ctrl-click.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
@@ -82,12 +80,15 @@
  * TODO: create a whitelist-based adblocker.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
+ * TODO: hide the hints when activating a hint.
  * TODO: disable the tab key in the status bar input.
  * TODO: in command and input mode, put the messages into a queue.
  * TODO: ask confirmation before submitting again the same form.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
+ * TODO: add a validator for the file input (browse): check that a file is selected (and not a
+ * directory), check that the input file exists.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
  * starting a download when the page is still loading).
  * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a

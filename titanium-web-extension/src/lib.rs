@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
  *
@@ -40,6 +39,7 @@ mod message_server;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::mem::forget;
+use std::panic::catch_unwind;
 use std::rc::Rc;
 
 use glib::variant::Variant;
@@ -56,7 +56,9 @@ pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
-    TermLogger::init(LogLevelFilter::max()).ok();
+    catch_unwind(|| {
+        let _ = TermLogger::init(LogLevelFilter::max());
+    }).ok();
 
     let current_page_id = Rc::new(Cell::new(0));
 
