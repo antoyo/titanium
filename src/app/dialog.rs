@@ -25,8 +25,6 @@ use std::env::{home_dir, temp_dir};
 use std::path::Path;
 use std::rc::Rc;
 
-use mg::dialog::DialogWindow;
-use mg::message::MessageWindow;
 use webkit2gtk::ScriptDialog;
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 

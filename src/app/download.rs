@@ -26,7 +26,6 @@ use std::path::Path;
 use std::rc::Rc;
 
 use mg::dialog::DialogResult::{Answer, Shortcut};
-use mg::dialog::DialogWindow;
 
 use dialogs::CustomDialog;
 use file::gen_unique_filename;

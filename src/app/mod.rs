@@ -40,7 +40,6 @@ use gdk::EventKey;
 use gtk::{self, ContainerExt, Inhibit};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
-use mg::message::MessageWindow;
 use xdg::BaseDirectories;
 use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
@@ -245,7 +244,6 @@ impl App {
         }
 
         app.webview.connect_close(|_| {
-            // TODO: if there are active downloads, ask confirmation before exit.
             gtk::main_quit();
         });
     }
@@ -439,7 +437,19 @@ impl App {
 
     /// Try to close the web view and quit the application.
     fn quit(&self) {
-        self.webview.try_close();
+        // Ask for a confirmation before quitting the application when there are active
+        // downloads.
+        let can_quit =
+            if (*self.download_list_view.borrow()).has_active_downloads() {
+                self.app.blocking_yes_no_question("There are active downloads. Do you want to quit?")
+            }
+            else {
+                true
+            };
+
+        if can_quit {
+            self.webview.try_close();
+        }
     }
 
     /// Set the title of the window as the progress and the web page title.

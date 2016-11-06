@@ -23,7 +23,6 @@
 
 use gtk::{Clipboard, WidgetExt};
 use mg::Application;
-use mg::message::MessageWindow;
 
 use super::App;
 

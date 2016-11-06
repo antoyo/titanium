@@ -24,8 +24,6 @@
 use std::rc::Rc;
 
 use mg::Application;
-use mg::dialog::DialogWindow;
-use mg::message::MessageWindow;
 
 use urls::get_base_url;
 use super::App;

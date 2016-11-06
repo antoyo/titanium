@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gtk::{ContainerExt, FlowBox, SelectionMode, WidgetExt};
@@ -33,7 +33,7 @@ type DecideDestinationCallback = Fn(&Download, &str) -> bool;
 /// A download view.
 pub struct DownloadListView {
     decide_destination_callback: Rc<RefCell<Option<Box<DecideDestinationCallback>>>>,
-    downloads: Vec<Download>,
+    download_count: Rc<Cell<u32>>,
     downloads_to_open: Rc<RefCell<Vec<String>>>,
     view: FlowBox,
 }
@@ -47,7 +47,7 @@ impl DownloadListView {
 
         DownloadListView {
             decide_destination_callback: Rc::new(RefCell::new(None)),
-            downloads: vec![],
+            download_count: Rc::new(Cell::new(0)),
             downloads_to_open: Rc::new(RefCell::new(vec![])),
             view: flow_box,
         }
@@ -55,7 +55,7 @@ impl DownloadListView {
 
     /// Add a new download.
     pub fn add(&mut self, download: &Download) {
-        self.downloads.push(download.clone());
+        self.download_count.set(self.download_count.get() + 1);
 
         let download_view = DownloadView::new(download);
 
@@ -77,7 +77,9 @@ impl DownloadListView {
 
         {
             let downloads_to_open = self.downloads_to_open.clone();
+            let download_count = self.download_count.clone();
             download.connect_finished(move |download| {
+                download_count.set(download_count.get() - 1);
                 if let Some(destination) = download.get_destination() {
                     let downloads = &mut *downloads_to_open.borrow_mut();
                     let index = downloads.iter().position(|download_destination| *download_destination == destination);
@@ -105,6 +107,11 @@ impl DownloadListView {
     /// Add a callback for the decide destination event.
     pub fn connect_decide_destination<F: Fn(&Download, &str) -> bool + 'static>(&mut self, callback: F) {
         *self.decide_destination_callback.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Check if there are active downloads.
+    pub fn has_active_downloads(&self) -> bool {
+        self.download_count.get() > 0
     }
 }
 

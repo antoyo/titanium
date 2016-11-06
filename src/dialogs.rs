@@ -21,12 +21,12 @@
 
 //! Custom dialogs.
 
-use mg::dialog::{DialogBuilder, DialogResult, DialogWindow};
+use mg::dialog::{DialogBuilder, DialogResult};
 use mg_settings::key::Key::{Char, Control};
 
 use app::MgApp;
 
-pub trait CustomDialog : DialogWindow {
+pub trait CustomDialog {
     /// Show a blocking iniput dialog with file completion for download destination selection.
     /// It contains the C-x shortcut to open the file instead of downloading it.
     fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult;

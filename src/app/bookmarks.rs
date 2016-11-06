@@ -22,8 +22,6 @@
 //! Bookmark management in the application.
 
 use mg::Application;
-use mg::dialog::DialogWindow;
-use mg::message::MessageWindow;
 
 use super::App;
 

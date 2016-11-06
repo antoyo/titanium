@@ -21,8 +21,6 @@
 
 //! Search engine application support.
 
-use mg::message::MessageWindow;
-
 use urls::is_url;
 
 use super::App;
