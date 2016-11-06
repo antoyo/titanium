@@ -89,6 +89,7 @@
  * TODO: activate insert mode after focusing a text element.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
+ * FIXME: cannot scroll on http://dudzik.co/digress-into-development/syntax-off/.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
  * starting a download when the page is still loading).
  * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a

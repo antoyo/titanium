@@ -12,9 +12,13 @@ default = ["webkit2gtk-webextension/v2_12"]
 [dependencies]
 log = "^0.3"
 regex = "^0.1"
-simplelog = "^0.2"
+#simplelog = "^0.2"
 url = "^1.2"
 xdg = "^2.0"
+
+[dependencies.simplelog]
+git = "https://github.com/antoyo/simplelog.rs"
+branch = "remove-unwrap"
 
 [dependencies.gdbus]
 git = "https://github.com/antoyo/gdbus-rs"

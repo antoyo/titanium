@@ -121,7 +121,7 @@ impl BookmarkManager {
     }
 
     /// Query the bookmarks.
-    pub fn query<'a>(&'a self, input: BookmarkInput) -> BookmarkIter<'a> {
+    pub fn query(&self, input: BookmarkInput) -> BookmarkIter {
         BookmarkIter {
             input: input,
             iter: self.bookmarks.values(),

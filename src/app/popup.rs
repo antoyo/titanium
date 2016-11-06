@@ -64,7 +64,7 @@ impl App {
                 Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));
             }
             else {
-                App::ask_open_popup(&app, url, base_url);
+                App::ask_open_popup(app, url, base_url);
             }
         }
         else {

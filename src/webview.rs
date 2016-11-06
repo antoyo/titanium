@@ -359,7 +359,7 @@ impl WebView {
     /// Open the specified URL.
     pub fn open(&self, url: &str) {
         let url: Cow<str> =
-            if let Ok(_) = Url::parse(url) {
+            if Url::parse(url).is_ok() {
                 url.into()
             }
             else {

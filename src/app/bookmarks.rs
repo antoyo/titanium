@@ -33,7 +33,7 @@ impl App {
             let message = format!("Added bookmark: {}", url);
             match (*self.bookmark_manager.borrow_mut()).add(url, title) {
                 Ok(true) => Application::info(&self.app, &message),
-                Ok(false) => Application::info(&self.app, &format!("The current page is already in the bookmarks")),
+                Ok(false) => Application::info(&self.app, "The current page is already in the bookmarks"),
                 Err(error) => self.show_error(error),
             }
         }
@@ -76,6 +76,6 @@ impl App {
 
     /// Show an information message to tell that the current page is not in the bookmarks.
     fn info_page_not_in_bookmarks(&self) {
-        Application::info(&self.app, &format!("The current page is not in the bookmarks"));
+        Application::info(&self.app, "The current page is not in the bookmarks");
     }
 }
