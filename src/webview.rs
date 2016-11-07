@@ -28,7 +28,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use glib::{Cast, ToVariant};
-use gtk::{Inhibit, WidgetExt};
+use gtk::{Inhibit, WidgetExt, Window};
 use libc::getpid;
 use mg_settings::settings::Settings;
 use url::Url;
@@ -41,6 +41,7 @@ use webkit2gtk::{
     NavigationPolicyDecision,
     PolicyDecision,
     PolicyDecisionExt,
+    PrintOperation,
     ResponsePolicyDecision,
     UserContentManager,
     UserScript,
@@ -366,6 +367,14 @@ impl WebView {
                 format!("http://{}", url).into()
             };
         self.view.load_uri(&url);
+    }
+
+    /// Print the current page.
+    pub fn print(&self) {
+        let print_operation = PrintOperation::new(&self.view);
+        let window = self.view.get_toplevel()
+            .and_then(|toplevel| toplevel.downcast::<Window>().ok());
+        print_operation.run_dialog(window.as_ref());
     }
 
     /// Scroll by the specified number of pixels.

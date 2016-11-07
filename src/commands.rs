@@ -55,6 +55,8 @@ pub enum AppCommand {
     Open(String),
     #[completion(hidden)]
     PasteUrl,
+    #[help(text="Print the current page")]
+    Print,
     #[help(text="Quit the application")]
     Quit,
     #[help(text="Reload the current page")]

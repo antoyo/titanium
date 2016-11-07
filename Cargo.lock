@@ -651,7 +651,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2gtk"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-rs#7cbd2924f12110bd9f943e3ddeb78a8325695bf7"
+source = "git+https://github.com/antoyo/webkit2gtk-rs#2f247c901cfa9e154b688fe808052b2672009d31"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.1.0 (git+https://github.com/gtk-rs/gio)",

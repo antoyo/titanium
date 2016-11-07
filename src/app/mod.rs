@@ -302,6 +302,7 @@ impl App {
             Normal => self.app.set_mode("normal"),
             Open(url) => self.open(&url),
             PasteUrl => self.paste_url(),
+            Print => self.webview.print(),
             Quit => self.quit(),
             Reload => self.webview.reload(),
             ReloadBypassCache => self.webview.reload_bypass_cache(),
