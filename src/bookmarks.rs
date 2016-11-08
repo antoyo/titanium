@@ -170,6 +170,7 @@ pub struct BookmarkIter<'a> {
 impl<'a> Iterator for BookmarkIter<'a> {
     type Item = &'a Bookmark;
 
+    #[allow(while_let_on_iterator)]
     fn next(&mut self) -> Option<Self::Item> {
         'iter:
         while let Some(bookmark) = self.iter.next() {

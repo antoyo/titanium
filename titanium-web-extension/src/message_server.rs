@@ -40,7 +40,16 @@ use webkit2gtk_webextension::{
     WebExtension,
 };
 
-use dom::{ElementIter, get_body, is_enabled, is_hidden, is_text_input, mouse_down, mouse_out, mouse_over};
+use dom::{
+    ElementIter,
+    get_body,
+    is_enabled,
+    is_hidden,
+    is_text_input,
+    mouse_down,
+    mouse_out,
+    mouse_over,
+};
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use scroll::Scrollable;
 

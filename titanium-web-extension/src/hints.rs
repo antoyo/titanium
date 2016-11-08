@@ -36,61 +36,69 @@ use dom::{ElementIter, Pos, get_position, hide, is_enabled, is_visible, show};
 pub const HINTS_ID: &'static str = "__titanium_hints";
 
 pub struct Hints {
-    characters: String,
-    current_indexes: Vec<usize>,
     hints: HashMap<String, DOMElement>,
-    size: usize,
+    prefix_indexes: Vec<usize>,
+    prefixes: String,
+    suffix_index: usize,
+    suffixes: String,
 }
 
 impl Hints {
-    fn new(size: usize, hint_chars: &str) -> Self {
-        let characters = hint_chars.to_string();
-        let first_index =
-            if size <= characters.len() {
-                0
+    fn new(count: usize, hint_chars: &str) -> Self {
+        let (prefixes, suffixes) =
+            if count <= hint_chars.len() {
+                (String::new(), hint_chars.to_string())
             }
             else {
-                characters.len() / 2
+                let (prefixes, suffixes) = hint_chars.split_at(hint_chars.len() / 2);
+                (prefixes.to_string(), suffixes.to_string())
             };
         Hints {
-            characters: characters,
-            current_indexes: vec![first_index],
             hints: HashMap::new(),
-            size: size,
+            prefix_indexes: vec![],
+            prefixes: prefixes,
+            suffix_index: 0,
+            suffixes: suffixes,
         }
     }
 
+    /// Add an hint for the specified element.
+    /// Returns the text of that hint.
     fn add(&mut self, element: &DOMElement) -> String {
-        let mut hint = String::new();
-        if self.size <= self.characters.len() {
-            let index = self.current_indexes[0];
-            hint.push(self.characters.chars().nth(index).unwrap_or('a'));
-            self.current_indexes[0] += 1;
-        }
-        else {
-            for &index in &self.current_indexes {
-                hint.push(self.characters.chars().nth(index).unwrap_or('a'));
-            }
-            let mut changed = true;
-            for current_index in self.current_indexes.iter_mut().rev() {
-                if !changed {
-                    break;
-                }
-                changed = false;
-                let mut index = *current_index;
-                index += 1;
-                if index >= self.characters.len() {
-                    changed = true;
-                    index = 0;
-                }
-                *current_index = index;
-            }
-            if changed {
-                self.current_indexes.push(self.characters.len() / 2);
-            }
-        }
+        let hint = self.generate();
         self.hints.insert(hint.clone(), element.clone());
         hint
+    }
+
+    /// Generate the next hint text.
+    fn generate(&mut self) -> String {
+        let suffix = self.suffixes.chars().nth(self.suffix_index).unwrap_or('a');
+        self.suffix_index += 1;
+
+        let prefix: String = self.prefix_indexes
+            .iter()
+            .map(|&index| self.prefixes.chars().nth(index).unwrap_or('a'))
+            .collect();
+
+        if self.suffix_index >= self.suffixes.len() {
+            self.suffix_index = 0;
+            let mut i = 0;
+            while i < self.prefix_indexes.len() {
+                self.prefix_indexes[i] += 1;
+                if self.prefix_indexes[i] >= self.prefixes.len() {
+                    self.prefix_indexes[i] = 0;
+                }
+                else {
+                    break;
+                }
+                i += 1;
+            }
+            if i >= self.prefix_indexes.len() {
+                self.prefix_indexes.push(0);
+            }
+        }
+
+        format!("{}{}", prefix, suffix)
     }
 }
 
@@ -220,5 +228,84 @@ pub fn show_all_hints(document: &DOMDocument) {
                 show(&hint_element);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Hints;
+
+    #[test]
+    fn generate_hints() {
+        let expected_hints = vec![
+            "h", "j", "k", "l", "a", "s", "d", "f", "g", "y", "u", "i", "o",
+        ];
+        let count = expected_hints.len();
+        let mut hints = Hints::new(count, "hjklasdfgyuiopqwertnmzxcvb");
+        let mut hint_texts = vec![];
+        for _ in 0 .. count {
+            hint_texts.push(hints.generate());
+        }
+        assert_eq!(expected_hints, hint_texts);
+
+        let expected_hints = vec![
+            "h", "j", "k", "l", "a", "s", "d", "f", "g", "y", "u", "i", "o", "p", "q", "w", "e", "r", "t", "n", "m", "z", "x", "c", "v", "b",
+        ];
+        let count = expected_hints.len();
+        let mut hints = Hints::new(count, "hjklasdfgyuiopqwertnmzxcvb");
+        let mut hint_texts = vec![];
+        for _ in 0 .. count {
+            hint_texts.push(hints.generate());
+        }
+        assert_eq!(expected_hints, hint_texts);
+
+        let expected_hints = vec![
+            "p", "q", "w", "e", "r", "t", "n", "m", "z", "x", "c", "v", "b",
+            "hp", "hq", "hw", "he", "hr", "ht", "hn", "hm", "hz", "hx", "hc", "hv", "hb",
+            "jp", "jq", "jw", "je", "jr", "jt", "jn", "jm", "jz", "jx", "jc", "jv", "jb",
+            "kp", "kq", "kw", "ke", "kr", "kt", "kn", "km", "kz", "kx", "kc", "kv", "kb",
+            "lp", "lq", "lw", "le", "lr", "lt", "ln", "lm", "lz", "lx", "lc", "lv", "lb",
+            "ap", "aq", "aw", "ae", "ar", "at", "an", "am", "az", "ax", "ac", "av", "ab",
+            "sp", "sq", "sw", "se", "sr", "st", "sn", "sm", "sz", "sx", "sc", "sv", "sb",
+            "dp", "dq", "dw", "de", "dr", "dt", "dn", "dm", "dz", "dx", "dc", "dv", "db",
+            "fp", "fq", "fw", "fe", "fr", "ft", "fn", "fm", "fz", "fx", "fc", "fv", "fb",
+            "gp", "gq", "gw", "ge", "gr", "gt", "gn", "gm", "gz", "gx", "gc", "gv", "gb",
+            "yp", "yq", "yw", "ye", "yr", "yt", "yn", "ym", "yz", "yx", "yc", "yv", "yb",
+            "up", "uq", "uw", "ue", "ur", "ut", "un", "um", "uz", "ux", "uc", "uv", "ub",
+            "ip", "iq", "iw", "ie", "ir", "it", "in", "im", "iz", "ix", "ic", "iv", "ib",
+            "op", "oq", "ow", "oe", "or", "ot", "on", "om", "oz", "ox", "oc", "ov", "ob",
+        ];
+        let count = expected_hints.len();
+        let mut hints = Hints::new(count, "hjklasdfgyuiopqwertnmzxcvb");
+        let mut hint_texts = vec![];
+        for _ in 0 .. count {
+            hint_texts.push(hints.generate());
+        }
+        assert_eq!(expected_hints, hint_texts);
+
+        let expected_hints = vec![
+            "p", "q", "w", "e", "r", "t", "n", "m", "z", "x", "c", "v", "b",
+            "hp", "hq", "hw", "he", "hr", "ht", "hn", "hm", "hz", "hx", "hc", "hv", "hb",
+            "jp", "jq", "jw", "je", "jr", "jt", "jn", "jm", "jz", "jx", "jc", "jv", "jb",
+            "kp", "kq", "kw", "ke", "kr", "kt", "kn", "km", "kz", "kx", "kc", "kv", "kb",
+            "lp", "lq", "lw", "le", "lr", "lt", "ln", "lm", "lz", "lx", "lc", "lv", "lb",
+            "ap", "aq", "aw", "ae", "ar", "at", "an", "am", "az", "ax", "ac", "av", "ab",
+            "sp", "sq", "sw", "se", "sr", "st", "sn", "sm", "sz", "sx", "sc", "sv", "sb",
+            "dp", "dq", "dw", "de", "dr", "dt", "dn", "dm", "dz", "dx", "dc", "dv", "db",
+            "fp", "fq", "fw", "fe", "fr", "ft", "fn", "fm", "fz", "fx", "fc", "fv", "fb",
+            "gp", "gq", "gw", "ge", "gr", "gt", "gn", "gm", "gz", "gx", "gc", "gv", "gb",
+            "yp", "yq", "yw", "ye", "yr", "yt", "yn", "ym", "yz", "yx", "yc", "yv", "yb",
+            "up", "uq", "uw", "ue", "ur", "ut", "un", "um", "uz", "ux", "uc", "uv", "ub",
+            "ip", "iq", "iw", "ie", "ir", "it", "in", "im", "iz", "ix", "ic", "iv", "ib",
+            "op", "oq", "ow", "oe", "or", "ot", "on", "om", "oz", "ox", "oc", "ov", "ob",
+            "hhp"
+        ];
+        let count = expected_hints.len();
+        let mut hints = Hints::new(count, "hjklasdfgyuiopqwertnmzxcvb");
+        let mut hint_texts = vec![];
+        for _ in 0 .. count {
+            hint_texts.push(hints.generate());
+        }
+        assert_eq!(expected_hints, hint_texts);
     }
 }

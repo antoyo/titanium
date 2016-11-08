@@ -20,7 +20,14 @@
  */
 
 /*
+ * FIXME: skiped hints on http://www.chessgames.com/.
+ * FIXME: hitting Escape when editing tags delete them.
+ * FIXME: hover does not always work (usherbrooke.ca).
+ * FIXME: file:// protocol does not work anymore (probably because of the default search engine).
+ * FIXME: cookies are not synced between windows.
  * FIXME: cannot open localhost.
+ * FIXME: URL checker should check for URL without spaces so that "v3 chess.com" run a search
+ * instead of opening that URL.
  * FIXME: do not show # in completion when there are not tags.
  *
  * TODO: add tests.
@@ -38,6 +45,7 @@
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
+ * FIXME: hints at the wrong position on http://slowchessleague.org/.
  *
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  *
@@ -51,12 +59,18 @@
  * TODO: #[default(value)] attribute for settings.
  *
  * FIXME: sometimes does not go to insert mode after focusing first input.
+ * FIXME: the page can resize when the completion is updated. Move the completion view outside to
+ * box (at an absolute position).
  * TODO: shortcut to open the selected (searched) word.
+ * TODO: if the URL is updated with JavaScript (history API?), it is not updated on the view
+ * (search on crates.io, then select a crate).
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
  * TODO: message when search fails.
  * TODO: hide the scrollbars?
  * TODO: shortcut to focus frames (to be able to scroll other frames).
  * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
+ * FIXME: download view can get stuck on: 0%, -2147483648: -2147483648 [512B/infYiB] while the
+ * download is finished.
  * TODO: unselect text when focusing a field.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
@@ -158,8 +172,7 @@ mod urls;
 mod webview;
 
 use docopt::Docopt;
-use simplelog::TermLogger;
-use simplelog::LogLevelFilter;
+use simplelog::{Config, LogLevelFilter, TermLogger};
 
 use app::App;
 
@@ -187,7 +200,7 @@ fn main() {
         .unwrap_or_else(|error| error.exit());
 
     if args.flag_log {
-        TermLogger::init(LogLevelFilter::max()).unwrap();
+        TermLogger::init(LogLevelFilter::max(), Config::default()).unwrap();
     }
 
     let _app = App::new(args.arg_url);
