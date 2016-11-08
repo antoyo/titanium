@@ -421,7 +421,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2gtk-webextension"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#adbf6d2a4168f2af9a8baadc51162a390898ad4b"
+source = "git+https://github.com/antoyo/webkit2gtk-webextension-rs#18e73770389441fa898fdb4b821b569e2f2ad8b9"
 dependencies = [
  "glib 0.1.0 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",

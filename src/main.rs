@@ -20,7 +20,7 @@
  */
 
 /*
- * FIXME: skiped hints on http://www.chessgames.com/.
+ * FIXME: do not show hints hidden by another element (branch button on GitHub).
  * FIXME: hitting Escape when editing tags delete them.
  * FIXME: hover does not always work (usherbrooke.ca).
  * FIXME: file:// protocol does not work anymore (probably because of the default search engine).

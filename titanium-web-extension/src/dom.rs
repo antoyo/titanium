@@ -245,28 +245,26 @@ pub fn is_text_input(element: &DOMElement) -> bool {
 /// Check if an element is visible and in the viewport.
 pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
     if let Some(window) = document.get_default_view() {
-        if let Some(document_element) = document.get_document_element() {
-            let height = document_element.get_client_height() as i64;
-            let width = document_element.get_client_width() as i64;
-            let pos = get_offset(element);
-            if pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height {
-                return false;
+        let height = window.get_inner_height();
+        let width = window.get_inner_width();
+        let pos = get_offset(element);
+        if pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height {
+            return false;
+        }
+        let mut element = Some(element.clone());
+        while let Some(el) = element {
+            if el.get_tag_name() == Some("BODY".to_string()) {
+                return true;
             }
-            let mut element = Some(element.clone());
-            while let Some(el) = element {
-                if el.get_tag_name() == Some("BODY".to_string()) {
-                    return true;
-                }
-                if let Some(style) = window.get_computed_style(&el, None) {
-                    if style.get_property_value("display") == Some("none".to_string()) ||
-                        style.get_property_value("visibility") == Some("hidden".to_string()) ||
+            if let Some(style) = window.get_computed_style(&el, None) {
+                if style.get_property_value("display") == Some("none".to_string()) ||
+                    style.get_property_value("visibility") == Some("hidden".to_string()) ||
                         style.get_property_value("opacity") == Some("0".to_string())
-                    {
-                        return false;
-                    }
-                }
-                element = el.get_offset_parent();
+                        {
+                            return false;
+                        }
             }
+            element = el.get_offset_parent();
         }
     }
     false
