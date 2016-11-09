@@ -50,5 +50,6 @@ pub fn get_filename(url: &str) -> Option<String> {
 pub fn is_url(input: &str) -> bool {
     let regex = Regex::new(r"^[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_\+.~#?&//=]*$").unwrap();
     let regex_scheme = Regex::new(r"^[a-zA-Z][a-zA-Z+.-]+://[-a-zA-Z0-9@:%_\+.~#?&//=]*$").unwrap();
-    regex.is_match(input) || regex_scheme.is_match(input)
+    regex.is_match(input) || regex_scheme.is_match(input) ||
+        input == "localhost"
 }

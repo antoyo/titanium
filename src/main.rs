@@ -20,7 +20,6 @@
  */
 
 /*
- * FIXME: cannot open localhost.
  * FIXME: do not show # in completion when there are not tags.
  * FIXME: cookies are not synced between windows.
  *
