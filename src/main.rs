@@ -20,7 +20,8 @@
  */
 
 /*
- * FIXME: do not show # in completion when there are not tags.
+ * FIXME: hints at the wrong position on http://slowchessleague.org/ (will be fixed when using
+ * getBoundingClientRect).
  * FIXME: cookies are not synced between windows.
  *
  * TODO: add tests.
@@ -38,7 +39,6 @@
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
- * FIXME: hints at the wrong position on http://slowchessleague.org/.
  *
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  *
@@ -56,15 +56,13 @@
  * FIXME: the page can resize when the completion is updated. Move the completion view outside to
  * box (at an absolute position).
  * TODO: shortcut to open the selected (searched) word.
- * TODO: if the URL is updated with JavaScript (history API?), it is not updated on the view
- * (search on crates.io, then select a crate).
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
  * TODO: message when search fails.
  * TODO: hide the scrollbars?
  * TODO: shortcut to focus frames (to be able to scroll other frames).
  * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
  * FIXME: download view can get stuck on: 0%, -2147483648: -2147483648 [512B/infYiB] while the
- * download is finished.
+ * download is finished (perhaps when downloading a file present in the cache).
  * TODO: unselect text when focusing a field.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.

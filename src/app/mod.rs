@@ -43,6 +43,7 @@ use mg::{Application, ApplicationBuilder, StatusBarItem};
 use xdg::BaseDirectories;
 use webkit2gtk::LoadEvent::{Finished, Started};
 use webkit2gtk::NavigationType::Other;
+use webkit2gtk::WebViewExt;
 
 use bookmarks::BookmarkManager;
 use commands::{AppCommand, SpecialCommand};
@@ -167,6 +168,23 @@ impl App {
             let webview = app.webview.clone();
             app.app.connect_setting_changed(move |setting| {
                 webview.setting_changed(&setting);
+            });
+        }
+
+        {
+            let webview = app.webview.clone();
+            let application = app.clone();
+            app.webview.connect_uri_changed(move || {
+                if let Some(url) = webview.get_uri() {
+                    application.url_label.set_text(&url);
+                }
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.webview.connect_title_changed(move || {
+                application.set_title();
             });
         }
 
@@ -375,7 +393,7 @@ impl App {
     fn handle_load_changed(app: Rc<App>) {
         let webview = app.webview.clone();
 
-        webview.connect_load_changed(move |webview, load_event| {
+        webview.connect_load_changed(move |_, load_event| {
             if load_event == Started {
                 app.webview.finish_search();
                 app.handle_error(app.webview.add_stylesheets());
@@ -386,10 +404,6 @@ impl App {
                 if mode == "insert" || mode == "follow" {
                     app.app.set_mode("normal");
                 }
-            }
-
-            if let Some(url) = webview.get_uri() {
-                app.url_label.set_text(&url);
             }
 
             if load_event == Finished {
