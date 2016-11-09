@@ -85,7 +85,13 @@ impl Completer for BookmarkCompleter {
         let query = BookmarkCompleter::parse_input(input);
 
         for bookmark in bookmarks.query(query) {
-            let tags = format!("#{}", bookmark.tags.join(" #"));
+            let tags =
+                if !bookmark.tags.is_empty() {
+                    format!("#{}", bookmark.tags.join(" #"))
+                }
+                else {
+                    String::new()
+                };
             results.push(CompletionResult::from_cells(
                 &[&bookmark.title, &CompletionCell::new(&tags).foreground("#33DD00"), &bookmark.url],
             ));
