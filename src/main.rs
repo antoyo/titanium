@@ -20,8 +20,6 @@
  */
 
 /*
- * FIXME: URL checker should check for URL without spaces so that "v3 chess.com" run a search
- * instead of opening that URL.
  * FIXME: cannot open localhost.
  * FIXME: do not show # in completion when there are not tags.
  * FIXME: cookies are not synced between windows.
