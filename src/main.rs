@@ -20,8 +20,6 @@
  */
 
 /*
- * FIXME: hover does not always work (usherbrooke.ca).
- * FIXME: hitting Escape when editing tags delete them.
  * FIXME: file:// protocol does not work anymore (probably because of the default search engine).
  * FIXME: cannot open localhost.
  * FIXME: URL checker should check for URL without spaces so that "v3 chess.com" run a search
@@ -57,6 +55,7 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: sometimes does not go to insert mode after focusing first input.
  * FIXME: the page can resize when the completion is updated. Move the completion view outside to
  * box (at an absolute position).

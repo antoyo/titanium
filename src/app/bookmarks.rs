@@ -60,13 +60,15 @@ impl App {
                 let default_answer = tags.join(", ");
                 // TODO: tags completion.
                 let input = self.app.blocking_input("Bookmark tags (separated by comma):", &default_answer);
-                let input = input.unwrap_or_default();
-                let tags: Vec<_> = input.split(',')
-                    .map(|tag| tag.trim().to_lowercase())
-                    .filter(|tag| !tag.is_empty())
-                    .collect();
-                if let Err(error) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
-                    self.show_error(error);
+                // Do not edit tags when the user press Escape.
+                if let Some(input) = input {
+                    let tags: Vec<_> = input.split(',')
+                        .map(|tag| tag.trim().to_lowercase())
+                        .filter(|tag| !tag.is_empty())
+                        .collect();
+                    if let Err(error) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
+                        self.show_error(error);
+                    }
                 }
             }
             else {
