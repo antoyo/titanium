@@ -42,8 +42,9 @@ use std::mem::forget;
 use std::rc::Rc;
 
 use glib::variant::Variant;
+use log::LogLevel::Error;
 use simplelog::{Config, TermLogger};
-use simplelog::LogLevelFilter::{self, Error, Trace};
+use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::WebExtension;
 
 use adblocker::Adblocker;
@@ -56,10 +57,10 @@ pub const APP_NAME: &'static str = "titanium";
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     let config = Config {
-        time: Error,
-        level: Error,
-        target: Trace,
-        location: Trace,
+        time: Some(Error),
+        level: Some(Error),
+        target: None,
+        location: None,
     };
     TermLogger::init(LogLevelFilter::max(), config).ok();
 

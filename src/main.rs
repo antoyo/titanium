@@ -20,15 +20,14 @@
  */
 
 /*
- * FIXME: do not show hints hidden by another element (branch button on GitHub).
- * FIXME: hitting Escape when editing tags delete them.
  * FIXME: hover does not always work (usherbrooke.ca).
+ * FIXME: hitting Escape when editing tags delete them.
  * FIXME: file:// protocol does not work anymore (probably because of the default search engine).
- * FIXME: cookies are not synced between windows.
  * FIXME: cannot open localhost.
  * FIXME: URL checker should check for URL without spaces so that "v3 chess.com" run a search
  * instead of opening that URL.
  * FIXME: do not show # in completion when there are not tags.
+ * FIXME: cookies are not synced between windows.
  *
  * TODO: add tests.
  * TODO: create a declarative GUI library to avoid having all these RefCells.
@@ -83,6 +82,9 @@
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: private browsing.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
+ * TODO: do not search for the empty string, only disable the current search to allow continuing
+ * the search on another page.
+ * FIXME: do not show (or move) hints hidden by another element (branch button on GitHub).
  * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: i18n.
@@ -134,6 +136,7 @@ extern crate glib_sys;
 extern crate gtk;
 extern crate gtk_sys;
 extern crate libc;
+extern crate log;
 #[macro_use]
 extern crate mg;
 #[macro_use]
@@ -172,6 +175,7 @@ mod urls;
 mod webview;
 
 use docopt::Docopt;
+use log::LogLevel::Error;
 use simplelog::{Config, LogLevelFilter, TermLogger};
 
 use app::App;
@@ -200,7 +204,13 @@ fn main() {
         .unwrap_or_else(|error| error.exit());
 
     if args.flag_log {
-        TermLogger::init(LogLevelFilter::max(), Config::default()).unwrap();
+        let config = Config {
+            time: Some(Error),
+            level: Some(Error),
+            target: None,
+            location: None,
+        };
+        TermLogger::init(LogLevelFilter::max(), config).unwrap();
     }
 
     let _app = App::new(args.arg_url);
