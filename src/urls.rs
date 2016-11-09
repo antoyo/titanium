@@ -49,5 +49,6 @@ pub fn get_filename(url: &str) -> Option<String> {
 /// Check if the input string looks like a URL.
 pub fn is_url(input: &str) -> bool {
     let regex = Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)").unwrap();
-    regex.is_match(input)
+    let regex_scheme = Regex::new(r"[a-zA-Z][a-zA-Z+.-]+://[-a-zA-Z0-9@:%_\+.~#?&//=]*").unwrap();
+    regex.is_match(input) || regex_scheme.is_match(input)
 }
