@@ -24,3 +24,7 @@ image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="
  * pop-up blocker with blacklist and whitelist
  * user scripts and user style sheet
  * page search
+ * search engines
+ * download manager
+ * bookmarks (with completions)
+ * ad blocker

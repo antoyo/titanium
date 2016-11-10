@@ -59,7 +59,7 @@ pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 pub type AppBoolResult = Result<bool, Box<Error>>;
 pub type AppResult = Result<(), Box<Error>>;
-pub type MgApp = Application<SpecialCommand, AppCommand, AppSettings>;
+pub type MgApp = Application<AppCommand, AppSettings, SpecialCommand>;
 
 #[derive(Clone, Copy)]
 enum FollowMode {
