@@ -80,7 +80,7 @@ impl App {
     pub fn handle_script_dialog(&self, script_dialog: ScriptDialog) {
         match script_dialog.get_dialog_type() {
             Alert => {
-                self.app.message(&format!("[JavaScript] {}", script_dialog.get_message()));
+                self.app.alert(&format!("[JavaScript] {}", script_dialog.get_message()));
             },
             Confirm => {
                 let confirmed = self.app.blocking_yes_no_question(&format!("[JavaScript] {}", script_dialog.get_message()));

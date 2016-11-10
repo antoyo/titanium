@@ -85,6 +85,7 @@ pub struct App {
     default_search_engine: Rc<RefCell<Option<String>>>,
     download_list_view: Rc<RefCell<DownloadListView>>,
     follow_mode: Cell<FollowMode>,
+    hovered_link: Rc<RefCell<Option<String>>>,
     popup_manager: Rc<RefCell<PopupManager>>,
     scroll_label: Rc<StatusBarItem>,
     search_engines: Rc<RefCell<HashMap<String, String>>>,
@@ -137,6 +138,7 @@ impl App {
             default_search_engine: Rc::new(RefCell::new(None)),
             download_list_view: Rc::new(RefCell::new(download_list_view)),
             follow_mode: Cell::new(FollowMode::Click),
+            hovered_link: Rc::new(RefCell::new(None)),
             popup_manager: Rc::new(RefCell::new(PopupManager::new())),
             scroll_label: scroll_label,
             search_engines: Rc::new(RefCell::new(HashMap::new())),
@@ -201,6 +203,19 @@ impl App {
             let application = app.clone();
             app.webview.connect_resource_load_started(move |_, _, _| {
                 application.set_title();
+            });
+        }
+
+        {
+            let application = app.clone();
+            app.webview.connect_mouse_target_changed(move |_, hit_test_result, _| {
+                let link = hit_test_result.get_link_uri();
+                {
+                    let empty = String::new();
+                    let text = link.as_ref().unwrap_or(&empty);
+                    application.app.message(text);
+                }
+                *application.hovered_link.borrow_mut() = link;
             });
         }
 
