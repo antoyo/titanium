@@ -1,0 +1,6 @@
+[package]
+name = "titanium-common"
+version = "0.1.0"
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
+
+[dependencies]
