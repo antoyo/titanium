@@ -36,8 +36,8 @@ use std::fmt::{self, Display, Formatter};
 use std::process::Command;
 use std::rc::Rc;
 
-use gdk::EventKey;
-use gtk::{self, ContainerExt, Inhibit};
+use gdk::{EventKey, CONTROL_MASK};
+use gtk::{self, ContainerExt, Inhibit, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
 use xdg::BaseDirectories;
@@ -56,6 +56,7 @@ use settings::AppSettings;
 use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+const LEFT_BUTTON: u32 = 1;
 
 pub type AppBoolResult = Result<bool, Box<Error>>;
 pub type AppResult = Result<(), Box<Error>>;
@@ -216,6 +217,19 @@ impl App {
                     application.app.message(text);
                 }
                 *application.hovered_link.borrow_mut() = link;
+            });
+        }
+
+        {
+            let application = app.clone();
+            (&**app.webview).connect_button_release_event(move |_, event| {
+                if event.get_button() == LEFT_BUTTON && event.get_state() & CONTROL_MASK == CONTROL_MASK {
+                    if let Some(ref url) = *application.hovered_link.borrow() {
+                        application.open_in_new_window_handling_error(url);
+                        return Inhibit(true)
+                    }
+                }
+                Inhibit(false)
             });
         }
 
