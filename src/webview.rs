@@ -636,8 +636,6 @@ impl WebView {
     }
 }
 
-is_widget!(WebView, view);
-
 impl Deref for WebView {
     type Target = webkit2gtk::WebView;
 

@@ -20,6 +20,7 @@
  */
 
 use std::cell::{Cell, RefCell};
+use std::ops::Deref;
 use std::rc::Rc;
 
 use gtk::{ContainerExt, FlowBox, SelectionMode, WidgetExt};
@@ -115,4 +116,10 @@ impl DownloadListView {
     }
 }
 
-is_widget!(DownloadListView, view);
+impl Deref for DownloadListView {
+    type Target = FlowBox;
+
+    fn deref(&self) -> &FlowBox {
+        &self.view
+    }
+}

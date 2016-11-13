@@ -136,10 +136,10 @@ impl App {
         let vbox = gtk::Box::new(Vertical, 0);
 
         let download_list_view = DownloadListView::new();
-        vbox.add(&download_list_view);
+        vbox.add(&*download_list_view);
 
         let webview = WebView::new();
-        vbox.add(&*webview);
+        vbox.add(&**webview);
 
         mg_app.set_view(&vbox);
 

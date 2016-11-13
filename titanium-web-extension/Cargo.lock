@@ -395,7 +395,7 @@ dependencies = [
 [[package]]
 name = "titanium-common"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/titanium#29becdffb8118d3593d31a7894909a533814d444"
+source = "git+https://github.com/antoyo/titanium#41dc4f89e7bdb7396ddc44b4538af4496979f883"
 
 [[package]]
 name = "unicode-bidi"
