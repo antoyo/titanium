@@ -58,6 +58,10 @@ version = "^0.0.5-pre"
 git = "https://github.com/antoyo/mg-settings"
 version = "^0.0.1"
 
+[dependencies.titanium-common]
+git = "https://github.com/antoyo/titanium"
+version = "^0.1"
+
 [dependencies.webkit2gtk]
 git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"

@@ -32,6 +32,10 @@ version = "0.1.0"
 git = "https://github.com/gtk-rs/sys"
 version = "0.3.1"
 
+[dependencies.titanium-common]
+git = "https://github.com/antoyo/titanium"
+version = "^0.1"
+
 [dependencies.webkit2gtk-webextension]
 git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
 version = "^0.1"
@@ -41,4 +45,4 @@ git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
 version = "^0.2"
 
 [replace]
-"glib-sys:0.3.1" = { git = "https://github.com/antoyo/sys" }
+"https://github.com/gtk-rs/sys#glib-sys:0.3.1" = { git = "https://github.com/antoyo/sys" }

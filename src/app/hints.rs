@@ -28,6 +28,8 @@ use gtk::Inhibit;
 
 use super::App;
 
+use titanium_common::Action::{self, FileInput, GoInInsertMode, NoAction};
+
 impl App {
     /// In follow mode, send the key to the web process.
     pub fn handle_follow_key_press(&mut self, event_key: &EventKey) -> Inhibit {
@@ -39,8 +41,16 @@ impl App {
                             if should_click {
                                 let result = self.webview.activate_hint(self.follow_mode.get().to_string());
                                 self.hide_hints();
-                                if let Ok(true) = result {
-                                    self.app.set_mode("insert")
+                                if let Some(result) = result.ok().and_then(Action::from_i32) {
+                                    match result {
+                                        FileInput => {
+                                            if let Ok(file) = self.file_input(vec![]) {
+                                                handle_error!(self.webview.select_file(&file));
+                                            }
+                                        },
+                                        GoInInsertMode => self.app.set_mode("insert"),
+                                        NoAction => (),
+                                    }
                                 }
                             }
                         },

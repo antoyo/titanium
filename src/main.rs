@@ -20,12 +20,15 @@
  */
 
 /*
+ * TODO: hint file input.
+ * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
+ * Vimperator simulates ctrl-click to work around this.
+ *
+ * TODO: Create a gdbus binding that works similar to elm subscriptions.
+ *
  * FIXME: hints at the wrong position on http://slowchessleague.org/ (will be fixed when using
  * getBoundingClientRect).
  * FIXME: cookies are not synced between windows.
- *
- * TODO: add tests.
- * TODO: create a declarative GUI library to avoid having all these RefCells.
  *
  * TODO: file watcher to sync bookmarks between windows.
  * TODO: lock the file read/write.
@@ -40,8 +43,6 @@
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
- * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
- *
  * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
  * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
@@ -52,14 +53,13 @@
  * TODO: #[default(value)] attribute for settings.
  *
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
+ * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
  * FIXME: sometimes does not go to insert mode after focusing first input.
- * FIXME: the page can resize when the completion is updated. Move the completion view outside to
- * box (at an absolute position).
  * TODO: shortcut to open the selected (searched) word.
+ * TODO: support CTRL-Z in input elements.
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
- * TODO: message when search fails.
+ * TODO: message when search fails (and when it wraps to the start/end).
  * TODO: hide the scrollbars?
- * TODO: shortcut to focus frames (to be able to scroll other frames).
  * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
  * FIXME: download view can get stuck on: 0%, -2147483648: -2147483648 [512B/infYiB] while the
  * download is finished (perhaps when downloading a file present in the cache).
@@ -78,11 +78,14 @@
  * TODO: do not search for the empty string, only disable the current search to allow continuing
  * the search on another page.
  * FIXME: do not show (or move) hints hidden by another element (branch button on GitHub).
+ * TODO: use a custom error type (wrapping the other errors) instead of Box<Error>.
  * TODO: show source.
  * TODO: copier plugin (word, line, sentense, block, links…).
+ * TODO: separate config options in section (like webkit.enable-java instead of webkit-enable-java).
  * TODO: i18n.
  * TODO: plugin to block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
- * TODO: handle ctrl-click.
+ * FIXME: trigger a GTK+ event to activate hints (this will fix clicking on a link hidden by
+ * another element).
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
@@ -93,13 +96,13 @@
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: hide the hints when activating a hint.
- * TODO: disable the tab key in the status bar input.
  * TODO: in command and input mode, put the messages into a queue.
  * TODO: ask confirmation before submitting again the same form.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element.
  * TODO: show URL in title when the title is not available.
+ * TODO: add command (;f) to focus frame.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
  * FIXME: cannot scroll on http://dudzik.co/digress-into-development/syntax-off/.
@@ -107,6 +110,8 @@
  * starting a download when the page is still loading).
  * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
  * time, or perhaps just using a blocking input for popups will do it).
+ *
+ * TODO: add tests.
  *
  * FIXME: some dbus calls timeout (seems to be caused by the click method since it triggers an
  * action in the application which is waiting for the answer of the call).
@@ -146,6 +151,7 @@ extern crate serde_derive;
 extern crate serde_yaml;
 extern crate simplelog;
 extern crate tempfile;
+extern crate titanium_common;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;

@@ -25,6 +25,7 @@ extern crate gio_sys;
 #[macro_use]
 extern crate log;
 extern crate simplelog;
+extern crate titanium_common;
 extern crate url;
 extern crate xdg;
 #[macro_use]
@@ -83,7 +84,7 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     let server_name = user_data.get_str();
     if let Some(server_name) = server_name {
         let mut message_server: MessageServer = MessageServer::new(
-            server_name, current_page_id, extension, String::new(), HashMap::new(), None);
+            server_name, current_page_id, extension, String::new(), HashMap::new(), None, None);
         message_server.run("/com/titanium/WebExtensions");
         forget(message_server);
     }

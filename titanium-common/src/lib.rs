@@ -21,13 +21,15 @@
 
 /// Action that should be executed from the UI process.
 pub enum Action {
-    GoInInsertMode = 0,
+    FileInput = 0,
+    GoInInsertMode,
     NoAction,
 }
 
 impl Action {
     pub fn from_i32(value: i32) -> Option<Self> {
         match value {
+            _ if value == Action::FileInput as i32 => Some(Action::FileInput),
             _ if value == Action::GoInInsertMode as i32 => Some(Action::GoInInsertMode),
             _ if value == Action::NoAction as i32 => Some(Action::NoAction),
             _ => None,

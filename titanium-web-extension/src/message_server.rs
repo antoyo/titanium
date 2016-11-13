@@ -40,6 +40,7 @@ use webkit2gtk_webextension::{
     WebExtension,
 };
 
+use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
 use dom::{
     ElementIter,
     get_body,
@@ -64,38 +65,42 @@ dbus_class!("com.titanium.client", class MessageServer
     , extension: WebExtension
     , hint_keys: String
     , hint_map: HashMap<String, DOMElement>
+    , activated_file_input: Option<DOMHTMLInputElement>
     , last_hovered_element: Option<DOMElement>
     )
 {
     // Activate (click, focus, hover) the selected hint.
-    // Return true if a text element has been focused.
-    fn activate_hint(&mut self, follow_mode: &str) -> bool {
-        fn click(_server: &mut DBusObject, element: DOMHTMLElement) -> bool {
+    // Return an Action that should be executed from the UI process.
+    fn activate_hint(&mut self, follow_mode: &str) -> i32 {
+        fn click(server: &mut DBusObject, element: DOMHTMLElement) -> i32 {
             if element.is::<DOMHTMLInputElement>() {
-                let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
-                    .and_then(|input_element| input_element.get_input_type());
-                if let Some(input_type) = input_type {
-                    match input_type.as_ref() {
-                        "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
-                        // FIXME: file and color not opening.
-                        "color" | "file" => {
-                            mouse_down(&element.upcast());
-                        },
-                        _ => {
-                            element.focus();
-                            return true;
-                        },
+                if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
+                    let input_type = input_element.get_input_type();
+                    if let Some(input_type) = input_type {
+                        match input_type.as_ref() {
+                            "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
+                            // FIXME: file and color not opening.
+                            "color" => (),
+                            "file" => {
+                                server.activated_file_input = Some(input_element);
+                                return FileInput as i32
+                            },
+                            _ => {
+                                element.focus();
+                                return GoInInsertMode as i32;
+                            },
+                        }
                     }
                 }
             }
             else if element.is::<DOMHTMLTextAreaElement>() {
                 element.focus();
-                return true;
+                return GoInInsertMode as i32;
             }
             else if element.is::<DOMHTMLSelectElement>() {
                 if element.get_attribute("multiple").is_some() {
                     element.focus();
-                    return true;
+                    return GoInInsertMode as i32;
                 }
                 else {
                     mouse_down(&element.upcast());
@@ -104,16 +109,16 @@ dbus_class!("com.titanium.client", class MessageServer
             else {
                 element.click();
             }
-            false
+            NoAction as i32
         }
 
-        fn hover(server: &mut DBusObject, element: DOMHTMLElement) -> bool {
+        fn hover(server: &mut DBusObject, element: DOMHTMLElement) -> i32 {
             if let Some(ref element) = server.last_hovered_element {
                 mouse_out(element);
             }
             server.last_hovered_element = Some(element.clone().upcast());
             mouse_over(&element.upcast());
-            false
+            NoAction as i32
         }
 
         let follow =
@@ -132,7 +137,7 @@ dbus_class!("com.titanium.client", class MessageServer
             self.hint_keys.clear();
             return follow(self, element);
         }
-        false
+        NoAction as i32
     }
 
     // Click on the link of the selected text.
@@ -233,6 +238,15 @@ dbus_class!("com.titanium.client", class MessageServer
         if let Some(page) = get_page!(self) {
             page.scroll_top();
         }
+    }
+
+    // Set the selected file on the input[type="file"].
+    fn select_file(&mut self, file: &str) -> () {
+        if let Some(ref input_file) = self.activated_file_input {
+            // FIXME: this is not working.
+            input_file.set_value(file);
+        }
+        self.activated_file_input = None;
     }
 
     // Show the hint of elements using the hint characters.
