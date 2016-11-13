@@ -21,37 +21,49 @@
 
 //! Bookmark management in the application.
 
-use mg::Application;
-
 use super::App;
 
 impl App {
     /// Add the current page to the bookmarks.
-    pub fn bookmark(&self) {
+    pub fn bookmark(&mut self) {
         if let Some(url) = self.webview.get_uri() {
             let title = self.webview.get_title();
             let message = format!("Added bookmark: {}", url);
+            // TODO: remove when there are no RefCell anymore.
+            let mut error = None;
             match (*self.bookmark_manager.borrow_mut()).add(url, title) {
-                Ok(true) => Application::info(&self.app, &message),
-                Ok(false) => Application::info(&self.app, "The current page is already in the bookmarks"),
-                Err(error) => self.show_error(error),
+                Ok(true) => self.app.info(&message),
+                Ok(false) => self.app.info("The current page is already in the bookmarks"),
+                Err(err) => error = Some(err),
+            }
+            if let Some(error) = error {
+                self.show_error(error);
             }
         }
     }
 
     /// Delete the current page from the bookmarks.
-    pub fn delete_bookmark(&self) {
+    pub fn delete_bookmark(&mut self) {
         if let Some(url) = self.webview.get_uri() {
+            // TODO: refactor when there is no RefCell anymore if possible.
+            let mut show_info = false;
+            let mut error = None;
             match (*self.bookmark_manager.borrow_mut()).delete(&url) {
-                Ok(true) => Application::info(&self.app, &format!("Deleted bookmark: {}", url)),
-                Ok(false) => self.info_page_not_in_bookmarks(),
-                Err(error) => self.show_error(error),
+                Ok(true) => self.app.info(&format!("Deleted bookmark: {}", url)),
+                Ok(false) => show_info = true,
+                Err(err) => error = Some(err),
+            }
+            if let Some(error) = error {
+                self.show_error(error);
+            }
+            if show_info {
+                self.info_page_not_in_bookmarks();
             }
         }
     }
 
     /// Edit the tags of the current page from the bookmarks.
-    pub fn edit_bookmark_tags(&self) {
+    pub fn edit_bookmark_tags(&mut self) {
         if let Some(url) = self.webview.get_uri() {
             let tags = {
                 (*self.bookmark_manager.borrow()).get_tags(&url)
@@ -66,7 +78,12 @@ impl App {
                         .map(|tag| tag.trim().to_lowercase())
                         .filter(|tag| !tag.is_empty())
                         .collect();
-                    if let Err(error) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
+                    // TODO: refactor when there is no RefCell anymore if possible.
+                    let mut error = None;
+                    if let Err(err) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
+                        error = Some(err);
+                    }
+                    if let Some(error) = error {
                         self.show_error(error);
                     }
                 }
@@ -78,7 +95,7 @@ impl App {
     }
 
     /// Show an information message to tell that the current page is not in the bookmarks.
-    fn info_page_not_in_bookmarks(&self) {
-        Application::info(&self.app, "The current page is not in the bookmarks");
+    fn info_page_not_in_bookmarks(&mut self) {
+        self.app.info("The current page is not in the bookmarks");
     }
 }

@@ -19,6 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+macro_rules! handle_error {
+    ($app:ident . $attribute:ident . $method:ident ( $($args:expr),* ) ) => {{
+        let result = $app.$attribute.$method($($args),*);
+        $app.handle_error(result);
+    }};
+    ($app:ident . $method:ident ( $($args:expr),* ) ) => {{
+        let result = $app.$method($($args),*);
+        $app.handle_error(result);
+    }};
+}
+
 mod bookmarks;
 mod config;
 mod copy_paste;
@@ -36,14 +47,14 @@ use std::fmt::{self, Display, Formatter};
 use std::process::Command;
 use std::rc::Rc;
 
-use gdk::{EventKey, CONTROL_MASK};
-use gtk::{self, ContainerExt, Inhibit, WidgetExt};
+use gdk::{EventButton, EventKey, CONTROL_MASK};
+use gtk::{self, ContainerExt, Inhibit, Widget, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
 use xdg::BaseDirectories;
-use webkit2gtk::LoadEvent::{Finished, Started};
+use webkit2gtk::{HitTestResult, NavigationAction, WebViewExt};
+use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
-use webkit2gtk::WebViewExt;
 
 use bookmarks::BookmarkManager;
 use commands::{AppCommand, SpecialCommand};
@@ -58,8 +69,7 @@ use webview::WebView;
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const LEFT_BUTTON: u32 = 1;
 
-pub type AppBoolResult = Result<bool, Box<Error>>;
-pub type AppResult = Result<(), Box<Error>>;
+pub type AppResult<T> = Result<T, Box<Error>>;
 pub type MgApp = Application<AppCommand, AppSettings, SpecialCommand>;
 
 #[derive(Clone, Copy)]
@@ -81,21 +91,21 @@ impl Display for FollowMode {
 
 /// Titanium application.
 pub struct App {
-    app: Rc<MgApp>,
+    app: Box<MgApp>,
     bookmark_manager: Rc<RefCell<BookmarkManager>>,
     default_search_engine: Rc<RefCell<Option<String>>>,
-    download_list_view: Rc<RefCell<DownloadListView>>,
+    download_list_view: DownloadListView,
     follow_mode: Cell<FollowMode>,
-    hovered_link: Rc<RefCell<Option<String>>>,
-    popup_manager: Rc<RefCell<PopupManager>>,
+    hovered_link: Option<String>,
+    popup_manager: PopupManager,
     scroll_label: Rc<StatusBarItem>,
     search_engines: Rc<RefCell<HashMap<String, String>>>,
     url_label: StatusBarItem,
-    webview: Rc<WebView>,
+    webview: Box<WebView>,
 }
 
 impl App {
-    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>) -> Rc<MgApp> {
+    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>) -> Box<MgApp> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let include_path = xdg_dirs.get_config_home();
 
@@ -112,9 +122,9 @@ impl App {
             .build()
     }
 
-    pub fn new(homepage: Option<String>) -> Rc<Self> {
+    pub fn new(homepage: Option<String>) -> Box<Self> {
         let bookmark_manager = Rc::new(RefCell::new(BookmarkManager::new()));
-        let mg_app = App::build(&bookmark_manager);
+        let mut mg_app = App::build(&bookmark_manager);
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -133,21 +143,21 @@ impl App {
 
         mg_app.set_view(&vbox);
 
-        let app = Rc::new(App {
+        let mut app = Box::new(App {
             app: mg_app,
             bookmark_manager: bookmark_manager,
             default_search_engine: Rc::new(RefCell::new(None)),
-            download_list_view: Rc::new(RefCell::new(download_list_view)),
+            download_list_view: download_list_view,
             follow_mode: Cell::new(FollowMode::Click),
-            hovered_link: Rc::new(RefCell::new(None)),
-            popup_manager: Rc::new(RefCell::new(PopupManager::new())),
+            hovered_link: None,
+            popup_manager: PopupManager::new(),
             scroll_label: scroll_label,
             search_engines: Rc::new(RefCell::new(HashMap::new())),
             url_label: url_label,
             webview: webview,
         });
 
-        App::create_events(&app);
+        app.create_events();
 
         // Create the events before parsing the config so that the settings are taken into account
         // and the commands are executed.
@@ -156,152 +166,57 @@ impl App {
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
         app.webview.open(&url);
 
-        app.handle_error((*app.bookmark_manager.borrow_mut()).load());
+        let result = (*app.bookmark_manager.borrow_mut()).load();
+        app.handle_error(result);
 
-        app.handle_error((*app.popup_manager.borrow_mut()).load());
+        handle_error!(app.popup_manager.load());
 
-        App::create_variables(app.clone());
+        app.create_variables();
 
         app
     }
 
     /// Create the events.
-    fn create_events(app: &Rc<Self>) {
-        {
-            let webview = app.webview.clone();
-            app.app.connect_setting_changed(move |setting| {
-                webview.setting_changed(&setting);
-            });
-        }
+    fn create_events(&mut self) {
+        connect!(self.app, connect_setting_changed(setting), self.webview, WebView::setting_changed(setting));
+        connect!(self.webview, connect_uri_changed, self, uri_changed);
+        connect!(self.webview, connect_title_changed, self, set_title);
+        connect!(self.app, connect_command(command), self, handle_command(command));
+        connect!(self.webview, connect_load_changed(_, load_event), self, handle_load_changed(load_event));
+        connect!(self.webview, connect_resource_load_started(_, _, _), self, set_title);
+        connect!(self.webview, connect_button_release_event(_, event), self, handle_button_release(event));
+        connect!(self.webview, connect_scrolled(scroll_percentage), self, show_scroll(scroll_percentage));
+        connect!(self.webview, connect_create(_, action), self, handle_create(action));
+        connect!(self.app, connect_special_command(command), self, handle_special_command(command));
+        connect!(self.app, connect_key_press_event(_, event_key), self, handle_key_press(event_key));
+        connect!(self.webview, connect_script_dialog(_, script_dialog), self, handle_script_dialog(script_dialog));
+        connect!(self.webview, connect_new_window(url), self, open_in_new_window_handling_error(url));
+        connect!(self.app, connect_close, self, quit);
 
-        {
-            let webview = app.webview.clone();
-            let application = app.clone();
-            app.webview.connect_uri_changed(move || {
-                if let Some(url) = webview.get_uri() {
-                    application.url_label.set_text(&url);
-                }
-            });
-        }
+        connect!(self.webview, connect_run_file_chooser(_, file_chooser_request),
+            self, handle_file_chooser(file_chooser_request));
 
-        {
-            let application = app.clone();
-            app.webview.connect_title_changed(move || {
-                application.set_title();
-            });
-        }
+        connect!(self.webview, connect_download_started(_, download),
+            &mut self.download_list_view, DownloadListView::add(download));
 
-        {
-            let application = app.clone();
-            app.app.connect_command(move |command| {
-                application.handle_command(command);
-            });
-        }
+        connect!(self.download_list_view, connect_decide_destination(download, suggested_filename),
+            self, handle_decide_destination(download, suggested_filename));
 
-        App::handle_load_changed(app.clone());
+        connect!(self.webview, connect_mouse_target_changed(_, hit_test_result, _),
+            self, mouse_target_changed(hit_test_result));
 
-        {
-            let application = app.clone();
-            app.webview.connect_resource_load_started(move |_, _, _| {
-                application.set_title();
-            });
-        }
-
-        {
-            let application = app.clone();
-            app.webview.connect_mouse_target_changed(move |_, hit_test_result, _| {
-                let link = hit_test_result.get_link_uri();
-                {
-                    let empty = String::new();
-                    let text = link.as_ref().unwrap_or(&empty);
-                    application.app.message(text);
-                }
-                *application.hovered_link.borrow_mut() = link;
-            });
-        }
-
-        {
-            let application = app.clone();
-            (&**app.webview).connect_button_release_event(move |_, event| {
-                if event.get_button() == LEFT_BUTTON && event.get_state() & CONTROL_MASK == CONTROL_MASK {
-                    if let Some(ref url) = *application.hovered_link.borrow() {
-                        application.open_in_new_window_handling_error(url);
-                        return Inhibit(true)
-                    }
-                }
-                Inhibit(false)
-            });
-        }
-
-        {
-            let application = app.clone();
-            app.webview.connect_scrolled(move |scroll_percentage| {
-                application.show_scroll(scroll_percentage);
-            });
-        }
-
-        App::handle_create(app.clone());
-
-        {
-            let application = app.clone();
-            app.app.connect_special_command(move |command| {
-                application.handle_special_command(command);
-            });
-        }
-
-        {
-            let application = app.clone();
-            app.app.connect_key_press_event(move |_, event_key| {
-                application.handle_key_press(event_key)
-            });
-        }
-
-        {
-            let application = app.clone();
-            app.webview.connect_script_dialog(move |_, script_dialog| {
-                application.handle_script_dialog(script_dialog.clone());
-                true
-            });
-        }
-
-        App::handle_file_chooser(app);
-
-        {
-            let application = app.clone();
-            app.webview.connect_download_started(move |_, download| {
-                (*application.download_list_view.borrow_mut()).add(download);
-            });
-        }
-
-        {
-            let application = app.clone();
-            app.webview.connect_new_window(move |url| {
-                application.open_in_new_window_handling_error(url);
-            });
-        }
-
-
-        App::handle_decide_destination(app.clone());
-
-        {
-            let application = app.clone();
-            app.app.connect_close(move || {
-                application.quit();
-            });
-        }
-
-        app.webview.connect_close(|_| {
+        self.webview.connect_close(|_| {
             gtk::main_quit();
         });
     }
 
     /// Show an error.
-    pub fn error(&self, error: &str) {
+    pub fn error(&mut self, error: &str) {
         self.app.error(error);
     }
 
     /// Focus the first input element.
-    fn focus_input(&self) {
+    fn focus_input(&mut self) {
         let result = self.webview.focus_input();
         if let Ok(true) = result {
             self.app.set_mode("insert")
@@ -321,10 +236,21 @@ impl App {
         }
     }
 
+    /// Handle the button release event to open in new window when using Ctrl-click.
+    fn handle_button_release(&mut self, event: &EventButton) -> Inhibit {
+        if event.get_button() == LEFT_BUTTON && event.get_state() & CONTROL_MASK == CONTROL_MASK {
+            if let Some(url) = self.hovered_link.clone() {
+                self.open_in_new_window_handling_error(&url);
+                return Inhibit(true)
+            }
+        }
+        Inhibit(false)
+    }
+
     /// Handle the command.
-    fn handle_command(&self, command: AppCommand) {
+    fn handle_command(&mut self, command: AppCommand) {
         match command {
-            ActivateSelection => self.handle_error(self.webview.activate_selection()),
+            ActivateSelection => handle_error!(self.webview.activate_selection()),
             Back => self.webview.go_back(),
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
@@ -335,14 +261,14 @@ impl App {
             Follow => {
                 self.follow_mode.set(FollowMode::Click);
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(self.hint_chars()))
+                handle_error!(self.webview.follow_link(self.hint_chars()))
             },
             Forward => self.webview.go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
                 self.follow_mode.set(FollowMode::Hover);
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(self.hint_chars()))
+                handle_error!(self.webview.follow_link(self.hint_chars()))
             },
             Insert => self.app.set_mode("insert"),
             Inspector => self.webview.show_inspector(),
@@ -353,14 +279,14 @@ impl App {
             Quit => self.quit(),
             Reload => self.webview.reload(),
             ReloadBypassCache => self.webview.reload_bypass_cache(),
-            ScrollBottom => self.handle_error(self.webview.scroll_bottom()),
-            ScrollDown => self.handle_error(self.webview.scroll_down_page()),
-            ScrollDownHalf => self.handle_error(self.webview.scroll_down_half_page()),
-            ScrollDownLine => self.handle_error(self.webview.scroll_down_line()),
-            ScrollTop => self.handle_error(self.webview.scroll_top()),
-            ScrollUp => self.handle_error(self.webview.scroll_up_page()),
-            ScrollUpHalf => self.handle_error(self.webview.scroll_up_half_page()),
-            ScrollUpLine => self.handle_error(self.webview.scroll_up_line()),
+            ScrollBottom => handle_error!(self.webview.scroll_bottom()),
+            ScrollDown => handle_error!(self.webview.scroll_down_page()),
+            ScrollDownHalf => handle_error!(self.webview.scroll_down_half_page()),
+            ScrollDownLine => handle_error!(self.webview.scroll_down_line()),
+            ScrollTop => handle_error!(self.webview.scroll_top()),
+            ScrollUp => handle_error!(self.webview.scroll_up_page()),
+            ScrollUpHalf => handle_error!(self.webview.scroll_up_half_page()),
+            ScrollUpLine => handle_error!(self.webview.scroll_up_line()),
             SearchEngine(args) => self.add_search_engine(&args),
             SearchNext => self.webview.search_next(),
             SearchPrevious => self.webview.search_previous(),
@@ -369,7 +295,7 @@ impl App {
                 self.follow_mode.set(FollowMode::Click);
                 self.webview.set_open_in_new_window();
                 self.app.set_mode("follow");
-                self.handle_error(self.webview.follow_link(self.hint_chars()))
+                handle_error!(self.webview.follow_link(self.hint_chars()))
             },
             WinOpen(url) => self.open_in_new_window_handling_error(&url),
             WinPasteUrl => self.win_paste_url(),
@@ -380,33 +306,29 @@ impl App {
     }
 
     /// Handle create window.
-    fn handle_create(app: Rc<App>) {
-        let webview = app.webview.clone();
-        webview.connect_create(move |_, action| {
-            if let Some(request) = action.get_request() {
-                if let Some(url) = request.get_uri() {
-                    let popup_manager = &*app.popup_manager.borrow();
-                    if action.get_navigation_type() == Other && !popup_manager.is_whitelisted(&url) {
-                        App::handle_popup(&app, url);
-                    }
-                    else {
-                        app.open_in_new_window_handling_error(&url);
-                    }
+    fn handle_create(&mut self, action: &NavigationAction) -> Option<Widget> {
+        if let Some(request) = action.get_request() {
+            if let Some(url) = request.get_uri() {
+                if action.get_navigation_type() == Other && !self.popup_manager.is_whitelisted(&url) {
+                    self.handle_popup(url);
+                }
+                else {
+                    self.open_in_new_window_handling_error(&url);
                 }
             }
-            None
-        });
+        }
+        None
     }
 
     /// Show an error in the result is an error.
-    fn handle_error(&self, error: AppResult) {
+    fn handle_error(&mut self, error: AppResult<()>) {
         if let Err(error) = error {
             self.show_error(error);
         }
     }
 
     /// Handle the key press event.
-    fn handle_key_press(&self, event_key: &EventKey) -> Inhibit {
+    fn handle_key_press(&mut self, event_key: &EventKey) -> Inhibit {
         if self.app.get_mode() == "follow" {
             self.handle_follow_key_press(event_key)
         }
@@ -419,29 +341,28 @@ impl App {
     /// Show the URL.
     /// Set the window title.
     /// Go back to normal mode.
-    fn handle_load_changed(app: Rc<App>) {
-        let webview = app.webview.clone();
+    fn handle_load_changed(&mut self, load_event: LoadEvent) {
+        if load_event == Started {
+            self.webview.finish_search();
+            handle_error!(self.webview.add_stylesheets());
+            handle_error!(self.webview.add_scripts());
 
-        webview.connect_load_changed(move |_, load_event| {
-            if load_event == Started {
-                app.webview.finish_search();
-                app.handle_error(app.webview.add_stylesheets());
-                app.handle_error(app.webview.add_scripts());
+            // Check to mode to avoid going back to normal mode if the user is in command mode.
+            let set_mode = {
+                let mode = self.app.get_mode();
+                mode == "insert" || mode == "follow"
+            };
+            if set_mode {
+                self.app.set_mode("normal");
+            }
+        }
 
-                // Check to mode to avoid going back to normal mode if the user is in command mode.
-                let mode = app.app.get_mode();
-                if mode == "insert" || mode == "follow" {
-                    app.app.set_mode("normal");
-                }
-            }
-
-            if load_event == Finished {
-                app.set_title_without_progress();
-            }
-            else {
-                app.set_title();
-            }
-        });
+        if load_event == Finished {
+            self.set_title_without_progress();
+        }
+        else {
+            self.set_title();
+        }
     }
 
     /// Handle the special command.
@@ -458,6 +379,18 @@ impl App {
         }
     }
 
+    /// Handle the mouse target changed event of the webview to show the hovered URL and save it
+    /// for use when using Ctrl-click.
+    fn mouse_target_changed(&mut self, hit_test_result: &HitTestResult) {
+        let link = hit_test_result.get_link_uri();
+        {
+            let empty = String::new();
+            let text = link.as_ref().unwrap_or(&empty);
+            self.app.message(text);
+        }
+        self.hovered_link = link;
+    }
+
     /// Open the given URL in the web view.
     fn open(&self, url: &str) {
         let url = self.transform_url(url);
@@ -465,7 +398,7 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    fn open_in_new_window(&self, url: &str) -> AppResult {
+    fn open_in_new_window(&self, url: &str) -> AppResult<()> {
         let url = self.transform_url(url);
         let program = env::args().next().unwrap();
         Command::new(program)
@@ -475,16 +408,16 @@ impl App {
     }
 
     /// Open the given URL in a new window, showing the error if any.
-    fn open_in_new_window_handling_error(&self, url: &str) {
-        self.handle_error(self.open_in_new_window(url));
+    fn open_in_new_window_handling_error(&mut self, url: &str) {
+        handle_error!(self.open_in_new_window(url));
     }
 
     /// Try to close the web view and quit the application.
-    fn quit(&self) {
+    fn quit(&mut self) {
         // Ask for a confirmation before quitting the application when there are active
         // downloads.
         let can_quit =
-            if (*self.download_list_view.borrow()).has_active_downloads() {
+            if self.download_list_view.has_active_downloads() {
                 self.app.blocking_yes_no_question("There are active downloads. Do you want to quit?")
             }
             else {
@@ -515,7 +448,7 @@ impl App {
     }
 
     /// Show the error in the status bar.
-    fn show_error(&self, error: Box<Error>) {
+    fn show_error(&mut self, error: Box<Error>) {
         // Remove the quotes around the error string since DBus message contains quotes.
         self.app.error(error.to_string().trim_matches('"'));
     }
@@ -533,29 +466,39 @@ impl App {
     }
 
     /// Show the zoom level in the status bar.
-    fn show_zoom(&self, level: i32) {
-        Application::info(&self.app, &format!("Zoom level: {}%", level));
+    fn show_zoom(&mut self, level: i32) {
+        self.app.info(&format!("Zoom level: {}%", level));
+    }
+
+    /// Handle the URI changed event.
+    fn uri_changed(&self) {
+        if let Some(url) = self.webview.get_uri() {
+            self.url_label.set_text(&url);
+        }
     }
 
     /// Open in a new window the url from the system clipboard.
-    fn win_paste_url(&self) {
+    fn win_paste_url(&mut self) {
         if let Some(url) = self.get_url_from_clipboard() {
             self.open_in_new_window_handling_error(&url);
         }
     }
 
     /// Zoom in.
-    fn zoom_in(&self) {
-        self.show_zoom(self.webview.zoom_in());
+    fn zoom_in(&mut self) {
+        let zoom = self.webview.zoom_in();
+        self.show_zoom(zoom);
     }
 
     /// Zoom back to 100%.
-    fn zoom_normal(&self) {
-        self.show_zoom(self.webview.zoom_normal());
+    fn zoom_normal(&mut self) {
+        let zoom = self.webview.zoom_normal();
+        self.show_zoom(zoom);
     }
 
     /// Zoom out.
-    fn zoom_out(&self) {
-        self.show_zoom(self.webview.zoom_out());
+    fn zoom_out(&mut self) {
+        let zoom = self.webview.zoom_out();
+        self.show_zoom(zoom);
     }
 }

@@ -23,9 +23,9 @@
 
 use std::env::temp_dir;
 use std::path::Path;
-use std::rc::Rc;
 
 use mg::dialog::DialogResult::{Answer, Shortcut};
+use webkit2gtk::Download;
 
 use dialogs::CustomDialog;
 use file::gen_unique_filename;
@@ -34,48 +34,44 @@ use super::App;
 
 impl App {
     /// Handle the download decide destination event.
-    pub fn handle_decide_destination(app: Rc<App>) {
-        let application = app.clone();
-        (*app.download_list_view.borrow_mut()).connect_decide_destination(move |download, suggested_filename| {
-            let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
-            let destination = application.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
-            match destination {
-                Answer(Some(destination)) => {
-                    let path = Path::new(&destination);
-                    let download_destination =
-                        if path.is_dir() {
-                            path.join(suggested_filename)
-                        }
-                        else {
-                            path.to_path_buf()
-                        };
-                    let exists = download_destination.exists();
-                    let download_destination = download_destination.to_str().unwrap();
-                    if exists {
-                        let message = &format!("Do you want to overwrite {}?", download_destination);
-                        let answer = application.app.blocking_yes_no_question(message);
-                        if answer {
-                            download.set_allow_overwrite(true);
-                        }
-                        else {
-                            download.cancel();
-                        }
+    pub fn handle_decide_destination(&mut self, download: &Download, suggested_filename: &str) -> bool {
+        let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
+        let destination = self.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
+        match destination {
+            Answer(Some(destination)) => {
+                let path = Path::new(&destination);
+                let download_destination =
+                    if path.is_dir() {
+                        path.join(suggested_filename)
                     }
-                    download.set_destination(&format!("file://{}", download_destination));
-                },
-                Shortcut(shortcut) => {
-                    if shortcut == "download" {
-                        let temp_dir = temp_dir();
-                        let download_destination = gen_unique_filename(suggested_filename);
-                        let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
-                        let download_list_view = &*application.download_list_view.borrow_mut();
-                        download_list_view.add_file_to_open(&destination);
-                        download.set_destination(&destination);
+                    else {
+                        path.to_path_buf()
+                    };
+                let exists = download_destination.exists();
+                let download_destination = download_destination.to_str().unwrap();
+                if exists {
+                    let message = &format!("Do you want to overwrite {}?", download_destination);
+                    let answer = self.app.blocking_yes_no_question(message);
+                    if answer {
+                        download.set_allow_overwrite(true);
                     }
-                },
-                _ => download.cancel(),
-            }
-            true
-        });
+                    else {
+                        download.cancel();
+                    }
+                }
+                download.set_destination(&format!("file://{}", download_destination));
+            },
+            Shortcut(shortcut) => {
+                if shortcut == "download" {
+                    let temp_dir = temp_dir();
+                    let download_destination = gen_unique_filename(suggested_filename);
+                    let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
+                    self.download_list_view.add_file_to_open(&destination);
+                    download.set_destination(&destination);
+                }
+            },
+            _ => download.cancel(),
+        }
+        true
     }
 }

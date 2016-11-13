@@ -27,7 +27,7 @@ use super::App;
 
 impl App {
     /// Add a search engine.
-    pub fn add_search_engine(&self, args: &str) {
+    pub fn add_search_engine(&mut self, args: &str) {
         let args: Vec<_> = args.split_whitespace().collect();
         if args.len() == 2 {
             let keyword = args[0].to_string();

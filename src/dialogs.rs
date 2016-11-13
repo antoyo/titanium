@@ -29,14 +29,14 @@ use app::MgApp;
 pub trait CustomDialog {
     /// Show a blocking iniput dialog with file completion for download destination selection.
     /// It contains the C-x shortcut to open the file instead of downloading it.
-    fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult;
+    fn blocking_download_input(&mut self, message: &str, default_answer: &str) -> DialogResult;
 
     /// Show a blocking input dialog with file completion.
-    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String>;
+    fn blocking_file_input(&mut self, message: &str, default_answer: &str) -> Option<String>;
 }
 
 impl CustomDialog for MgApp {
-    fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult {
+    fn blocking_download_input(&mut self, message: &str, default_answer: &str) -> DialogResult {
         let builder = DialogBuilder::new()
             .blocking(true)
             .completer("file")
@@ -46,7 +46,7 @@ impl CustomDialog for MgApp {
         self.show_dialog(builder)
     }
 
-    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
+    fn blocking_file_input(&mut self, message: &str, default_answer: &str) -> Option<String> {
         let builder = DialogBuilder::new()
             .blocking(true)
             .completer("file")

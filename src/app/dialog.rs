@@ -23,61 +23,78 @@
 
 use std::env::{home_dir, temp_dir};
 use std::path::Path;
-use std::rc::Rc;
 
-use webkit2gtk::ScriptDialog;
+use webkit2gtk::{FileChooserRequest, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
 use dialogs::CustomDialog;
+use self::FileInputError::*;
 use super::App;
 
+pub enum FileInputError {
+    Cancelled,
+    FileDoesNotExist,
+    SelectedDirectory,
+}
+
 impl App {
-    /// Show a non-modal file chooser dialog when the user activates a file input.
-    pub fn handle_file_chooser(app: &Rc<App>) {
-        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
-        let application = app.clone();
-        app.webview.connect_run_file_chooser(move |_, file_chooser_request| {
-            if file_chooser_request.get_select_multiple() {
-                // TODO: support multiple files (use a boolean column that is converted to a pixmap).
-                false
+    /// Show a file input dialog.
+    pub fn file_input(&mut self, selected_files: Vec<String>) -> Result<String, FileInputError> {
+        let file =
+            if selected_files.is_empty() {
+                let dir = home_dir()
+                    .unwrap_or_else(temp_dir)
+                    .to_str().unwrap()
+                    .to_string();
+                format!("{}/", dir)
             }
             else {
-                let selected_files = file_chooser_request.get_selected_files();
-                let file =
-                    if selected_files.is_empty() {
-                        let dir = home_dir()
-                            .unwrap_or_else(temp_dir)
-                            .to_str().unwrap()
-                            .to_string();
-                        format!("{}/", dir)
-                    }
-                    else {
-                        selected_files[0].clone()
-                    };
-                if let Some(file) = application.app.blocking_file_input("Select file", &file) {
-                    let path = Path::new(&file);
-                    if !path.exists() {
-                        application.app.error("Please select an existing file");
-                        file_chooser_request.cancel();
-                    }
-                    else if path.is_dir() {
-                        application.app.error("Please select a file, not a directory");
-                        file_chooser_request.cancel();
-                    }
-                    else {
-                        file_chooser_request.select_files(&[&file]);
-                    }
+                selected_files[0].clone()
+            };
+        if let Some(file) = self.app.blocking_file_input("Select file", &file) {
+            {
+                let path = Path::new(&file);
+                if !path.exists() {
+                    return Err(FileDoesNotExist)
                 }
-                else {
-                    file_chooser_request.cancel();
+                else if path.is_dir() {
+                    return Err(SelectedDirectory)
                 }
-                true
             }
-        });
+            Ok(file)
+        }
+        else {
+            Err(Cancelled)
+        }
+    }
+
+    /// Show a non-modal file chooser dialog when the user activates a file input.
+    pub fn handle_file_chooser(&mut self, file_chooser_request: &FileChooserRequest) -> bool {
+        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
+        if file_chooser_request.get_select_multiple() {
+            // TODO: support multiple files (use a boolean column that is converted to a pixmap).
+            false
+        }
+        else {
+            let selected_files = file_chooser_request.get_selected_files();
+            match self.file_input(selected_files) {
+                Ok(file) => file_chooser_request.select_files(&[&file]),
+                Err(Cancelled) => file_chooser_request.cancel(),
+                Err(FileDoesNotExist) => {
+                    self.app.error("Please select an existing file");
+                    file_chooser_request.cancel();
+                },
+                Err(SelectedDirectory) => {
+                    self.app.error("Please select a file, not a directory");
+                    file_chooser_request.cancel();
+                },
+            }
+            true
+        }
     }
 
     /// Handle the script dialog event.
-    pub fn handle_script_dialog(&self, script_dialog: ScriptDialog) {
+    pub fn handle_script_dialog(&mut self, script_dialog: &ScriptDialog) -> bool {
         match script_dialog.get_dialog_type() {
             Alert => {
                 self.app.alert(&format!("[JavaScript] {}", script_dialog.get_message()));
@@ -98,5 +115,6 @@ impl App {
             },
             _ => (),
         }
+        true
     }
 }

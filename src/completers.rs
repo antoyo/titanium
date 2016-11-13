@@ -79,7 +79,7 @@ impl Completer for BookmarkCompleter {
         format!("{} {}", self.prefix, value)
     }
 
-    fn completions(&self, input: &str) -> Vec<CompletionResult> {
+    fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
         let bookmarks = &*self.bookmarks.borrow();
         let mut results = vec![];
         let query = BookmarkCompleter::parse_input(input);
@@ -134,7 +134,7 @@ impl Completer for FileCompleter {
         absolute_path.to_str().unwrap().trim_right_matches('/').to_string()
     }
 
-    fn completions(&self, input: &str) -> Vec<CompletionResult> {
+    fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
         let mut paths = vec![];
         let input_path = Path::new(input).to_path_buf();
         // If the input ends with /, complete within this directory.

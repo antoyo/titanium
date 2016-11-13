@@ -53,13 +53,13 @@ use webkit2gtk::{
     FIND_OPTIONS_WRAP_AROUND,
 };
 use webkit2gtk::NavigationType::LinkClicked;
-use webkit2gtk::PolicyDecisionType::{NavigationAction, Response};
+use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 use xdg::BaseDirectories;
 
-use app::{AppBoolResult, AppResult, APP_NAME};
+use app::{AppResult, APP_NAME};
 use message_server::MessageServer;
 use settings::{AppSettings, CookieAcceptPolicy};
 use settings::AppSettingsVariant::{
@@ -133,7 +133,7 @@ pub struct WebView {
 
 impl WebView {
     /// Create a new web view.
-    pub fn new() -> Rc<Self> {
+    pub fn new() -> Box<Self> {
         let (context, message_server) = WebView::initialize_web_extension();
 
         let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
@@ -141,8 +141,8 @@ impl WebView {
 
         let find_controller = view.get_find_controller().unwrap();
 
-        let webview =
-            Rc::new(WebView {
+        let mut webview =
+            Box::new(WebView {
                 find_controller: find_controller,
                 message_server: message_server,
                 new_window_callback: RefCell::new(None),
@@ -152,26 +152,26 @@ impl WebView {
                 view: view,
             });
 
-        WebView::create_events(&webview);
+        webview.create_events();
 
         webview
     }
 
     /// Activate the selected hint.
-    pub fn activate_hint(&self, follow_mode: String) -> AppBoolResult {
+    pub fn activate_hint(&self, follow_mode: String) -> AppResult<i32> {
         self.view.grab_focus();
         self.message_server.activate_hint(&follow_mode)
             .map_err(From::from)
     }
 
     /// Activate the link in the selection
-    pub fn activate_selection(&self) -> AppResult {
+    pub fn activate_selection(&self) -> AppResult<()> {
         self.message_server.activate_selection()?;
         Ok(())
     }
 
     /// Add the user scripts.
-    pub fn add_scripts(&self) -> AppResult {
+    pub fn add_scripts(&self) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_scripts();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
@@ -189,7 +189,7 @@ impl WebView {
     }
 
     /// Add the user stylesheets.
-    pub fn add_stylesheets(&self) -> AppResult {
+    pub fn add_stylesheets(&self) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_style_sheets();
             let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
@@ -225,32 +225,24 @@ impl WebView {
     }
 
     /// Create the events.
-    fn create_events(webview: &Rc<WebView>) {
+    fn create_events(&mut self) {
         // Emit the scroll event whenever the view is drawn.
-        {
-            let webview = webview.clone();
-            let view = webview.view.clone();
-            view.connect_draw(move |_, _| {
-                webview.emit_scrolled_event();
-                Inhibit(false)
-            });
-        }
+        connect!(self.view, connect_draw(_, _), self, emit_scrolled_event);
+        connect!(self.view, connect_decide_policy(_, policy_decision, policy_decision_type),
+            self, decide_policy(policy_decision, policy_decision_type));
+    }
 
-        {
-            let webview = webview.clone();
-            let view = webview.view.clone();
-            view.connect_decide_policy(move |_, policy_decision, policy_decision_type| {
-                if policy_decision_type == NavigationAction {
-                    if webview.handle_navigation_action(policy_decision.clone()) {
-                        return true;
-                    }
-                }
-                else if policy_decision_type == Response && webview.handle_response(policy_decision.clone()) {
-                    return true;
-                }
-                false
-            });
+    /// Handle the decide policy event.
+    fn decide_policy(&self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
+        if policy_decision_type == NavigationAction {
+            if self.handle_navigation_action(policy_decision.clone()) {
+                return true;
+            }
         }
+        else if policy_decision_type == Response && self.handle_response(policy_decision.clone()) {
+            return true;
+        }
+        false
     }
 
     /// Emit the new window event.
@@ -261,13 +253,14 @@ impl WebView {
     }
 
     /// Emit the scrolled event.
-    pub fn emit_scrolled_event(&self) {
+    pub fn emit_scrolled_event(&self) -> Inhibit {
         if let Some(ref callback) = *self.scrolled_callback.borrow() {
             let callback = callback.clone();
             if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
                 callback(scroll_percentage);
             }
         }
+        Inhibit(false)
     }
 
     /// Send a key to the web process to process with the current hints.
@@ -283,14 +276,14 @@ impl WebView {
     }
 
     /// Focus the first input element.
-    pub fn focus_input(&self) -> AppBoolResult {
+    pub fn focus_input(&self) -> AppResult<bool> {
         self.view.grab_focus();
         self.message_server.focus_input()
             .map_err(From::from)
     }
 
     /// Follow a link.
-    pub fn follow_link(&self, hint_chars: &str) -> AppResult {
+    pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
         self.message_server.show_hints(hint_chars)?;
         Ok(())
     }
@@ -326,7 +319,7 @@ impl WebView {
     }
 
     /// Hide the hints.
-    pub fn hide_hints(&self) -> AppResult {
+    pub fn hide_hints(&self) -> AppResult<()> {
         self.message_server.hide_hints()?;
         Ok(())
     }
@@ -378,53 +371,53 @@ impl WebView {
     }
 
     /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) -> AppResult {
+    fn scroll(&self, pixels: i32) -> AppResult<()> {
         self.message_server.scroll_by(pixels as i64)?;
         Ok(())
     }
 
     /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) -> AppResult {
+    pub fn scroll_bottom(&self) -> AppResult<()> {
         self.message_server.scroll_bottom()?;
         Ok(())
     }
 
     /// Scroll down by one line.
-    pub fn scroll_down_line(&self) -> AppResult {
+    pub fn scroll_down_line(&self) -> AppResult<()> {
         self.scroll(SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) -> AppResult {
+    pub fn scroll_down_half_page(&self) -> AppResult<()> {
         let allocation = self.view.get_allocation();
         self.scroll(allocation.height / 2)
     }
 
     /// Scroll down by one page.
-    pub fn scroll_down_page(&self) -> AppResult {
+    pub fn scroll_down_page(&self) -> AppResult<()> {
         let allocation = self.view.get_allocation();
         self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
     }
 
     /// Scroll to the top of the page.
-    pub fn scroll_top(&self) -> AppResult {
+    pub fn scroll_top(&self) -> AppResult<()> {
         self.message_server.scroll_top()?;
         Ok(())
     }
 
     /// Scroll up by one line.
-    pub fn scroll_up_line(&self) -> AppResult {
+    pub fn scroll_up_line(&self) -> AppResult<()> {
         self.scroll(-SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) -> AppResult {
+    pub fn scroll_up_half_page(&self) -> AppResult<()> {
         let allocation = self.view.get_allocation();
         self.scroll(-allocation.height / 2)
     }
 
     /// Scroll up by one page.
-    pub fn scroll_up_page(&self) -> AppResult {
+    pub fn scroll_up_page(&self) -> AppResult<()> {
         let allocation = self.view.get_allocation();
         self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
     }
@@ -464,6 +457,12 @@ impl WebView {
         }
     }
 
+    /// Set the value of an input[type="file"].
+    pub fn select_file(&self, file: &str) -> AppResult<()> {
+        self.message_server.select_file(file)?;
+        Ok(())
+    }
+
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
     pub fn set_open_in_new_window(&self) {
@@ -471,9 +470,9 @@ impl WebView {
     }
 
     /// Adjust the webkit settings.
-    pub fn setting_changed(&self, setting: &<AppSettings as Settings>::Variant) {
+    pub fn setting_changed(&self, setting: <AppSettings as Settings>::Variant) {
         if let Some(settings) = self.view.get_settings() {
-            match *setting {
+            match setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) | HomePage(_) => (),
                 WebkitAllowFileAccessFromFileUrls(value) =>

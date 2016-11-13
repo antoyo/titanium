@@ -51,7 +51,7 @@ impl PopupManager {
     }
 
     /// Blacklist the specified url.
-    pub fn blacklist(&mut self, url: &str) -> AppResult {
+    pub fn blacklist(&mut self, url: &str) -> AppResult<()> {
         self.blacklisted_urls.insert(get_base_url(url).to_string());
         self.save_blacklist()
     }
@@ -77,7 +77,7 @@ impl PopupManager {
     }
 
     /// Load the urls from the files.
-    pub fn load(&mut self) -> AppResult {
+    pub fn load(&mut self) -> AppResult<()> {
         self.blacklisted_urls = self.read_as_set(&self.blacklist_path)?;
         self.whitelisted_urls = self.read_as_set(&self.whitelist_path)?;
         Ok(())
@@ -95,7 +95,7 @@ impl PopupManager {
     }
 
     /// Save the list in the file specified by `path`.
-    fn save(&self, path: &PathBuf, list: &HashSet<String>) -> AppResult {
+    fn save(&self, path: &PathBuf, list: &HashSet<String>) -> AppResult<()> {
         let mut file = File::create(path)?;
         for url in list {
             writeln!(file, "{}", url)?;
@@ -104,17 +104,17 @@ impl PopupManager {
     }
 
     /// Save the popup blacklist.
-    fn save_blacklist(&self) -> AppResult {
+    fn save_blacklist(&self) -> AppResult<()> {
         self.save(&self.blacklist_path, &self.blacklisted_urls)
     }
 
     /// Save the popup whitelist.
-    fn save_whitelist(&self) -> AppResult {
+    fn save_whitelist(&self) -> AppResult<()> {
         self.save(&self.whitelist_path, &self.whitelisted_urls)
     }
 
     /// Whitelist the specified url.
-    pub fn whitelist(&mut self, url: &str) -> AppResult {
+    pub fn whitelist(&mut self, url: &str) -> AppResult<()> {
         self.whitelisted_urls.insert(get_base_url(url).to_string());
         self.save_whitelist()
     }

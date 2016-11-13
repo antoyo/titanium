@@ -24,7 +24,6 @@
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::{self, Write};
 use std::path::Path;
-use std::rc::Rc;
 
 use xdg::BaseDirectories;
 
@@ -34,7 +33,7 @@ use super::{App, AppResult, APP_NAME};
 
 impl App {
     /// Create the default configuration files and directories if it does not exist.
-    fn create_config_files(&self, config_path: &Path) -> AppResult {
+    fn create_config_files(&self, config_path: &Path) -> AppResult<()> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
 
         let bookmarks_path = BookmarkManager::config_path();
@@ -65,7 +64,7 @@ impl App {
     }
 
     /// Create the config file with its default content if it does not exist.
-    fn create_default_config_file(&self, path: &Path, content: &'static str) -> AppResult {
+    fn create_default_config_file(&self, path: &Path, content: &'static str) -> AppResult<()> {
         if !path.exists() {
             let mut file = File::create(path)?;
             write!(file, "{}", content)?;
@@ -74,20 +73,22 @@ impl App {
     }
 
     /// Create the variables accessible from the config files.
-    pub fn create_variables(app: Rc<Self>) {
-        let application = app.clone();
-        app.app.add_variable("url", move || {
-            application.webview.get_uri().unwrap()
-        });
+    pub fn create_variables(&mut self) {
+        connect!(self.app, add_variable["url"], self, get_current_url);
+    }
+
+    /// Get the webview current URL.
+    fn get_current_url(&self) -> String {
+        self.webview.get_uri().unwrap()
     }
 
     /// Create the missing config files and parse the config files.
-    pub fn parse_config(&self) {
+    pub fn parse_config(&mut self) {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
         let config_path = xdg_dirs.place_config_file("config")
             .expect("cannot create configuration directory");
-        self.handle_error(self.create_config_files(config_path.as_path()));
-        self.handle_error(self.app.parse_config(config_path));
+        handle_error!(self.create_config_files(config_path.as_path()));
+        handle_error!(self.app.parse_config(config_path));
     }
 }
 

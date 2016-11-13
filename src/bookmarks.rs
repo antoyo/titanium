@@ -30,7 +30,7 @@ use std::path::PathBuf;
 use serde_yaml;
 use xdg::BaseDirectories;
 
-use app::{AppBoolResult, AppResult, APP_NAME};
+use app::{AppResult, APP_NAME};
 
 /// A bookmark has a title and a URL and optionally some tags.
 #[derive(Deserialize, Serialize, Debug)]
@@ -70,7 +70,7 @@ impl BookmarkManager {
 
     /// Add a bookmark.
     /// Returns true if the bookmark was added.
-    pub fn add(&mut self, url: String, title: Option<String>) -> AppBoolResult {
+    pub fn add(&mut self, url: String, title: Option<String>) -> AppResult<bool> {
         if self.bookmarks.contains_key(&url) {
             Ok(false)
         }
@@ -90,7 +90,7 @@ impl BookmarkManager {
 
     /// Delete a bookmark.
     /// Returns true if a bookmark was deleted.
-    pub fn delete(&mut self, url: &str) -> AppBoolResult {
+    pub fn delete(&mut self, url: &str) -> AppResult<bool> {
         let deleted = self.bookmarks.remove(url).is_some();
         if deleted {
             self.save()?;
@@ -105,7 +105,7 @@ impl BookmarkManager {
     }
 
     /// Load the bookmarks from the specified file.
-    pub fn load(&mut self) -> AppResult {
+    pub fn load(&mut self) -> AppResult<()> {
         let filename = BookmarkManager::config_path();
         let reader = BufReader::new(File::open(filename)?);
         let bookmarks: Vec<Bookmark> = serde_yaml::from_reader(reader)?;
@@ -129,7 +129,7 @@ impl BookmarkManager {
     }
 
     /// Save the bookmarks to the disk file.
-    fn save(&self) -> AppResult {
+    fn save(&self) -> AppResult<()> {
         let filename = BookmarkManager::config_path();
         let mut writer = BufWriter::new(File::create(filename)?);
         let bookmarks: Vec<_> = self.bookmarks.values().collect();
@@ -139,7 +139,7 @@ impl BookmarkManager {
     }
 
     /// Set the tags of a bookmark.
-    pub fn set_tags(&mut self, url: &str, tags: Vec<String>) -> AppResult {
+    pub fn set_tags(&mut self, url: &str, tags: Vec<String>) -> AppResult<()> {
         let mut edited = false;
         if let Some(bookmark) = self.bookmarks.get_mut(url) {
             for tag in &tags {

@@ -21,59 +21,62 @@
 
 //! Popup management in the application.
 
-use std::rc::Rc;
-
-use mg::Application;
-
 use urls::get_base_url;
 use super::App;
 
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
-    pub fn ask_open_popup(app: &Rc<App>, url: String, base_url: String) {
-        let instance = app.clone();
-        app.app.question(&format!("A popup from {} was blocked. Do you want to open it?", base_url),
-        &['y', 'n', 'a', 'e'], move |answer| {
-            match answer {
-                Some("a") => {
-                    instance.open_in_new_window_handling_error(&url);
-                    instance.whitelist_popup(&url);
-                },
-                Some("y") => instance.open_in_new_window_handling_error(&url),
-                Some("e") => instance.blacklist_popup(&url),
-                _ => (),
-            }
-        });
+    pub fn ask_open_popup(&mut self, url: String, base_url: String) {
+        connect!(self.app, question[
+             &format!("A popup from {} was blocked. Do you want to open it?", base_url),
+             &['y', 'n', 'a', 'e']
+        ](answer), self, handle_answer(answer, &url));
     }
 
     /// Save the specified url in the popup blacklist.
-    pub fn blacklist_popup(&self, url: &str) {
-        self.handle_error((*self.popup_manager.borrow_mut()).blacklist(url));
+    pub fn blacklist_popup(&mut self, url: &str) {
+        handle_error!(self.popup_manager.blacklist(url));
+    }
+
+    /// Handle the answer of the ask open popup dialog.
+    /// If the answer is a (for always), whitelist the popup and open it.
+    /// If the answer is y (for yes), open the popup.
+    /// If the answer is e (for never), blacklist the popup.
+    /// Otherwise, does not open the popup.
+    fn handle_answer(&mut self, answer: Option<&str>, url: &str) {
+        match answer {
+            Some("a") => {
+                self.open_in_new_window_handling_error(url);
+                self.whitelist_popup(url);
+            },
+            Some("y") => self.open_in_new_window_handling_error(url),
+            Some("e") => self.blacklist_popup(url),
+            _ => (),
+        }
     }
 
     /// Handle the popup.
     /// If the url is whitelisted, open it.
     /// If the url is blacklisted, block it.
     /// Otherwise, ask to the user whether to open it.
-    pub fn handle_popup(app: &Rc<App>, url: String) {
+    pub fn handle_popup(&mut self, url: String) {
         // Block popup.
-        let popup_manager = &*app.popup_manager.borrow();
         let base_url = get_base_url(&url);
-        if !popup_manager.is_whitelisted(&url) {
-            if popup_manager.is_blacklisted(&url) {
-                Application::warning(&app.app, &format!("Not opening popup from {} since it is blacklisted.", base_url));
+        if !self.popup_manager.is_whitelisted(&url) {
+            if self.popup_manager.is_blacklisted(&url) {
+                self.app.warning(&format!("Not opening popup from {} since it is blacklisted.", base_url));
             }
             else {
-                App::ask_open_popup(app, url, base_url);
+                self.ask_open_popup(url, base_url);
             }
         }
         else {
-            app.open_in_new_window_handling_error(&url);
+            self.open_in_new_window_handling_error(&url);
         }
     }
 
     /// Save the specified url in the popup whitelist.
-    pub fn whitelist_popup(&self, url: &str) {
-        self.handle_error((*self.popup_manager.borrow_mut()).whitelist(url));
+    pub fn whitelist_popup(&mut self, url: &str) {
+        handle_error!(self.popup_manager.whitelist(url));
     }
 }
