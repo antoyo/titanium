@@ -21,7 +21,7 @@
 
 //! Custom dialogs.
 
-use mg::dialog::{DialogBuilder, DialogResult};
+use mg::{DialogBuilder, DialogResult};
 use mg_settings::key::Key::{Char, Control};
 
 use app::MgApp;

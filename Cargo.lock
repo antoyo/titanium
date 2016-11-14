@@ -347,7 +347,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#65b92d6d5bf2003cfa3c9645ae26cbb25b61e663"
+source = "git+https://github.com/antoyo/mg#487a509f7d9e0967337856ee9cadf9cc0f3b3036"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -365,7 +365,7 @@ dependencies = [
 [[package]]
 name = "mg-settings"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg-settings#438f5732f49bd22ee0dfd81254690a957691296c"
+source = "git+https://github.com/antoyo/mg-settings#03b980fc1c7c1456e2512eded1bf533da15b31e4"
 dependencies = [
  "mg-settings-macros 0.0.1 (git+https://github.com/antoyo/mg-settings)",
 ]
@@ -373,7 +373,7 @@ dependencies = [
 [[package]]
 name = "mg-settings-macros"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/mg-settings#438f5732f49bd22ee0dfd81254690a957691296c"
+source = "git+https://github.com/antoyo/mg-settings#03b980fc1c7c1456e2512eded1bf533da15b31e4"
 dependencies = [
  "quote 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -621,7 +621,7 @@ dependencies = [
 [[package]]
 name = "titanium-common"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/titanium#41dc4f89e7bdb7396ddc44b4538af4496979f883"
+source = "git+https://github.com/antoyo/titanium#8e67a86e10ea066a7f55b935ae5ab128d23bf829"
 
 [[package]]
 name = "unicode-bidi"

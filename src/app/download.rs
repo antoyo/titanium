@@ -24,7 +24,7 @@
 use std::env::temp_dir;
 use std::path::Path;
 
-use mg::dialog::DialogResult::{Answer, Shortcut};
+use mg::DialogResult::{Answer, Shortcut};
 use webkit2gtk::Download;
 
 use dialogs::CustomDialog;

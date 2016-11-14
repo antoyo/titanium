@@ -80,6 +80,7 @@
  * FIXME: do not show (or move) hints hidden by another element (branch button on GitHub).
  * TODO: use a custom error type (wrapping the other errors) instead of Box<Error>.
  * TODO: show source.
+ * TODO: prevent videos from autoplaying.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: separate config options in section (like webkit.enable-java instead of webkit-enable-java).
  * TODO: i18n.

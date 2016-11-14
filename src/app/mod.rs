@@ -178,20 +178,21 @@ impl App {
 
     /// Create the events.
     fn create_events(&mut self) {
-        connect!(self.app, connect_setting_changed(setting), self.webview, WebView::setting_changed(setting));
-        connect!(self.webview, connect_uri_changed, self, uri_changed);
-        connect!(self.webview, connect_title_changed, self, set_title);
-        connect!(self.app, connect_command(command), self, handle_command(command));
-        connect!(self.webview, connect_load_changed(_, load_event), self, handle_load_changed(load_event));
-        connect!(self.webview, connect_resource_load_started(_, _, _), self, set_title);
-        connect!(self.webview, connect_button_release_event(_, event), self, handle_button_release(event));
-        connect!(self.webview, connect_scrolled(scroll_percentage), self, show_scroll(scroll_percentage));
-        connect!(self.webview, connect_create(_, action), self, handle_create(action));
-        connect!(self.app, connect_special_command(command), self, handle_special_command(command));
-        connect!(self.app, connect_key_press_event(_, event_key), self, handle_key_press(event_key));
-        connect!(self.webview, connect_script_dialog(_, script_dialog), self, handle_script_dialog(script_dialog));
-        connect!(self.webview, connect_new_window(url), self, open_in_new_window_handling_error(url));
         connect!(self.app, connect_close, self, quit);
+        connect!(self.app, connect_command(command), self, handle_command(command));
+        connect!(self.app, connect_key_press_event(_, event_key), self, handle_key_press(event_key));
+        connect!(self.app, connect_setting_changed(setting), self.webview, WebView::setting_changed(setting));
+        connect!(self.app, connect_special_command(command), self, handle_special_command(command));
+        connect!(self.webview, connect_button_release_event(_, event), self, handle_button_release(event));
+        connect!(self.webview, connect_create(_, action), self, handle_create(action));
+        connect!(self.webview, connect_load_changed(_, load_event), self, handle_load_changed(load_event));
+        connect!(self.webview, connect_new_window(url), self, open_in_new_window_handling_error(url));
+        connect!(self.webview, connect_resource_load_started(_, _, _), self, set_title);
+        connect!(self.webview, connect_script_dialog(_, script_dialog), self, handle_script_dialog(script_dialog));
+        connect!(self.webview, connect_scrolled(scroll_percentage), self, show_scroll(scroll_percentage));
+        connect!(self.webview, connect_title_changed, self, set_title);
+        connect!(self.webview, connect_uri_changed, self, uri_changed);
+        connect!(self.webview, connect_web_process_crashed(_), self, web_process_crashed);
 
         connect!(self.webview, connect_run_file_chooser(_, file_chooser_request),
             self, handle_file_chooser(file_chooser_request));
@@ -475,6 +476,12 @@ impl App {
         if let Some(url) = self.webview.get_uri() {
             self.url_label.set_text(&url);
         }
+    }
+
+    /// Handle the web process crashed event.
+    fn web_process_crashed(&mut self) -> bool {
+        self.error("The web process crashed.");
+        false
     }
 
     /// Open in a new window the url from the system clipboard.
