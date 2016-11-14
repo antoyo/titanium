@@ -20,12 +20,10 @@
  */
 
 use std::borrow::Cow;
-use std::cell::{Cell, RefCell};
 use std::error::Error;
 use std::fs::{File, read_dir};
 use std::io::Read;
 use std::ops::Deref;
-use std::rc::Rc;
 
 use glib::{Cast, ToVariant};
 use gtk::{Inhibit, WidgetExt, Window};
@@ -124,10 +122,10 @@ const SCROLL_LINE_VERTICAL: i32 = 40;
 pub struct WebView {
     find_controller: FindController,
     message_server: MessageServer,
-    new_window_callback: RefCell<Option<Rc<Box<Fn(&str)>>>>,
-    open_in_new_window: Cell<bool>,
-    scrolled_callback: RefCell<Option<Rc<Box<Fn(i64)>>>>,
-    search_backwards: Cell<bool>,
+    new_window_callback: Option<Box<Fn(&str)>>,
+    open_in_new_window: bool,
+    scrolled_callback: Option<Box<Fn(i64)>>,
+    search_backwards: bool,
     view: webkit2gtk::WebView,
 }
 
@@ -145,10 +143,10 @@ impl WebView {
             Box::new(WebView {
                 find_controller: find_controller,
                 message_server: message_server,
-                new_window_callback: RefCell::new(None),
-                open_in_new_window: Cell::new(false),
-                scrolled_callback: RefCell::new(None),
-                search_backwards: Cell::new(false),
+                new_window_callback: None,
+                open_in_new_window: false,
+                scrolled_callback: None,
+                search_backwards: false,
                 view: view,
             });
 
@@ -215,13 +213,13 @@ impl WebView {
     }
 
     /// Connect the new window event.
-    pub fn connect_new_window<F: Fn(&str) + 'static>(&self, callback: F) {
-        *self.new_window_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
+    pub fn connect_new_window<F: Fn(&str) + 'static>(&mut self, callback: F) {
+        self.new_window_callback = Some(Box::new(callback));
     }
 
     /// Connect the scrolled event.
-    pub fn connect_scrolled<F: Fn(i64) + 'static>(&self, callback: F) {
-        *self.scrolled_callback.borrow_mut() = Some(Rc::new(Box::new(callback)));
+    pub fn connect_scrolled<F: Fn(i64) + 'static>(&mut self, callback: F) {
+        self.scrolled_callback = Some(Box::new(callback));
     }
 
     /// Create the events.
@@ -233,7 +231,7 @@ impl WebView {
     }
 
     /// Handle the decide policy event.
-    fn decide_policy(&self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
+    fn decide_policy(&mut self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
         if policy_decision_type == NavigationAction {
             if self.handle_navigation_action(policy_decision.clone()) {
                 return true;
@@ -247,15 +245,14 @@ impl WebView {
 
     /// Emit the new window event.
     pub fn emit_new_window_event(&self, url: &str) {
-        if let Some(ref callback) = *self.new_window_callback.borrow() {
+        if let Some(ref callback) = self.new_window_callback {
             callback(url);
         }
     }
 
     /// Emit the scrolled event.
     pub fn emit_scrolled_event(&self) -> Inhibit {
-        if let Some(ref callback) = *self.scrolled_callback.borrow() {
-            let callback = callback.clone();
+        if let Some(ref callback) = self.scrolled_callback {
             if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
                 callback(scroll_percentage);
             }
@@ -289,15 +286,15 @@ impl WebView {
     }
 
     /// Handle follow link in new window.
-    fn handle_navigation_action(&self, policy_decision: PolicyDecision) -> bool {
+    fn handle_navigation_action(&mut self, policy_decision: PolicyDecision) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
-            if self.open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
+            if self.open_in_new_window && policy_decision.get_navigation_type() == LinkClicked {
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
-                    self.open_in_new_window.set(false);
+                    self.open_in_new_window = false;
                     self.emit_new_window_event(&url);
                     return true;
                 }
@@ -426,7 +423,7 @@ impl WebView {
     pub fn search(&self, input: &str) {
         let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
         let other_options =
-            if self.search_backwards.get() {
+            if self.search_backwards {
                 FIND_OPTIONS_BACKWARDS
             }
             else {
@@ -439,7 +436,7 @@ impl WebView {
 
     /// Search the next occurence of the search text.
     pub fn search_next(&self) {
-        if self.search_backwards.get() {
+        if self.search_backwards {
             self.find_controller.search_previous();
         }
         else {
@@ -449,7 +446,7 @@ impl WebView {
 
     /// Search the previous occurence of the search text.
     pub fn search_previous(&self) {
-        if self.search_backwards.get() {
+        if self.search_backwards {
             self.find_controller.search_next();
         }
         else {
@@ -465,8 +462,8 @@ impl WebView {
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
-    pub fn set_open_in_new_window(&self) {
-        self.open_in_new_window.set(true);
+    pub fn set_open_in_new_window(&mut self) {
+        self.open_in_new_window = true;
     }
 
     /// Adjust the webkit settings.
@@ -587,8 +584,8 @@ impl WebView {
     }
 
     /// Set whether the search is backward or not.
-    pub fn set_search_backward(&self, backward: bool) {
-        self.search_backwards.set(backward);
+    pub fn set_search_backward(&mut self, backward: bool) {
+        self.search_backwards = backward;
     }
 
     /// Show the web inspector.

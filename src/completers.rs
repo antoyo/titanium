@@ -107,7 +107,7 @@ impl Completer for BookmarkCompleter {
 
 /// A file completer.
 pub struct FileCompleter {
-    current_directory: Rc<RefCell<PathBuf>>,
+    current_directory: PathBuf,
 }
 
 impl FileCompleter {
@@ -115,7 +115,7 @@ impl FileCompleter {
     pub fn new() -> Self {
         let path = Path::new(&get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD)).to_path_buf();
         FileCompleter {
-            current_directory: Rc::new(RefCell::new(path)),
+            current_directory: path,
         }
     }
 }
@@ -126,7 +126,7 @@ impl Completer for FileCompleter {
     }
 
     fn complete_result(&self, value: &str) -> String {
-        let absolute_path = (*self.current_directory.borrow()).join(value);
+        let absolute_path = self.current_directory.join(value);
         // Remove the trailing slash in the completion to avoid updating the completions for a new
         // directory when selecting a directory.
         // This means the user needs to type the slash to trigger the completion of the new
@@ -148,7 +148,7 @@ impl Completer for FileCompleter {
             else {
                 input_path
             };
-        *self.current_directory.borrow_mut() = path.clone();
+        self.current_directory = path.clone();
         if let Ok(entries) = read_dir(path) {
             for entry in entries {
                 if let Ok(entry) = entry {

@@ -39,7 +39,7 @@ mod hints;
 mod popup;
 mod search_engine;
 
-use std::cell::{Cell, RefCell};
+use std::cell::{RefCell};
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -93,13 +93,13 @@ impl Display for FollowMode {
 pub struct App {
     app: Box<MgApp>,
     bookmark_manager: Rc<RefCell<BookmarkManager>>,
-    default_search_engine: Rc<RefCell<Option<String>>>,
+    default_search_engine: Option<String>,
     download_list_view: DownloadListView,
-    follow_mode: Cell<FollowMode>,
+    follow_mode: FollowMode,
     hovered_link: Option<String>,
     popup_manager: PopupManager,
-    scroll_label: Rc<StatusBarItem>,
-    search_engines: Rc<RefCell<HashMap<String, String>>>,
+    scroll_label: StatusBarItem,
+    search_engines: HashMap<String, String>,
     url_label: StatusBarItem,
     webview: Box<WebView>,
 }
@@ -128,7 +128,7 @@ impl App {
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
-        let scroll_label = Rc::new(mg_app.add_statusbar_item());
+        let scroll_label = mg_app.add_statusbar_item();
         scroll_label.set_text("[top]");
 
         let url_label = mg_app.add_statusbar_item();
@@ -146,13 +146,13 @@ impl App {
         let mut app = Box::new(App {
             app: mg_app,
             bookmark_manager: bookmark_manager,
-            default_search_engine: Rc::new(RefCell::new(None)),
+            default_search_engine: None,
             download_list_view: download_list_view,
-            follow_mode: Cell::new(FollowMode::Click),
+            follow_mode: FollowMode::Click,
             hovered_link: None,
             popup_manager: PopupManager::new(),
             scroll_label: scroll_label,
-            search_engines: Rc::new(RefCell::new(HashMap::new())),
+            search_engines: HashMap::new(),
             url_label: url_label,
             webview: webview,
         });
@@ -260,14 +260,14 @@ impl App {
             FinishSearch => self.webview.finish_search(),
             FocusInput => self.focus_input(),
             Follow => {
-                self.follow_mode.set(FollowMode::Click);
+                self.follow_mode = FollowMode::Click;
                 self.app.set_mode("follow");
                 handle_error!(self.webview.follow_link(self.hint_chars()))
             },
             Forward => self.webview.go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
-                self.follow_mode.set(FollowMode::Hover);
+                self.follow_mode = FollowMode::Hover;
                 self.app.set_mode("follow");
                 handle_error!(self.webview.follow_link(self.hint_chars()))
             },
@@ -293,7 +293,7 @@ impl App {
             SearchPrevious => self.webview.search_previous(),
             Stop => self.webview.stop_loading(),
             WinFollow => {
-                self.follow_mode.set(FollowMode::Click);
+                self.follow_mode = FollowMode::Click;
                 self.webview.set_open_in_new_window();
                 self.app.set_mode("follow");
                 handle_error!(self.webview.follow_link(self.hint_chars()))
@@ -367,7 +367,7 @@ impl App {
     }
 
     /// Handle the special command.
-    fn handle_special_command(&self, command: SpecialCommand) {
+    fn handle_special_command(&mut self, command: SpecialCommand) {
         match command {
             BackwardSearch(input) => {
                 self.webview.set_search_backward(true);

@@ -39,7 +39,7 @@ impl App {
                     match self.webview.enter_hint_key(key_char) {
                         Ok(should_click) => {
                             if should_click {
-                                let result = self.webview.activate_hint(self.follow_mode.get().to_string());
+                                let result = self.webview.activate_hint(self.follow_mode.to_string());
                                 self.hide_hints();
                                 if let Some(result) = result.ok().and_then(Action::from_i32) {
                                     match result {

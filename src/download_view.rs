@@ -19,92 +19,55 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::cell::{Cell, RefCell};
 use std::ops::Deref;
-use std::rc::Rc;
 use std::time::SystemTime;
 
-use glib::Cast;
-use gtk::{Container, Continue, ProgressBar, WidgetExt, timeout_add};
+use gtk::ProgressBar;
 use number_prefix::{Prefixed, Standalone, binary_prefix};
 use webkit2gtk::Download;
-use webkit2gtk::DownloadError::CancelledByUser;
 
 use urls::get_filename;
 
-const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2000;
-
 /// Download view.
 pub struct DownloadView {
-    pub filename_callback: Rc<Fn(String)>,
-    view: Rc<ProgressBar>,
+    pub id: u32,
+    last_update: SystemTime,
+    view: ProgressBar,
+    was_shown: bool,
 }
 
 impl DownloadView {
     /// Create a download view.
-    pub fn new(download: &Download) -> Self {
-        let progress_bar = Rc::new(ProgressBar::new());
+    pub fn new(download: &Download, id: u32) -> Box<Self> {
+        let progress_bar = ProgressBar::new();
         progress_bar.set_show_text(true);
 
-        DownloadView::add_events(download, progress_bar.clone());
+        let mut download_view =
+            Box::new(DownloadView {
+                id: id,
+                last_update: SystemTime::now(),
+                view: progress_bar,
+                was_shown: false,
+            });
 
-        let callback = {
-            let progress_bar = progress_bar.clone();
-            Rc::new(move |suggested_filename| {
-                progress_bar.set_text(Some(&format!("{} 0%", suggested_filename)));
-            })
-        };
+        download_view.add_events(download);
 
-        DownloadView {
-            filename_callback: callback,
-            view: progress_bar,
-        }
+        download_view
     }
 
     /// Add the events.
-    fn add_events(download: &Download, progress_bar: Rc<ProgressBar>) {
+    fn add_events(&mut self, download: &Download) {
         // TODO: show errors.
         // TODO: add a command to download the current page.
         // TODO: add commands to cancel, delete (on disk), open, retry, remove from list, clear all
         // the list
-        let last_update = Rc::new(RefCell::new(SystemTime::now()));
-        let was_shown = Rc::new(Cell::new(false));
-        DownloadView::update_progress_bar(download, &progress_bar, &last_update, &was_shown);
-        {
-            let progress_bar = progress_bar.clone();
-            let last_update = last_update.clone();
-            let was_shown = was_shown.clone();
-            download.connect_received_data(move |download, _| {
-                DownloadView::update_progress_bar(download, &progress_bar, &last_update, &was_shown);
-            });
-        }
+        self.update_progress_bar(download);
 
-        {
-            let progress_bar = progress_bar.clone();
-            download.connect_failed(move |_, error| {
-                if let Some(error) = error.kind::<::webkit2gtk::DownloadError>() {
-                    if error == CancelledByUser {
-                        remove_from_flow_box(&progress_bar);
-                    }
-                }
-            });
-        }
-
-        download.connect_finished(move |download| {
-            let progress_bar = progress_bar.clone();
-            let progress = download.get_estimated_progress();
-            let percent = (progress * 100.0) as i32;
-            if percent == 100 {
-                timeout_add(DOWNLOAD_TIME_BEFORE_HIDE, move || {
-                    remove_from_flow_box(&progress_bar);
-                    Continue(false)
-                });
-            }
-        });
+        connect!(download, connect_received_data(download, _), self, update_progress_bar(download));
     }
 
     /// Update the progress and the text of the progress bar.
-    fn update_progress_bar(download: &Download, progress_bar: &Rc<ProgressBar>, last_update: &Rc<RefCell<SystemTime>>, was_shown: &Rc<Cell<bool>>) {
+    fn update_progress_bar(&mut self, download: &Download) {
         let suggested_filename =
             download.get_request()
                 .and_then(|request| request.get_uri())
@@ -113,25 +76,29 @@ impl DownloadView {
             .and_then(|url| get_filename(&url))
             .unwrap_or(suggested_filename.clone().unwrap_or_default());
         let progress = download.get_estimated_progress();
-        progress_bar.set_fraction(progress);
+        self.view.set_fraction(progress);
         let percent = (progress * 100.0) as i32;
         let (downloaded_size, total_size) = get_data_sizes(download);
         // TODO: show the speed (downloaded data over the last 5 seconds).
         let mut updated = false;
         if percent == 100 {
-            progress_bar.set_text(Some(&format!("{} {}% [{}]", filename, percent, total_size)));
+            let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
+            self.view.set_text(Some(&format!("{} {}%{}", filename, percent, total_size)));
         }
-        else if let Ok(duration) = (*last_update.borrow()).elapsed() {
+        else if let Ok(duration) = self.last_update.elapsed() {
             // Update the text once per second.
-            if duration.as_secs() >= 1 || !was_shown.get() {
+            if duration.as_secs() >= 1 || !self.was_shown {
                 updated = true;
-                let time_remaining = get_remaining_time(download);
-                progress_bar.set_text(Some(&format!("{} {}%, {} [{}/{}]", filename, percent, time_remaining, downloaded_size, total_size)));
-                was_shown.set(true);
+                let time_remaining = get_remaining_time(download)
+                    .map(|time| format!(", {}", time))
+                    .unwrap_or_default();
+                let total_size = total_size.map(|size| format!("/{}", size)).unwrap_or_default();
+                self.view.set_text(Some(&format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size, total_size)));
+                self.was_shown = true;
             }
         }
         if updated {
-            *last_update.borrow_mut() = SystemTime::now();
+            self.last_update = SystemTime::now();
         }
     }
 }
@@ -140,7 +107,7 @@ impl Deref for DownloadView {
     type Target = ProgressBar;
 
     fn deref(&self) -> &ProgressBar {
-        &*self.view
+        &self.view
     }
 }
 
@@ -154,32 +121,30 @@ fn add_byte_suffix(number: f64) -> String {
 }
 
 /// Get the sizes bytes received and total bytes.
-fn get_data_sizes(download: &Download) -> (String, String) {
+fn get_data_sizes(download: &Download) -> (String, Option<String>) {
     let progress = download.get_estimated_progress();
-    let current = download.get_received_data_length() as f64;
-    let total = current / progress;
-    (add_byte_suffix(current), add_byte_suffix(total))
+    if progress == 0.0 {
+        (add_byte_suffix(progress), None)
+    }
+    else {
+        let current = download.get_received_data_length() as f64;
+        let total = current / progress;
+        (add_byte_suffix(current), Some(add_byte_suffix(total)))
+    }
 }
 
 /// Get the estimated remaining time.
-fn get_remaining_time(download: &Download) -> String {
+fn get_remaining_time(download: &Download) -> Option<String> {
     let progress = download.get_estimated_progress();
-    let elapsed_seconds = download.get_elapsed_time();
-    let total_seconds = elapsed_seconds / progress;
-    let seconds = total_seconds - elapsed_seconds;
-    let minutes = (seconds / 60.0) as i32;
-    let seconds = (seconds % 60.0) as i32;
-    format!("{}:{:02}", minutes, seconds)
-}
-
-/// Remove the progress bar from its `FlowBox` parent.
-fn remove_from_flow_box(progress_bar: &Rc<ProgressBar>) {
-    let child: Option<Container> = progress_bar.get_parent()
-        .and_then(|parent| parent.downcast().ok());
-    // FlowBox children are wrapped inside FlowBoxChild, so we need to destroy this
-    // FlowBoxChild (which is the parent of the widget) in order to remove it from
-    // the FlowBox.
-    if let Some(child) = child {
-        child.destroy();
+    if progress == 0.0 {
+        None
+    }
+    else {
+        let elapsed_seconds = download.get_elapsed_time();
+        let total_seconds = elapsed_seconds / progress;
+        let seconds = total_seconds - elapsed_seconds;
+        let minutes = (seconds / 60.0) as i32;
+        let seconds = (seconds % 60.0) as i32;
+        Some(format!("{}:{:02}", minutes, seconds))
     }
 }
