@@ -34,8 +34,9 @@ extern crate webkit2gtk_webextension;
 mod adblocker;
 mod dom;
 mod hints;
-mod scroll;
+mod login_form;
 mod message_server;
+mod scroll;
 
 use std::cell::Cell;
 use std::collections::HashMap;

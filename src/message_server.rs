@@ -28,12 +28,16 @@ interface MessageServer {
     fn activate_selection(&self);
     fn enter_hint_key(&mut self, key: char) -> bool;
     fn focus_input(&self) -> bool;
+    fn get_credentials(&self) -> (String, String);
     fn get_scroll_percentage(&self) -> i64;
     fn hide_hints(&self);
+    fn load_password(&self, password: &str);
+    fn load_username(&self, username: &str);
     fn scroll_bottom(&self);
     fn scroll_by(&self, pixels: i64);
     fn scroll_top(&self);
     fn select_file(&self, file: &str);
     fn show_hints(&mut self, hint_chars: &str);
+    fn submit_login_form(&self);
 }
 );

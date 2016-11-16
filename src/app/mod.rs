@@ -36,6 +36,7 @@ mod copy_paste;
 mod dialog;
 mod download;
 mod hints;
+mod pass_filler;
 mod popup;
 mod search_engine;
 
@@ -61,6 +62,7 @@ use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
+use credentials::PasswordManager;
 use download_list_view::DownloadListView;
 use popup_manager::PopupManager;
 use settings::AppSettings;
@@ -138,7 +140,8 @@ impl App {
         let download_list_view = DownloadListView::new();
         vbox.add(&*download_list_view);
 
-        let webview = WebView::new();
+        let password_manager = PasswordManager::new();
+        let webview = WebView::new(password_manager);
         vbox.add(&**webview);
 
         mg_app.set_view(&vbox);
@@ -170,6 +173,7 @@ impl App {
         app.handle_error(result);
 
         handle_error!(app.popup_manager.load());
+        handle_error!(app.webview.load_passwords());
 
         app.create_variables();
 
@@ -275,6 +279,9 @@ impl App {
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
             Open(url) => self.open(&url),
+            PasswordLoad => { let _ = self.load_password(); },
+            PasswordSave => self.save_password(),
+            PasswordSubmit => self.submit_login_form(),
             PasteUrl => self.paste_url(),
             Print => self.webview.print(),
             Quit => self.quit(),

@@ -104,7 +104,7 @@ impl BookmarkManager {
             .map(|bookmark| bookmark.tags.clone())
     }
 
-    /// Load the bookmarks from the specified file.
+    /// Load the bookmarks.
     pub fn load(&mut self) -> AppResult<()> {
         let filename = BookmarkManager::config_path();
         let reader = BufReader::new(File::open(filename)?);

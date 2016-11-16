@@ -23,6 +23,12 @@ use regex::Regex;
 use url::Url;
 use url::percent_encoding::percent_decode;
 
+/// Get the base URL without www.
+pub fn base_url(url: &str) -> String {
+    let base_url = get_base_url(url);
+    base_url.trim_left_matches("www.").to_string()
+}
+
 /// Get the base URL (domain and tld) of an URL.
 /// Returns an empty string in case there are no hosts.
 pub fn get_base_url(url: &str) -> String {

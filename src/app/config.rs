@@ -28,6 +28,7 @@ use std::path::Path;
 use xdg::BaseDirectories;
 
 use bookmarks::BookmarkManager;
+use credentials::PasswordManager;
 use popup_manager::PopupManager;
 use super::{App, AppResult, APP_NAME};
 
@@ -37,6 +38,7 @@ impl App {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
 
         let bookmarks_path = BookmarkManager::config_path();
+        let passwords_path = PasswordManager::config_path();
 
         let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
         let scripts_path = xdg_dirs.place_config_file("scripts")?;
@@ -55,6 +57,7 @@ impl App {
         self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
         self.create_default_config_file(&bookmarks_path, include_str!("../../config/bookmarks"))?;
         self.create_default_config_file(&hosts_path, include_str!("../../config/hosts"))?;
+        self.create_default_config_file(&passwords_path, include_str!("../../config/passwords"))?;
 
         let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
         create_file(&popup_whitelist_path)?;

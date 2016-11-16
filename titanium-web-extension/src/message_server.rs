@@ -26,6 +26,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use glib::Cast;
+use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
 use webkit2gtk_webextension::{
     DOMDOMWindowExtManual,
     DOMDocumentExt,
@@ -40,7 +41,6 @@ use webkit2gtk_webextension::{
     WebExtension,
 };
 
-use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
 use dom::{
     ElementIter,
     get_body,
@@ -52,12 +52,26 @@ use dom::{
     mouse_over,
 };
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
+use login_form::{get_credentials, load_password, load_username, submit_login_form};
 use scroll::Scrollable;
 
 macro_rules! get_page {
     ($_self:ident) => {
         $_self.extension.get_page($_self.page_id.get())
     };
+}
+
+macro_rules! get_document {
+    ($_self:ident) => {{
+        let document = get_page!($_self)
+            .and_then(|page| page.get_dom_document());
+        if let Some(document) = document {
+            document
+        }
+        else {
+            return;
+        }
+    }};
 }
 
 dbus_class!("com.titanium.client", class MessageServer
@@ -197,6 +211,20 @@ dbus_class!("com.titanium.client", class MessageServer
         false
     }
 
+    // Get the username and password from the login form.
+    fn get_credentials(&self) -> (String, String) {
+        let mut username = String::new();
+        let mut password = String::new();
+        let credential = get_page!(self)
+            .and_then(|page| page.get_dom_document())
+            .and_then(|document| get_credentials(&document));
+        if let Some(credential) = credential {
+            username = credential.username;
+            password = credential.password;
+        }
+        (username, password)
+    }
+
     // Get the page scroll percentage.
     fn get_scroll_percentage(&self) -> i64 {
         if let Some(page) = get_page!(self) {
@@ -217,6 +245,20 @@ dbus_class!("com.titanium.client", class MessageServer
         if let Some((hints, body)) = elements {
             body.remove_child(&hints).ok();
         }
+    }
+
+    // FIXME: use one method with two parameters to load the username and the password at the same
+    // time.
+    // Load the password in the login form.
+    fn load_password(&self, password: &str) -> () {
+        let document = get_document!(self);
+        load_password(&document, password);
+    }
+
+    // Load the username in the login form.
+    fn load_username(&self, username: &str) -> () {
+        let document = get_document!(self);
+        load_username(&document, username);
     }
 
     // Scroll to the bottom of the page.
@@ -261,5 +303,11 @@ dbus_class!("com.titanium.client", class MessageServer
                 body.append_child(&hints).ok();
             }
         }
+    }
+
+    // Submit the login form.
+    fn submit_login_form(&self) -> () {
+        let document = get_document!(self);
+        submit_login_form(&document);
     }
 });

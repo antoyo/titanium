@@ -231,7 +231,7 @@ pub fn is_enabled(element: &DOMElement) -> bool {
 }
 
 /// Check if an element is hidden.
-/// This is not exactly the opposite as `is_visible` since `is_hidden` returns false for element that
+/// This is not exactly the opposite as `is_visible` since `is_hidden` returns false for elements that
 /// are visible, but outside the viewport.
 pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
     if let Some(window) = document.get_default_view() {

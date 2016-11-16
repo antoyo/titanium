@@ -20,15 +20,9 @@
  */
 
 /*
- * TODO: hint file input.
- * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
- * Vimperator simulates ctrl-click to work around this.
+ * TODO: add a command to delete a password.
  *
- * TODO: Create a gdbus binding that works similar to elm subscriptions.
- *
- * FIXME: hints at the wrong position on http://slowchessleague.org/ (will be fixed when using
- * getBoundingClientRect).
- * FIXME: cookies are not synced between windows.
+ * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows).
  *
  * TODO: file watcher to sync bookmarks between windows.
  * TODO: lock the file read/write.
@@ -37,7 +31,13 @@
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
  * property="og:article:tag"/> is a start).
  *
- * TODO: password filler.
+ * TODO: use lifetimes to ensure the pointers live long enough for the connect!() macro.
+ *
+ * TODO: hint file input.
+ * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
+ * Vimperator simulates ctrl-click to work around this.
+ *
+ * TODO: Create a gdbus binding that works similar to elm subscriptions.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
@@ -52,6 +52,8 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * FIXME: ctrl-/ should not trigger the mapping for /.
+ * TODO: allow using Backspace to remove the last hint character.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
  * FIXME: sometimes does not go to insert mode after focusing first input.
@@ -101,7 +103,7 @@
  * TODO: ask confirmation before submitting again the same form.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
- * TODO: activate insert mode after focusing a text element.
+ * TODO: activate insert mode after focusing a text element (disable insert mode when focus is lost).
  * TODO: show URL in title when the title is not available.
  * TODO: add command (;f) to focus frame.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
@@ -144,6 +146,7 @@ extern crate mg_settings;
 extern crate mg_settings_macros;
 extern crate number_prefix;
 extern crate open;
+extern crate password_store;
 extern crate regex;
 extern crate rustc_serialize;
 extern crate serde;
@@ -162,6 +165,7 @@ mod bookmarks;
 mod clipboard;
 mod commands;
 mod completers;
+mod credentials;
 mod dialogs;
 mod download_view;
 mod download_list_view;

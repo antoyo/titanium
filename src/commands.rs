@@ -53,6 +53,12 @@ pub enum AppCommand {
     Normal,
     #[help(text="Open an URL")]
     Open(String),
+    #[help(text="Load the credentials in the login form")]
+    PasswordLoad,
+    #[help(text="Save the credentials from the login form")]
+    PasswordSave,
+    #[help(text="Load the credentials in the login form and submit the form")]
+    PasswordSubmit,
     #[completion(hidden)]
     PasteUrl,
     #[help(text="Print the current page")]

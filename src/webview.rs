@@ -58,6 +58,7 @@ use webkit2gtk::UserStyleLevel::User;
 use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
+use credentials::PasswordManager;
 use message_server::MessageServer;
 use settings::{AppSettings, CookieAcceptPolicy};
 use settings::AppSettingsVariant::{
@@ -124,6 +125,7 @@ pub struct WebView {
     message_server: MessageServer,
     new_window_callback: Option<Box<Fn(&str)>>,
     open_in_new_window: bool,
+    password_manager: PasswordManager,
     scrolled_callback: Option<Box<Fn(i64)>>,
     search_backwards: bool,
     view: webkit2gtk::WebView,
@@ -131,7 +133,7 @@ pub struct WebView {
 
 impl WebView {
     /// Create a new web view.
-    pub fn new() -> Box<Self> {
+    pub fn new(password_manager: PasswordManager) -> Box<Self> {
         let (context, message_server) = WebView::initialize_web_extension();
 
         let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
@@ -145,6 +147,7 @@ impl WebView {
                 message_server: message_server,
                 new_window_callback: None,
                 open_in_new_window: false,
+                password_manager: password_manager,
                 scrolled_callback: None,
                 search_backwards: false,
                 view: view,
@@ -315,6 +318,16 @@ impl WebView {
         false
     }
 
+    /// Check if there are multiple passwords for the current URL.
+    pub fn has_multiple_passwords(&self) -> bool {
+        if let Some(url) = self.view.get_uri() {
+            if let Some(credentials) = self.password_manager.get_credentials(&url) {
+                return credentials.len() > 1;
+            }
+        }
+        false
+    }
+
     /// Hide the hints.
     pub fn hide_hints(&self) -> AppResult<()> {
         self.message_server.hide_hints()?;
@@ -347,6 +360,25 @@ impl WebView {
         (context, message_server)
     }
 
+    /// Load the username and password in the login form.
+    pub fn load_password(&self) -> AppResult<bool> {
+        if let Some(url) = self.view.get_uri() {
+            if let Some(credentials) = self.password_manager.get_credentials(&url) {
+                let credential = &credentials[0];
+                let password = self.password_manager.get_password(&url, &credential.username)?;
+                self.message_server.load_username(&credential.username)?;
+                self.message_server.load_password(&password)?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Load the passwords into the password manager.
+    pub fn load_passwords(&mut self) -> AppResult<()> {
+        self.password_manager.load()
+    }
+
     /// Open the specified URL.
     pub fn open(&self, url: &str) {
         let url: Cow<str> =
@@ -365,6 +397,16 @@ impl WebView {
         let window = self.view.get_toplevel()
             .and_then(|toplevel| toplevel.downcast::<Window>().ok());
         print_operation.run_dialog(window.as_ref());
+    }
+
+    /// Save the password from the login form.
+    pub fn save_password(&mut self) -> AppResult<bool> {
+        let (username, password) = self.message_server.get_credentials()?;
+        if let Some(url) = self.view.get_uri() {
+            // TODO: handle the check parameter.
+            return self.password_manager.add(&url, &username, &password, false);
+        }
+        Ok(false)
     }
 
     /// Scroll by the specified number of pixels.
@@ -610,6 +652,12 @@ impl WebView {
             });
             inspector.show();
         }
+    }
+
+    /// Submit the login form.
+    pub fn submit_login_form(&self) -> AppResult<()> {
+        self.message_server.submit_login_form()?;
+        Ok(())
     }
 
     /// Zoom in.
