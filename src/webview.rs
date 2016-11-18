@@ -25,6 +25,7 @@ use std::fs::{File, read_dir};
 use std::io::Read;
 use std::ops::Deref;
 
+use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{Inhibit, WidgetExt, Window};
 use libc::getpid;
@@ -408,6 +409,16 @@ impl WebView {
             return self.password_manager.add(&url, &username, &password, false);
         }
         Ok(false)
+    }
+
+    /// Save a screenshot of the web view.
+    pub fn screenshot(&self, path: &str) {
+        let allocation = self.view.get_allocation();
+        let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height);
+        let context = Context::new(&surface);
+        self.view.draw(&context);
+        let file = File::create(path).unwrap();
+        surface.write_to_png(file).unwrap();
     }
 
     /// Scroll by the specified number of pixels.

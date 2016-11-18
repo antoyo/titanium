@@ -20,6 +20,10 @@ tempfile = "^2.1"
 url = "^1.2"
 xdg = "^2.0"
 
+[dependencies.cairo-rs]
+git = "https://github.com/gtk-rs/cairo"
+version = "0.1.0"
+
 [dependencies.gdbus]
 git = "https://github.com/antoyo/gdbus-rs"
 version = "0.0.1"
@@ -68,7 +72,7 @@ git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
 
 [features]
-default = ["gtk/v3_16", "webkit2gtk/v2_12"]
+default = ["cairo-rs/png", "gtk/v3_16", "webkit2gtk/v2_12"]
 
 [replace."yaml-rust:0.3.4"]
 git = "https://github.com/chyh1990/yaml-rust"

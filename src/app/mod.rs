@@ -287,6 +287,7 @@ impl App {
             Quit => self.quit(),
             Reload => self.webview.reload(),
             ReloadBypassCache => self.webview.reload_bypass_cache(),
+            Screenshot(path) => self.webview.screenshot(&path),
             ScrollBottom => handle_error!(self.webview.scroll_bottom()),
             ScrollDown => handle_error!(self.webview.scroll_down_page()),
             ScrollDownHalf => handle_error!(self.webview.scroll_down_half_page()),

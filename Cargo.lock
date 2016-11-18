@@ -2,6 +2,7 @@
 name = "titanium"
 version = "0.1.0"
 dependencies = [
+ "cairo-rs 0.1.0 (git+https://github.com/gtk-rs/cairo)",
  "docopt 0.6.86 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdbus 0.0.1 (git+https://github.com/antoyo/gdbus-rs)",
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",

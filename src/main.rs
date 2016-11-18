@@ -129,6 +129,7 @@
 #![feature(proc_macro)]
 #![warn(missing_docs)]
 
+extern crate cairo;
 #[macro_use]
 extern crate gdbus;
 extern crate docopt;

@@ -72,6 +72,8 @@ pub enum AppCommand {
     #[completion(hidden)]
     SearchEngine(String),
     #[completion(hidden)]
+    Screenshot(String),
+    #[completion(hidden)]
     ScrollBottom,
     #[completion(hidden)]
     ScrollDown,
