@@ -19,6 +19,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+mod password;
+mod scroll;
+mod settings;
+
 use std::borrow::Cow;
 use std::error::Error;
 use std::fs::{File, read_dir};
@@ -27,9 +31,8 @@ use std::ops::Deref;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
-use gtk::{Inhibit, WidgetExt, Window};
+use gtk::{WidgetExt, Window};
 use libc::getpid;
-use mg_settings::settings::Settings;
 use url::Url;
 use webkit2gtk::{
     self,
@@ -61,65 +64,7 @@ use xdg::BaseDirectories;
 use app::{AppResult, APP_NAME};
 use credentials::PasswordManager;
 use message_server::MessageServer;
-use settings::{AppSettings, CookieAcceptPolicy};
-use settings::AppSettingsVariant::{
-    CookieAccept,
-    HintChars,
-    HomePage,
-    WebkitAllowFileAccessFromFileUrls,
-    WebkitAllowModalDialogs,
-    WebkitAutoLoadImages,
-    WebkitCursiveFontFamily,
-    WebkitDefaultCharset,
-    WebkitDefaultFontFamily,
-    WebkitDefaultFontSize,
-    WebkitDefaultMonospaceFontSize,
-    WebkitDrawCompositingIndicators,
-    WebkitEnableAccelerated2dCanvas,
-    WebkitEnableCaretBrowsing,
-    WebkitEnableDeveloperExtras,
-    WebkitEnableDnsPrefetching,
-    WebkitEnableFrameFlattening,
-    WebkitEnableFullscreen,
-    WebkitEnableHtml5Database,
-    WebkitEnableHtml5LocalStorage,
-    WebkitEnableHyperlinkAuditing,
-    WebkitEnableJava,
-    WebkitEnableJavascript,
-    WebkitEnableMediaStream,
-    WebkitEnableMediasource,
-    WebkitEnableOfflineWebApplicationCache,
-    WebkitEnablePageCache,
-    WebkitEnablePlugins,
-    WebkitEnablePrivateBrowsing,
-    WebkitEnableResizableTextAreas,
-    WebkitEnableSiteSpecificQuirks,
-    WebkitEnableSmoothScrolling,
-    WebkitEnableSpatialNavigation,
-    WebkitEnableTabsToLinks,
-    WebkitEnableWebaudio,
-    WebkitEnableWebgl,
-    WebkitEnableWriteConsoleMessagesToStdout,
-    WebkitEnableXssAuditor,
-    WebkitFantasyFontFamily,
-    WebkitJavascriptCanAccessClipboard,
-    WebkitJavascriptCanOpenWindowsAutomatically,
-    WebkitLoadIconsIgnoringImageLoadSetting,
-    WebkitMediaPlaybackAllowsInline,
-    WebkitMediaPlaybackRequiresUserGesture,
-    WebkitMinimumFontSize,
-    WebkitMonospaceFontFamily,
-    WebkitPictographFontFamily,
-    WebkitPrintBackgrounds,
-    WebkitSansSerifFontFamily,
-    WebkitSerifFontFamily,
-    WebkitUserAgent,
-    WebkitZoomTextOnly,
-};
 use stylesheet::get_stylesheet_and_whitelist;
-
-const SCROLL_LINE_HORIZONTAL: i64 = 40;
-const SCROLL_LINE_VERTICAL: i32 = 40;
 
 /// Webkit-based view.
 pub struct WebView {
@@ -222,11 +167,6 @@ impl WebView {
         self.new_window_callback = Some(Box::new(callback));
     }
 
-    /// Connect the scrolled event.
-    pub fn connect_scrolled<F: Fn(i64) + 'static>(&mut self, callback: F) {
-        self.scrolled_callback = Some(Box::new(callback));
-    }
-
     /// Create the events.
     fn create_events(&mut self) {
         // Emit the scroll event whenever the view is drawn.
@@ -253,16 +193,6 @@ impl WebView {
         if let Some(ref callback) = self.new_window_callback {
             callback(url);
         }
-    }
-
-    /// Emit the scrolled event.
-    pub fn emit_scrolled_event(&self) -> Inhibit {
-        if let Some(ref callback) = self.scrolled_callback {
-            if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
-                callback(scroll_percentage);
-            }
-        }
-        Inhibit(false)
     }
 
     /// Send a key to the web process to process with the current hints.
@@ -320,16 +250,6 @@ impl WebView {
         false
     }
 
-    /// Check if there are multiple passwords for the current URL.
-    pub fn has_multiple_passwords(&self) -> bool {
-        if let Some(url) = self.view.get_uri() {
-            if let Some(credentials) = self.password_manager.get_credentials(&url) {
-                return credentials.len() > 1;
-            }
-        }
-        false
-    }
-
     /// Hide the hints.
     pub fn hide_hints(&self) -> AppResult<()> {
         self.message_server.hide_hints()?;
@@ -362,25 +282,6 @@ impl WebView {
         (context, message_server)
     }
 
-    /// Load the username and password in the login form.
-    pub fn load_password(&self) -> AppResult<bool> {
-        if let Some(url) = self.view.get_uri() {
-            if let Some(credentials) = self.password_manager.get_credentials(&url) {
-                let credential = &credentials[0];
-                let password = self.password_manager.get_password(&url, &credential.username)?;
-                self.message_server.load_username(&credential.username)?;
-                self.message_server.load_password(&password)?;
-                return Ok(true);
-            }
-        }
-        Ok(false)
-    }
-
-    /// Load the passwords into the password manager.
-    pub fn load_passwords(&mut self) -> AppResult<()> {
-        self.password_manager.load()
-    }
-
     /// Open the specified URL.
     pub fn open(&self, url: &str) {
         let url: Cow<str> =
@@ -401,16 +302,6 @@ impl WebView {
         print_operation.run_dialog(window.as_ref());
     }
 
-    /// Save the password from the login form.
-    pub fn save_password(&mut self) -> AppResult<bool> {
-        let (username, password) = self.message_server.get_credentials()?;
-        if let Some(url) = self.view.get_uri() {
-            // TODO: handle the check parameter.
-            return self.password_manager.add(&url, &username, &password, false);
-        }
-        Ok(false)
-    }
-
     /// Save a screenshot of the web view.
     pub fn screenshot(&self, path: &str) {
         let allocation = self.view.get_allocation();
@@ -419,70 +310,6 @@ impl WebView {
         self.view.draw(&context);
         let file = File::create(path).unwrap();
         surface.write_to_png(file).unwrap();
-    }
-
-    /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) -> AppResult<()> {
-        self.message_server.scroll_by(pixels as i64)?;
-        Ok(())
-    }
-
-    /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) -> AppResult<()> {
-        self.message_server.scroll_bottom()?;
-        Ok(())
-    }
-
-    /// Scroll down by one line.
-    pub fn scroll_down_line(&self) -> AppResult<()> {
-        self.scroll(SCROLL_LINE_VERTICAL)
-    }
-
-    /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
-        self.scroll(allocation.height / 2)
-    }
-
-    /// Scroll down by one page.
-    pub fn scroll_down_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
-        self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
-    }
-
-    /// Scroll towards the left of the page.
-    pub fn scroll_left(&self) -> AppResult<()> {
-        self.message_server.scroll_by_x(-SCROLL_LINE_HORIZONTAL)?;
-        Ok(())
-    }
-
-    /// Scroll towards the right of the page.
-    pub fn scroll_right(&self) -> AppResult<()> {
-        self.message_server.scroll_by_x(SCROLL_LINE_HORIZONTAL)?;
-        Ok(())
-    }
-
-    /// Scroll to the top of the page.
-    pub fn scroll_top(&self) -> AppResult<()> {
-        self.message_server.scroll_top()?;
-        Ok(())
-    }
-
-    /// Scroll up by one line.
-    pub fn scroll_up_line(&self) -> AppResult<()> {
-        self.scroll(-SCROLL_LINE_VERTICAL)
-    }
-
-    /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
-        self.scroll(-allocation.height / 2)
-    }
-
-    /// Scroll up by one page.
-    pub fn scroll_up_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
-        self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
     }
 
     /// Search some text.
@@ -532,123 +359,6 @@ impl WebView {
         self.open_in_new_window = true;
     }
 
-    /// Adjust the webkit settings.
-    pub fn setting_changed(&self, setting: <AppSettings as Settings>::Variant) {
-        if let Some(settings) = self.view.get_settings() {
-            match setting {
-                CookieAccept(ref value) => self.set_cookie_accept(value),
-                HintChars(_) | HomePage(_) => (),
-                WebkitAllowFileAccessFromFileUrls(value) =>
-                    settings.set_allow_file_access_from_file_urls(value),
-                WebkitAllowModalDialogs(value) =>
-                    settings.set_allow_modal_dialogs(value),
-                WebkitAutoLoadImages(value) =>
-                    settings.set_auto_load_images(value),
-                WebkitCursiveFontFamily(ref value) =>
-                    settings.set_cursive_font_family(value),
-                WebkitDefaultCharset(ref value) =>
-                    settings.set_default_charset(value),
-                WebkitDefaultFontFamily(ref value) =>
-                    settings.set_default_font_family(value),
-                WebkitDefaultFontSize(value) =>
-                    settings.set_default_font_size(value as u32),
-                WebkitDefaultMonospaceFontSize(value) =>
-                    settings.set_default_monospace_font_size(value as u32),
-                WebkitDrawCompositingIndicators(value) =>
-                    settings.set_draw_compositing_indicators(value),
-                WebkitEnableAccelerated2dCanvas(value) =>
-                    settings.set_enable_accelerated_2d_canvas(value),
-                WebkitEnableCaretBrowsing(value) =>
-                    settings.set_enable_caret_browsing(value),
-                WebkitEnableDeveloperExtras(value) =>
-                    settings.set_enable_developer_extras(value),
-                WebkitEnableDnsPrefetching(value) =>
-                    settings.set_enable_dns_prefetching(value),
-                WebkitEnableFrameFlattening(value) =>
-                    settings.set_enable_frame_flattening(value),
-                WebkitEnableFullscreen(value) =>
-                    settings.set_enable_fullscreen(value),
-                WebkitEnableHtml5Database(value) =>
-                    settings.set_enable_html5_database(value),
-                WebkitEnableHtml5LocalStorage(value) =>
-                    settings.set_enable_html5_local_storage(value),
-                WebkitEnableHyperlinkAuditing(value) =>
-                    settings.set_enable_hyperlink_auditing(value),
-                WebkitEnableJava(value) =>
-                    settings.set_enable_java(value),
-                WebkitEnableJavascript(value) =>
-                    settings.set_enable_javascript(value),
-                WebkitEnableMediaStream(value) =>
-                    settings.set_enable_media_stream(value),
-                WebkitEnableMediasource(value) =>
-                    settings.set_enable_mediasource(value),
-                WebkitEnableOfflineWebApplicationCache(value) =>
-                    settings.set_enable_offline_web_application_cache(value),
-                WebkitEnablePageCache(value) =>
-                    settings.set_enable_page_cache(value),
-                WebkitEnablePlugins(value) =>
-                    settings.set_enable_plugins(value),
-                WebkitEnablePrivateBrowsing(value) =>
-                    settings.set_enable_private_browsing(value),
-                WebkitEnableResizableTextAreas(value) =>
-                    settings.set_enable_resizable_text_areas(value),
-                WebkitEnableSiteSpecificQuirks(value) =>
-                    settings.set_enable_site_specific_quirks(value),
-                WebkitEnableSmoothScrolling(value) =>
-                    settings.set_enable_smooth_scrolling(value),
-                WebkitEnableSpatialNavigation(value) =>
-                    settings.set_enable_spatial_navigation(value),
-                WebkitEnableTabsToLinks(value) =>
-                    settings.set_enable_tabs_to_links(value),
-                WebkitEnableWebaudio(value) =>
-                    settings.set_enable_webaudio(value),
-                WebkitEnableWebgl(value) =>
-                    settings.set_enable_webgl(value),
-                WebkitEnableWriteConsoleMessagesToStdout(value) =>
-                    settings.set_enable_write_console_messages_to_stdout(value),
-                WebkitEnableXssAuditor(value) =>
-                    settings.set_enable_xss_auditor(value),
-                WebkitFantasyFontFamily(ref value) =>
-                    settings.set_fantasy_font_family(value),
-                WebkitJavascriptCanAccessClipboard(value) =>
-                    settings.set_javascript_can_access_clipboard(value),
-                WebkitJavascriptCanOpenWindowsAutomatically(value) =>
-                    settings.set_javascript_can_open_windows_automatically(value),
-                WebkitLoadIconsIgnoringImageLoadSetting(value) =>
-                    settings.set_load_icons_ignoring_image_load_setting(value),
-                WebkitMediaPlaybackAllowsInline(value) =>
-                    settings.set_media_playback_allows_inline(value),
-                WebkitMediaPlaybackRequiresUserGesture(value) =>
-                    settings.set_media_playback_requires_user_gesture(value),
-                WebkitMinimumFontSize(value) =>
-                    settings.set_minimum_font_size(value as u32),
-                WebkitMonospaceFontFamily(ref value) =>
-                    settings.set_monospace_font_family(value),
-                WebkitPictographFontFamily(ref value) =>
-                    settings.set_pictograph_font_family(value),
-                WebkitPrintBackgrounds(value) =>
-                    settings.set_print_backgrounds(value),
-                WebkitSansSerifFontFamily(ref value) =>
-                    settings.set_sans_serif_font_family(value),
-                WebkitSerifFontFamily(ref value) =>
-                    settings.set_serif_font_family(value),
-                WebkitUserAgent(ref value) =>
-                    settings.set_user_agent(Some(value)),
-                WebkitZoomTextOnly(value) =>
-                    settings.set_zoom_text_only(value),
-            }
-        }
-    }
-
-    /// Set the cookie accept policy.
-    fn set_cookie_accept(&self, cookie_accept: &CookieAcceptPolicy) {
-        let cookie_manager = self.view.get_context()
-            .and_then(|context| context.get_cookie_manager());
-        if let Some(cookie_manager) = cookie_manager {
-            cookie_manager.set_accept_policy(cookie_accept.to_webkit());
-        }
-    }
-
     /// Set whether the search is backward or not.
     pub fn set_search_backward(&mut self, backward: bool) {
         self.search_backwards = backward;
@@ -676,12 +386,6 @@ impl WebView {
             });
             inspector.show();
         }
-    }
-
-    /// Submit the login form.
-    pub fn submit_login_form(&self) -> AppResult<()> {
-        self.message_server.submit_login_form()?;
-        Ok(())
     }
 
     /// Zoom in.
