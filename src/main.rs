@@ -66,12 +66,14 @@
  * FIXME: download view can get stuck on: 0%, -2147483648: -2147483648 [512B/infYiB] while the
  * download is finished (perhaps when downloading a file present in the cache).
  * TODO: unselect text when focusing a field.
+ * TODO: add a passthrough mode.
  * TODO: add help text for commands and settings.
  * TODO: allow to delete bookmarks in completion.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.
  * TODO: store cache.
+ * TODO: add a command to delete cache, cookies, history, …
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.

@@ -117,6 +117,7 @@ use settings::AppSettingsVariant::{
 };
 use stylesheet::get_stylesheet_and_whitelist;
 
+const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
 /// Webkit-based view.
@@ -436,6 +437,18 @@ impl WebView {
     pub fn scroll_down_page(&self) -> AppResult<()> {
         let allocation = self.view.get_allocation();
         self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
+    }
+
+    /// Scroll towards the left of the page.
+    pub fn scroll_left(&self) -> AppResult<()> {
+        self.message_server.scroll_by_x(-SCROLL_LINE_HORIZONTAL)?;
+        Ok(())
+    }
+
+    /// Scroll towards the right of the page.
+    pub fn scroll_right(&self) -> AppResult<()> {
+        self.message_server.scroll_by_x(SCROLL_LINE_HORIZONTAL)?;
+        Ok(())
     }
 
     /// Scroll to the top of the page.

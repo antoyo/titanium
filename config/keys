@@ -6,26 +6,43 @@ nmap <C-i> forward
 nmap <C-o> back
 nmap <C-r> inspector
 nmap <C-u> scroll-up-half
-nmap r reload
-nmap R reload-bypass-cache
+nmap b bookmark
 nmap f follow
+nmap F win-follow
 nmap gg scroll-top
+nmap gi focus-input
 nmap G scroll-bottom
+nmap h scroll-left
 nmap i insert
+nmap j scroll-down-line
+nmap k scroll-up-line
+nmap l scroll-right
 nmap n search-next
 nmap N search-previous
 nmap o :open
 nmap O :open <url>
+nmap p paste-url
+nmap P win-paste-url
 nmap q quit
-nmap k scroll-up-line
-nmap j scroll-down-line
+nmap r reload
+nmap R reload-bypass-cache
+nmap sl password-load
+nmap sp password-save
+nmap su password-submit
+nmap y copy-url
 nmap w :win-open
 nmap W :win-open <url>
 nmap = zoom-normal
 nmap - zoom-out
 nmap + zoom-in
+nmap <C-D> bookmark-del
+nmap <C-t> bookmark-edit-tags
 nmap <Enter> activate-selection
 nmap <Esc> finish-search
+nmap ;h hover
 
 fmap <Esc> hide-hints
 imap <Esc> normal
+
+cmap <C-n> complete-next
+cmap <C-p> complete-previous

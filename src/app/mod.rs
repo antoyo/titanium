@@ -291,6 +291,8 @@ impl App {
             ScrollDown => handle_error!(self.webview.scroll_down_page()),
             ScrollDownHalf => handle_error!(self.webview.scroll_down_half_page()),
             ScrollDownLine => handle_error!(self.webview.scroll_down_line()),
+            ScrollLeft => handle_error!(self.webview.scroll_left()),
+            ScrollRight => handle_error!(self.webview.scroll_right()),
             ScrollTop => handle_error!(self.webview.scroll_top()),
             ScrollUp => handle_error!(self.webview.scroll_up_page()),
             ScrollUpHalf => handle_error!(self.webview.scroll_up_half_page()),

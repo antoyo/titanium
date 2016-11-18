@@ -80,6 +80,10 @@ pub enum AppCommand {
     #[completion(hidden)]
     ScrollDownLine,
     #[completion(hidden)]
+    ScrollLeft,
+    #[completion(hidden)]
+    ScrollRight,
+    #[completion(hidden)]
     ScrollTop,
     #[completion(hidden)]
     ScrollUp,

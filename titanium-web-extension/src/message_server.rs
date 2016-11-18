@@ -275,6 +275,13 @@ dbus_class!("com.titanium.client", class MessageServer
         }
     }
 
+    // Scroll horizontally by the specified amount of pixels.
+    fn scroll_by_x(&self, pixels: i64) -> () {
+        if let Some(page) = get_page!(self) {
+            page.scroll_by_x(pixels);
+        }
+    }
+
     // Scroll to the top of the page.
     fn scroll_top(&self) -> () {
         if let Some(page) = get_page!(self) {

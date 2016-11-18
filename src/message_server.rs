@@ -35,6 +35,7 @@ interface MessageServer {
     fn load_username(&self, username: &str);
     fn scroll_bottom(&self);
     fn scroll_by(&self, pixels: i64);
+    fn scroll_by_x(&self, pixels: i64);
     fn scroll_top(&self);
     fn select_file(&self, file: &str);
     fn show_hints(&mut self, hint_chars: &str);

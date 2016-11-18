@@ -26,6 +26,7 @@ use dom::{get_body, get_document};
 /// Trait for widget that can scroll.
 pub trait Scrollable {
     fn scroll_by(&self, pixels: i64);
+    fn scroll_by_x(&self, pixels: i64);
     fn scroll_bottom(&self);
     fn scroll_percentage(&self) -> i64;
     fn scroll_top(&self);
@@ -37,6 +38,14 @@ impl Scrollable for WebPage {
     fn scroll_by(&self, pixels: i64) {
         if let Some(body) = get_body(self) {
             body.set_scroll_top(body.get_scroll_top() + pixels);
+        }
+    }
+
+    /// Scroll the web page horizontally by the specified amount of pixels.
+    /// A negative value scroll towards left.
+    fn scroll_by_x(&self, pixels: i64) {
+        if let Some(body) = get_body(self) {
+            body.set_scroll_left(body.get_scroll_left() + pixels);
         }
     }
 
