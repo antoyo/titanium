@@ -120,7 +120,7 @@ impl App {
                 "f" => "follow",
                 "i" => "insert",
             })
-            .settings(AppSettings::new())
+            .settings(AppSettings::default())
             .build()
     }
 

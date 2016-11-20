@@ -96,7 +96,7 @@ impl PasswordManager {
 
     /// Delete a password.
     /// Returns true if a credential was deleted.
-    pub fn delete(&mut self, url: &str, username: &str) -> AppResult<bool> {
+    pub fn _delete(&mut self, url: &str, username: &str) -> AppResult<bool> {
         let url = base_url(url);
         let mut deleted = false;
         let mut delete_url = false;

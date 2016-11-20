@@ -40,7 +40,7 @@ impl CookieAcceptPolicy {
     }
 }
 
-#[derive(Settings)]
+#[derive(Default, Settings)]
 pub struct AppSettings {
     pub cookie_accept: CookieAcceptPolicy,
     pub hint_chars: String,
