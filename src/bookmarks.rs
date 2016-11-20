@@ -21,8 +21,8 @@
 
 //! Bookmark management.
 
-use std::collections::{HashMap, HashSet};
-use std::collections::hash_map::Values;
+use std::collections::{BTreeMap, HashSet};
+use std::collections::btree_map::Values;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
@@ -55,7 +55,7 @@ impl Bookmark {
 
 /// A bookmark manager is use to add, search and remove bookmarks.
 pub struct BookmarkManager {
-    bookmarks: HashMap<String, Bookmark>,
+    bookmarks: BTreeMap<String, Bookmark>,
     tags: HashSet<String>,
 }
 
@@ -63,7 +63,7 @@ impl BookmarkManager {
     /// Create a new bookmark manager.
     pub fn new() -> Self {
         BookmarkManager {
-            bookmarks: HashMap::new(),
+            bookmarks: BTreeMap::new(),
             tags: HashSet::new(),
         }
     }

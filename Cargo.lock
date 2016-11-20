@@ -354,7 +354,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#ce149be04ad197b514e7c767481fc9502ca31f61"
+source = "git+https://github.com/antoyo/mg#0bd110cdb388e1fd03d36cf21e8ca3994621159c"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -634,7 +634,7 @@ dependencies = [
 [[package]]
 name = "titanium-common"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/titanium#a94aa4809ec4dc0359c343c1a589a3d4207c37b5"
+source = "git+https://github.com/antoyo/titanium#893f603811e046d18f24c913a43b85188c0d2f0e"
 
 [[package]]
 name = "unicode-bidi"

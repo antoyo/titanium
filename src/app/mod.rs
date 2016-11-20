@@ -261,6 +261,7 @@ impl App {
             BookmarkDel => self.delete_bookmark(),
             BookmarkEditTags => self.edit_bookmark_tags(),
             CopyUrl => self.copy_url(),
+            DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.finish_search(),
             FocusInput => self.focus_input(),
             Follow => {

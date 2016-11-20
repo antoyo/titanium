@@ -44,5 +44,6 @@ nmap ;h hover
 fmap <Esc> hide-hints
 imap <Esc> normal
 
+cmap <C-d> delete-selected-bookmark
 cmap <C-n> complete-next
 cmap <C-p> complete-previous

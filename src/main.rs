@@ -68,7 +68,6 @@
  * TODO: unselect text when focusing a field.
  * TODO: add a passthrough mode.
  * TODO: add help text for commands and settings.
- * TODO: allow to delete bookmarks in completion.
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: preferred languages.

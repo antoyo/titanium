@@ -62,6 +62,21 @@ impl App {
         }
     }
 
+    /// Delete the bookmark selected in completion.
+    pub fn delete_selected_bookmark(&mut self) {
+        let command = self.app.get_command();
+        let mut command = command.split_whitespace();
+        match command.next() {
+            Some("open") | Some("win-open") =>
+                if let Some(url) = command.next() {
+                    // Do not show message when deleting a bookmark in completion.
+                    (*self.bookmark_manager.borrow_mut()).delete(url).ok();
+                    self.app.delete_current_completion_item();
+                },
+            _ => (),
+        }
+    }
+
     /// Edit the tags of the current page from the bookmarks.
     pub fn edit_bookmark_tags(&mut self) {
         if let Some(url) = self.webview.get_uri() {

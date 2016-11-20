@@ -34,6 +34,8 @@ pub enum AppCommand {
     #[completion(hidden)]
     CopyUrl,
     #[completion(hidden)]
+    DeleteSelectedBookmark,
+    #[completion(hidden)]
     FinishSearch,
     #[completion(hidden)]
     FocusInput,
