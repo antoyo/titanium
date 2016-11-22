@@ -40,7 +40,6 @@
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
- * FIXME: hints too large on http://www.walmart.ca/.
  *
  * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
