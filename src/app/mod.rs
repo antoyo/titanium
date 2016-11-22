@@ -285,6 +285,7 @@ impl App {
             Inspector => self.webview.show_inspector(),
             Normal => self.app.set_mode("normal"),
             Open(url) => self.open(&url),
+            PasswordDelete => self.delete_password(),
             PasswordLoad => { let _ = self.load_password(); },
             PasswordSave => self.save_password(),
             PasswordSubmit => self.submit_login_form(),

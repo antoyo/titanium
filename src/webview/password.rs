@@ -23,6 +23,24 @@ use app::AppResult;
 use super::WebView;
 
 impl WebView {
+    /// Delete the username and password for the current URL.
+    pub fn delete_password(&mut self) -> AppResult<bool> {
+        if let Some(url) = self.view.get_uri() {
+            let username =
+                if let Some(credentials) = self.password_manager.get_credentials(&url) {
+                    Some(credentials[0].username.clone())
+                }
+                else {
+                    None
+                };
+            if let Some(username) = username {
+                self.password_manager.delete(&url, &username)?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// Check if there are multiple passwords for the current URL.
     pub fn has_multiple_passwords(&self) -> bool {
         if let Some(url) = self.view.get_uri() {
@@ -54,6 +72,7 @@ impl WebView {
 
     /// Save the password from the login form.
     pub fn save_password(&mut self) -> AppResult<bool> {
+        // TODO: ask to override existing password.
         let (username, password) = self.message_server.get_credentials()?;
         if let Some(url) = self.view.get_uri() {
             // TODO: handle the check parameter.

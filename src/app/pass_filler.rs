@@ -22,6 +22,20 @@
 use super::{App, AppResult};
 
 impl App {
+    /// Delete the password for the current URL.
+    pub fn delete_password(&mut self) {
+        if self.webview.has_multiple_passwords() {
+            // TODO
+        }
+        else {
+            match self.webview.delete_password() {
+                Ok(true) => self.app.info("Password deleted"),
+                Ok(false) => self.app.info("No password for the current URL"),
+                Err(err) => self.show_error(err),
+            }
+        }
+    }
+
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
