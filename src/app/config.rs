@@ -25,32 +25,26 @@ use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::{self, Write};
 use std::path::Path;
 
-use xdg::BaseDirectories;
-
-use bookmarks::BookmarkManager;
-use credentials::PasswordManager;
-use popup_manager::PopupManager;
-use super::{App, AppResult, APP_NAME};
+use super::{App, AppResult};
 
 impl App {
     /// Create the default configuration files and directories if it does not exist.
     fn create_config_files(&self, config_path: &Path) -> AppResult<()> {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME)?;
+        let bookmarks_path = App::bookmark_path(&self.config_dir);
+        let passwords_path = App::password_path(&self.config_dir);
 
-        let bookmarks_path = BookmarkManager::config_path();
-        let passwords_path = PasswordManager::config_path();
-
-        let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
-        let scripts_path = xdg_dirs.place_config_file("scripts")?;
-        let popups_path = xdg_dirs.place_config_file("popups")?;
+        let stylesheets_path = self.config_dir.config_file("stylesheets")?;
+        let scripts_path = self.config_dir.config_file("scripts")?;
+        let popups_path = self.config_dir.config_file("popups")?;
         create_dir_all(stylesheets_path)?;
         create_dir_all(scripts_path)?;
         create_dir_all(popups_path)?;
+        create_dir_all(self.config_dir.data_home())?;
 
-        let keys_path = xdg_dirs.place_config_file("keys")?;
-        let webkit_config_path = xdg_dirs.place_config_file("webkit")?;
-        let hints_css_path = xdg_dirs.place_config_file("stylesheets/hints.css")?;
-        let hosts_path = xdg_dirs.place_data_file("hosts")?;
+        let keys_path = self.config_dir.config_file("keys")?;
+        let webkit_config_path = self.config_dir.config_file("webkit")?;
+        let hints_css_path = self.config_dir.config_file("stylesheets/hints.css")?;
+        let hosts_path = self.config_dir.data_file("hosts")?;
         self.create_default_config_file(config_path, include_str!("../../config/config"))?;
         self.create_default_config_file(&keys_path, include_str!("../../config/keys"))?;
         self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
@@ -59,7 +53,7 @@ impl App {
         self.create_default_config_file(&hosts_path, include_str!("../../config/hosts"))?;
         self.create_default_config_file(&passwords_path, include_str!("../../config/passwords"))?;
 
-        let (popup_whitelist_path, popup_blacklist_path) = PopupManager::config_path();
+        let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(&self.config_dir);
         create_file(&popup_whitelist_path)?;
         create_file(&popup_blacklist_path)?;
 
@@ -87,8 +81,7 @@ impl App {
 
     /// Create the missing config files and parse the config files.
     pub fn parse_config(&mut self) {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        let config_path = xdg_dirs.place_config_file("config")
+        let config_path = self.config_dir.config_file("config")
             .expect("cannot create configuration directory");
         handle_error!(self.create_config_files(config_path.as_path()));
         handle_error!(self.app.parse_config(config_path));

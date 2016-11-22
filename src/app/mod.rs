@@ -37,6 +37,7 @@ mod dialog;
 mod download;
 mod hints;
 mod pass_filler;
+mod paths;
 mod popup;
 mod search_engine;
 
@@ -52,7 +53,6 @@ use gdk::{EventButton, EventKey, CONTROL_MASK};
 use gtk::{self, ContainerExt, Inhibit, Widget, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{Application, ApplicationBuilder, StatusBarItem};
-use xdg::BaseDirectories;
 use webkit2gtk::{HitTestResult, NavigationAction, WebViewExt};
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
@@ -62,6 +62,7 @@ use commands::{AppCommand, SpecialCommand};
 use commands::AppCommand::*;
 use commands::SpecialCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
+use config_dir::ConfigDir;
 use credentials::PasswordManager;
 use download_list_view::DownloadListView;
 use popup_manager::PopupManager;
@@ -95,6 +96,7 @@ impl Display for FollowMode {
 pub struct App {
     app: Box<MgApp>,
     bookmark_manager: Rc<RefCell<BookmarkManager>>,
+    config_dir: ConfigDir,
     default_search_engine: Option<String>,
     download_list_view: DownloadListView,
     follow_mode: FollowMode,
@@ -107,9 +109,8 @@ pub struct App {
 }
 
 impl App {
-    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>) -> Box<MgApp> {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        let include_path = xdg_dirs.get_config_home();
+    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>, config_dir: &ConfigDir) -> Box<MgApp> {
+        let include_path = config_dir.config_home();
 
         ApplicationBuilder::new()
             .completer("file", FileCompleter::new())
@@ -124,9 +125,10 @@ impl App {
             .build()
     }
 
-    pub fn new(homepage: Option<String>) -> Box<Self> {
-        let bookmark_manager = Rc::new(RefCell::new(BookmarkManager::new()));
-        let mut mg_app = App::build(&bookmark_manager);
+    pub fn new(homepage: Option<String>, config_dir: Option<String>) -> Box<Self> {
+        let config_dir = ConfigDir::new(&config_dir).unwrap();
+        let bookmark_manager = Rc::new(RefCell::new(BookmarkManager::new(App::bookmark_path(&config_dir))));
+        let mut mg_app = App::build(&bookmark_manager, &config_dir);
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -140,20 +142,23 @@ impl App {
         let download_list_view = DownloadListView::new();
         vbox.add(&*download_list_view);
 
-        let password_manager = PasswordManager::new();
-        let webview = WebView::new(password_manager);
+        let password_manager = PasswordManager::new(App::password_path(&config_dir));
+        let webview = WebView::new(password_manager, &config_dir);
         vbox.add(&**webview);
 
         mg_app.set_view(&vbox);
 
+        let popup_manager = PopupManager::new(App::popup_path(&config_dir));
+
         let mut app = Box::new(App {
             app: mg_app,
             bookmark_manager: bookmark_manager,
+            config_dir: config_dir,
             default_search_engine: None,
             download_list_view: download_list_view,
             follow_mode: FollowMode::Click,
             hovered_link: None,
-            popup_manager: PopupManager::new(),
+            popup_manager: popup_manager,
             scroll_label: scroll_label,
             search_engines: HashMap::new(),
             url_label: url_label,
@@ -356,8 +361,8 @@ impl App {
     fn handle_load_changed(&mut self, load_event: LoadEvent) {
         if load_event == Started {
             self.webview.finish_search();
-            handle_error!(self.webview.add_stylesheets());
-            handle_error!(self.webview.add_scripts());
+            handle_error!(self.webview.add_stylesheets(&self.config_dir));
+            handle_error!(self.webview.add_scripts(&self.config_dir));
 
             // Check to mode to avoid going back to normal mode if the user is in command mode.
             let set_mode = {

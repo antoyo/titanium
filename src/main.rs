@@ -20,7 +20,7 @@
  */
 
 /*
- * TODO: add a command to delete a password.
+ * TODO: setting to allow storing the password in clear-text.
  *
  * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows).
  *
@@ -167,6 +167,7 @@ mod bookmarks;
 mod clipboard;
 mod commands;
 mod completers;
+mod config_dir;
 mod credentials;
 mod dialogs;
 mod download_view;
@@ -190,15 +191,17 @@ const USAGE: &'static str = "
 Titanium web browser.
 
 Usage:
-    titanium [<url>] [--log]
+    titanium [<url>] [--config=<dir>] [--log]
 
 Options:
-    --log   Show the log messages.
+    --config=<dir>  The configuration directory.
+    --log           Show the log messages.
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
     arg_url: Option<String>,
+    flag_config: Option<String>,
     flag_log: bool,
 }
 
@@ -219,7 +222,7 @@ fn main() {
         TermLogger::init(LogLevelFilter::max(), config).unwrap();
     }
 
-    let _app = App::new(args.arg_url);
+    let _app = App::new(args.arg_url, args.flag_config);
 
     gtk::main();
 }

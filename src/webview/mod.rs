@@ -59,9 +59,9 @@ use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
-use xdg::BaseDirectories;
 
-use app::{AppResult, APP_NAME};
+use app::AppResult;
+use config_dir::ConfigDir;
 use credentials::PasswordManager;
 use message_server::MessageServer;
 use stylesheet::get_stylesheet_and_whitelist;
@@ -80,8 +80,8 @@ pub struct WebView {
 
 impl WebView {
     /// Create a new web view.
-    pub fn new(password_manager: PasswordManager) -> Box<Self> {
-        let (context, message_server) = WebView::initialize_web_extension();
+    pub fn new(password_manager: PasswordManager, config_dir: &ConfigDir) -> Box<Self> {
+        let (context, message_server) = WebView::initialize_web_extension(config_dir);
 
         let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
         view.set_vexpand(true);
@@ -119,11 +119,10 @@ impl WebView {
     }
 
     /// Add the user scripts.
-    pub fn add_scripts(&self) -> AppResult<()> {
+    pub fn add_scripts(&self, config_dir: &ConfigDir) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_scripts();
-            let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-            let script_path = xdg_dirs.place_config_file("scripts")?;
+            let script_path = config_dir.config_file("scripts")?;
             for filename in read_dir(script_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
@@ -137,11 +136,10 @@ impl WebView {
     }
 
     /// Add the user stylesheets.
-    pub fn add_stylesheets(&self) -> AppResult<()> {
+    pub fn add_stylesheets(&self, config_dir: &ConfigDir) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_style_sheets();
-            let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-            let stylesheets_path = xdg_dirs.place_config_file("stylesheets")?;
+            let stylesheets_path = config_dir.config_file("stylesheets")?;
             for filename in read_dir(stylesheets_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
@@ -257,7 +255,7 @@ impl WebView {
     }
 
     /// Create the context and initialize the web extension.
-    fn initialize_web_extension() -> (WebContext, MessageServer) {
+    fn initialize_web_extension(config_dir: &ConfigDir) -> (WebContext, MessageServer) {
         let context = WebContext::get_default().unwrap();
         if cfg!(debug_assertions) {
             context.set_web_extensions_directory("titanium-web-extension/target/debug");
@@ -273,8 +271,7 @@ impl WebView {
 
         context.set_web_extensions_initialization_user_data(&server_name.to_variant());
 
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        let cookie_path = xdg_dirs.place_data_file("cookies")
+        let cookie_path = config_dir.data_file("cookies")
             .expect("cannot create data directory");
         let cookie_manager = context.get_cookie_manager().unwrap();
         cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);

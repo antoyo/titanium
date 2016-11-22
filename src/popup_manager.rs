@@ -25,9 +25,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use xdg::BaseDirectories;
-
-use app::{AppResult, APP_NAME};
+use app::AppResult;
 use urls::get_base_url;
 
 /// Manager to know whether a popup should be always or never opened.
@@ -40,8 +38,8 @@ pub struct PopupManager {
 
 impl PopupManager {
     /// Create a new popup manager.
-    pub fn new() -> Self {
-        let (whitelist_path, blacklist_path) = Self::config_path();
+    pub fn new(popup_path: (PathBuf, PathBuf)) -> Self {
+        let (whitelist_path, blacklist_path) = popup_path;
         PopupManager {
             blacklisted_urls: HashSet::new(),
             blacklist_path: blacklist_path,
@@ -54,16 +52,6 @@ impl PopupManager {
     pub fn blacklist(&mut self, url: &str) -> AppResult<()> {
         self.blacklisted_urls.insert(get_base_url(url).to_string());
         self.save_blacklist()
-    }
-
-    /// Get the whitelist and blacklist path.
-    pub fn config_path() -> (PathBuf, PathBuf) {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        ( xdg_dirs.place_config_file("popups/whitelist")
-            .expect("cannot create configuration directory")
-        , xdg_dirs.place_config_file("popups/blacklist")
-            .expect("cannot create configuration directory")
-        )
     }
 
     /// Check if the specified url is blacklisted.

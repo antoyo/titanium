@@ -21,7 +21,7 @@
 
 //! Password management.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::ops::Not;
@@ -29,7 +29,6 @@ use std::path::PathBuf;
 
 use password_store::PasswordStore;
 use serde_yaml;
-use xdg::BaseDirectories;
 
 use app::{AppResult, APP_NAME};
 use urls::base_url;
@@ -53,18 +52,20 @@ impl Credential {
 }
 
 /// Credentials is a map of URL to a list of usernames.
-type Credentials = HashMap<String, Vec<Credential>>;
+type Credentials = BTreeMap<String, Vec<Credential>>;
 
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
     credentials: Credentials,
+    filename: PathBuf,
 }
 
 impl PasswordManager {
     /// Create a new password manager.
-    pub fn new() -> Self {
+    pub fn new(filename: PathBuf) -> Self {
         PasswordManager {
-            credentials: HashMap::new(),
+            credentials: BTreeMap::new(),
+            filename: filename,
         }
     }
 
@@ -72,31 +73,24 @@ impl PasswordManager {
     /// Returns true if the credential was added.
     pub fn add(&mut self, url: &str, username: &str, password: &str, check: bool) -> AppResult<bool> {
         let url = base_url(url);
-        let mut added = false;
+        let mut found = false;
         {
             let credentials = self.credentials.entry(url.to_string()).or_insert_with(Vec::new);
             for credential in credentials.iter() {
                 if credential.username == username {
-                    added = true;
+                    found = true;
                 }
             }
             credentials.push(Credential::new(username, check));
         }
         PasswordStore::insert(&PasswordManager::path(&url, username), password)?;
         self.save()?;
-        Ok(added)
-    }
-
-    /// Get the config path of the password file.
-    pub fn config_path() -> PathBuf {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        xdg_dirs.place_config_file("passwords")
-            .expect("cannot create configuration directory")
+        Ok(!found)
     }
 
     /// Delete a password.
     /// Returns true if a credential was deleted.
-    pub fn _delete(&mut self, url: &str, username: &str) -> AppResult<bool> {
+    pub fn delete(&mut self, url: &str, username: &str) -> AppResult<bool> {
         let url = base_url(url);
         let mut deleted = false;
         let mut delete_url = false;
@@ -134,8 +128,7 @@ impl PasswordManager {
 
     /// Load the usernames.
     pub fn load(&mut self) -> AppResult<()> {
-        let filename = PasswordManager::config_path();
-        let reader = BufReader::new(File::open(filename)?);
+        let reader = BufReader::new(File::open(&self.filename)?);
         self.credentials = serde_yaml::from_reader(reader)?;
 
         Ok(())
@@ -148,8 +141,7 @@ impl PasswordManager {
 
     /// Save the credentials to the disk file.
     fn save(&self) -> AppResult<()> {
-        let filename = PasswordManager::config_path();
-        let mut writer = BufWriter::new(File::create(filename)?);
+        let mut writer = BufWriter::new(File::create(&self.filename)?);
         let yaml = serde_yaml::to_string(&self.credentials)?;
         write!(writer, "{}", yaml)?;
         Ok(())

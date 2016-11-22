@@ -28,9 +28,8 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
 use serde_yaml;
-use xdg::BaseDirectories;
 
-use app::{AppResult, APP_NAME};
+use app::AppResult;
 
 /// A bookmark has a title and a URL and optionally some tags.
 #[derive(Deserialize, Serialize, Debug)]
@@ -56,14 +55,16 @@ impl Bookmark {
 /// A bookmark manager is use to add, search and remove bookmarks.
 pub struct BookmarkManager {
     bookmarks: BTreeMap<String, Bookmark>,
+    filename: PathBuf,
     tags: HashSet<String>,
 }
 
 impl BookmarkManager {
     /// Create a new bookmark manager.
-    pub fn new() -> Self {
+    pub fn new(filename: PathBuf) -> Self {
         BookmarkManager {
             bookmarks: BTreeMap::new(),
+            filename: filename,
             tags: HashSet::new(),
         }
     }
@@ -79,13 +80,6 @@ impl BookmarkManager {
             self.save()?;
             Ok(true)
         }
-    }
-
-    /// Get the config path of the bookmarks file.
-    pub fn config_path() -> PathBuf {
-        let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        xdg_dirs.place_config_file("bookmarks")
-            .expect("cannot create configuration directory")
     }
 
     /// Delete a bookmark.
@@ -106,8 +100,7 @@ impl BookmarkManager {
 
     /// Load the bookmarks.
     pub fn load(&mut self) -> AppResult<()> {
-        let filename = BookmarkManager::config_path();
-        let reader = BufReader::new(File::open(filename)?);
+        let reader = BufReader::new(File::open(&self.filename)?);
         let bookmarks: Vec<Bookmark> = serde_yaml::from_reader(reader)?;
 
         for bookmark in bookmarks {
@@ -130,8 +123,7 @@ impl BookmarkManager {
 
     /// Save the bookmarks to the disk file.
     fn save(&self) -> AppResult<()> {
-        let filename = BookmarkManager::config_path();
-        let mut writer = BufWriter::new(File::create(filename)?);
+        let mut writer = BufWriter::new(File::create(&self.filename)?);
         let bookmarks: Vec<_> = self.bookmarks.values().collect();
         let yaml = serde_yaml::to_string(&bookmarks)?;
         write!(writer, "{}", yaml)?;
