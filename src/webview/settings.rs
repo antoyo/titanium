@@ -24,6 +24,7 @@ use settings::AppSettingsVariant::{
     CookieAccept,
     HintChars,
     HomePage,
+    PasswordStorage,
     WebkitAllowFileAccessFromFileUrls,
     WebkitAllowModalDialogs,
     WebkitAutoLoadImages,
@@ -87,11 +88,12 @@ impl WebView {
     }
 
     /// Adjust the webkit settings.
-    pub fn setting_changed(&self, setting: &AppSettingsVariant) {
+    pub fn setting_changed(&mut self, setting: &AppSettingsVariant) {
         if let Some(settings) = self.view.get_settings() {
             match *setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) | HomePage(_) => (),
+                PasswordStorage(ref storage) => self.password_manager.set_storage(storage),
                 WebkitAllowFileAccessFromFileUrls(value) =>
                     settings.set_allow_file_access_from_file_urls(value),
                 WebkitAllowModalDialogs(value) =>

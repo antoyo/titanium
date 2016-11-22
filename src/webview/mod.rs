@@ -62,8 +62,8 @@ use webkit2gtk::UserStyleLevel::User;
 
 use app::AppResult;
 use config_dir::ConfigDir;
-use credentials::PasswordManager;
 use message_server::MessageServer;
+use pass_manager::PasswordManager;
 use stylesheet::get_stylesheet_and_whitelist;
 
 /// Webkit-based view.

@@ -31,6 +31,7 @@ use password_store::PasswordStore;
 use serde_yaml;
 
 use app::{AppResult, APP_NAME};
+use settings::PasswordStorage;
 use urls::base_url;
 
 /// Username/password for a website.
@@ -38,6 +39,8 @@ use urls::base_url;
 pub struct Credential {
     #[serde(default, skip_serializing_if = "Not::not")]
     pub check: bool,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub password: String,
     pub username: String,
 }
 
@@ -46,6 +49,7 @@ impl Credential {
     fn new(username: &str, check: bool) -> Self {
         Credential {
             check: check,
+            password: String::new(),
             username: username.to_string(),
         }
     }
@@ -58,6 +62,7 @@ type Credentials = BTreeMap<String, Vec<Credential>>;
 pub struct PasswordManager {
     credentials: Credentials,
     filename: PathBuf,
+    storage: PasswordStorage,
 }
 
 impl PasswordManager {
@@ -66,6 +71,7 @@ impl PasswordManager {
         PasswordManager {
             credentials: BTreeMap::new(),
             filename: filename,
+            storage: PasswordStorage::Cleartext,
         }
     }
 
@@ -81,9 +87,15 @@ impl PasswordManager {
                     found = true;
                 }
             }
-            credentials.push(Credential::new(username, check));
+            let mut credential = Credential::new(username, check);
+            if self.storage == PasswordStorage::Cleartext {
+                credential.password = password.to_string();
+            }
+            credentials.push(credential);
         }
-        PasswordStore::insert(&PasswordManager::path(&url, username), password)?;
+        if self.storage == PasswordStorage::Pass {
+            PasswordStore::insert(&PasswordManager::path(&url, username), password)?;
+        }
         self.save()?;
         Ok(!found)
     }
@@ -99,7 +111,7 @@ impl PasswordManager {
             credentials.retain(|credential| credential.username == username);
             deleted = credentials.len() != last_len;
             delete_url = credentials.is_empty();
-            if deleted {
+            if deleted && self.storage == PasswordStorage::Pass {
                 PasswordStore::remove(&PasswordManager::path(&url, username))?;
             }
         }
@@ -121,9 +133,23 @@ impl PasswordManager {
 
     /// Get the password for a `url` and username.
     pub fn get_password(&self, url: &str, username: &str) -> AppResult<String> {
-        let url = base_url(url);
-        let password = PasswordStore::get(&PasswordManager::path(&url, username))?;
-        Ok(password)
+        if self.storage == PasswordStorage::Pass {
+            let url = base_url(url);
+            Ok(PasswordStore::get(&PasswordManager::path(&url, username))?)
+        }
+        else if let Some(credentials) = self.get_credentials(url) {
+            for credential in credentials {
+                if credential.username == username {
+                    return Ok(credential.password.clone());
+                }
+            }
+            // TODO: implement proper error handling.
+            panic!("No credential for the current URL and username".to_string());
+        }
+        else {
+            // TODO: implement proper error handling.
+            panic!("No credential for the current URL".to_string());
+        }
     }
 
     /// Load the usernames.
@@ -145,5 +171,10 @@ impl PasswordManager {
         let yaml = serde_yaml::to_string(&self.credentials)?;
         write!(writer, "{}", yaml)?;
         Ok(())
+    }
+
+    /// Set the password storage.
+    pub fn set_storage(&mut self, storage: &PasswordStorage) {
+        self.storage = storage.clone();
     }
 }

@@ -20,8 +20,6 @@
  */
 
 /*
- * TODO: setting to allow storing the password in clear-text.
- *
  * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows).
  *
  * TODO: file watcher to sync bookmarks between windows.
@@ -168,13 +166,13 @@ mod clipboard;
 mod commands;
 mod completers;
 mod config_dir;
-mod credentials;
 mod dialogs;
 mod download_view;
 mod download_list_view;
 mod file;
 mod glib_ext;
 mod message_server;
+mod pass_manager;
 mod popup_manager;
 mod settings;
 mod stylesheet;
