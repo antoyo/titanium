@@ -29,4 +29,15 @@ impl App {
             self.app.info("Cache cleared");
         }
     }
+
+    /// Delete the cookies for the specified domain.
+    pub fn delete_cookies(&mut self, domain: &str) {
+        let cookie_manager =
+            self.webview.get_context()
+            .and_then(|context| context.get_cookie_manager());
+        if let Some(cookie_manager) = cookie_manager {
+            cookie_manager.delete_cookies_for_domain(domain);
+            self.app.info(&format!("Cookies deleted for domain {}", domain));
+        }
+    }
 }

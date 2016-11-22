@@ -269,6 +269,7 @@ impl App {
             BookmarkEditTags => self.edit_bookmark_tags(),
             ClearCache => self.clear_cache(),
             CopyUrl => self.copy_url(),
+            DeleteCookies(domain) => self.delete_cookies(&domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.finish_search(),
             FocusInput => self.focus_input(),

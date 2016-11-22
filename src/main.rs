@@ -72,7 +72,7 @@
  * TODO: support marks.
  * TODO: preferred languages.
  * TODO: store cache.
- * TODO: add a command to delete cache, cookies, history, …
+ * TODO: add a command to delete history, …
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
