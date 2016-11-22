@@ -30,6 +30,17 @@ impl App {
         }
     }
 
+    /// Delete all the cookies.
+    pub fn delete_all_cookies(&mut self) {
+        let cookie_manager =
+            self.webview.get_context()
+            .and_then(|context| context.get_cookie_manager());
+        if let Some(cookie_manager) = cookie_manager {
+            cookie_manager.delete_all_cookies();
+            self.app.info("All cookies deleted");
+        }
+    }
+
     /// Delete the cookies for the specified domain.
     pub fn delete_cookies(&mut self, domain: &str) {
         let cookie_manager =

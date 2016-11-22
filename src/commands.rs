@@ -35,6 +35,8 @@ pub enum AppCommand {
     ClearCache,
     #[completion(hidden)]
     CopyUrl,
+    #[help(text="Delete all the cookies")]
+    DeleteAllCookies,
     #[help(text="Delete the cookies for the specified domain")]
     DeleteCookies(String),
     #[completion(hidden)]
