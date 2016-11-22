@@ -31,6 +31,8 @@ pub enum AppCommand {
     BookmarkDel,
     #[help(text="Edit the bookmark tags of the current page")]
     BookmarkEditTags,
+    #[help(text="Clear the browser cache")]
+    ClearCache,
     #[completion(hidden)]
     CopyUrl,
     #[completion(hidden)]

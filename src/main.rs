@@ -40,6 +40,7 @@
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
+ * FIXME: hints too large on http://www.walmart.ca/.
  *
  * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
@@ -55,6 +56,8 @@
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
  * FIXME: sometimes does not go to insert mode after focusing first input.
+ * TODO: generate the default files from the code (for instance, from default settings) instead of
+ * copying predefined files.
  * TODO: shortcut to open the selected (searched) word.
  * TODO: support CTRL-Z in input elements.
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).

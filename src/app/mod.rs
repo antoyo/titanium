@@ -31,6 +31,7 @@ macro_rules! handle_error {
 }
 
 mod bookmarks;
+mod browser;
 mod config;
 mod copy_paste;
 mod dialog;
@@ -266,6 +267,7 @@ impl App {
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
             BookmarkEditTags => self.edit_bookmark_tags(),
+            ClearCache => self.clear_cache(),
             CopyUrl => self.copy_url(),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.finish_search(),
