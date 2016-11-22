@@ -12,6 +12,7 @@ dependencies = [
  "gtk 0.1.0 (git+https://github.com/gtk-rs/gtk)",
  "gtk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libxdo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "mg 0.0.5-pre (git+https://github.com/antoyo/mg)",
  "mg-settings 0.0.5-pre (git+https://github.com/antoyo/mg-settings)",
@@ -25,6 +26,7 @@ dependencies = [
  "serde_derive 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_yaml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "simplelog 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tempdir 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 2.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "titanium-common 0.1.0 (git+https://github.com/antoyo/titanium)",
  "url 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -321,8 +323,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libc"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "libc"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "libxdo"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libxdo-sys 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libxdo-sys"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x11 2.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "linked-hash-map"
@@ -354,7 +379,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#0bd110cdb388e1fd03d36cf21e8ca3994621159c"
+source = "git+https://github.com/antoyo/mg#0aa38876fa2a3e15352105cd9d39a3e9983fdf1c"
 dependencies = [
  "gdk 0.5.0 (git+https://github.com/gtk-rs/gdk)",
  "gdk-sys 0.3.1 (git+https://github.com/gtk-rs/sys)",
@@ -372,7 +397,7 @@ dependencies = [
 [[package]]
 name = "mg-settings"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg-settings#2533fa5f477a62207866fc9ea90308f217b0d343"
+source = "git+https://github.com/antoyo/mg-settings#d57b911e14d5c7d22764824bbdfe56ce00da2835"
 dependencies = [
  "mg-settings-macros 0.0.1 (git+https://github.com/antoyo/mg-settings)",
 ]
@@ -380,7 +405,7 @@ dependencies = [
 [[package]]
 name = "mg-settings-macros"
 version = "0.0.1"
-source = "git+https://github.com/antoyo/mg-settings#2533fa5f477a62207866fc9ea90308f217b0d343"
+source = "git+https://github.com/antoyo/mg-settings#d57b911e14d5c7d22764824bbdfe56ce00da2835"
 dependencies = [
  "quote 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -584,6 +609,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tempdir"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "tempfile"
 version = "2.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -634,7 +667,7 @@ dependencies = [
 [[package]]
 name = "titanium-common"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/titanium#893f603811e046d18f24c913a43b85188c0d2f0e"
+source = "git+https://github.com/antoyo/titanium#8a6f164bf59ef73a17485615f78d36f404600760"
 
 [[package]]
 name = "unicode-bidi"
@@ -718,6 +751,15 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "x11"
+version = "2.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "xdg"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,7 +807,10 @@ replace = "yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)"
 "checksum javascriptcore-sys 0.1.0 (git+https://github.com/antoyo/javascriptcore-sys-rs)" = "<none>"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6abe0ee2e758cd6bc8a2cd56726359007748fbf4128da998b65d0b70f881e19b"
+"checksum libc 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "e32a70cf75e5846d53a673923498228bbec6a8624708a9ea5645f075d6276122"
 "checksum libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)" = "044d1360593a78f5c8e5e710beccdc24ab71d1f01bc19a29bcacdba22e8475d8"
+"checksum libxdo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c778ab264e5fac4de725e2f5cbf2b671ed984bd1a39620a1bb14bd0c72dfa288"
+"checksum libxdo-sys 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1e094ffd00b53dbef1a1394f2df970ff222210a1ea9f5dcdfd846e8c4c76a1ef"
 "checksum linked-hash-map 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6d262045c5b87c0861b3f004610afd0e2c851e2908d08b6c870cbb9d5f494ecd"
 "checksum log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "ab83497bf8bf4ed2a74259c1c802351fcd67a65baa86394b6ba73c36f4838054"
 "checksum matches 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "efd7622e3022e1a6eaa602c4cea8912254e5582c9c692e9167714182244801b1"
@@ -798,6 +843,7 @@ replace = "yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)"
 "checksum strsim 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "50c069df92e4b01425a8bf3576d5d417943a6a7272fbabaf5bd80b1aaa76442e"
 "checksum syn 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "94e7d81ecd16d39f16193af05b8d5a0111b9d8d2f3f78f31760f327a247da777"
 "checksum syn 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)" = "76c2db66dc579998854d84ff0ff4a81cb73e69596764d144ce7cece4d04ce6b5"
+"checksum tempdir 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "87974a6f5c1dfb344d733055601650059a3363de2a6104819293baff662132d6"
 "checksum tempfile 2.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "9270837a93bad1b1dac18fe67e786b3c960513af86231f6f4f57fddd594ff0c8"
 "checksum term 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "3deff8a2b3b6607d6d7cc32ac25c0b33709453ca9cceac006caac51e963cf94a"
 "checksum thread-id 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a9539db560102d1cef46b8b78ce737ff0bb64e7e18d35b2a5688f7d097d0ff03"
@@ -813,6 +859,7 @@ replace = "yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)"
 "checksum webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-sys-rs)" = "<none>"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
+"checksum x11 2.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "be719a282c8d2debd87999849347346259c58ff0acdac3f7f3b48b58652dd773"
 "checksum xdg 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "77b831a5ba77110f438f0ac5583aafeb087f70432998ba6b7dcb1d32185db453"
 "checksum yaml-rust 0.3.4 (git+https://github.com/chyh1990/yaml-rust)" = "<none>"
 "checksum yaml-rust 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "371cea3a33a58d11dc83c0992fb37e44f651ebdf2df12f9d939f6cb24be2a8fd"

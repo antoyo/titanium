@@ -69,3 +69,85 @@ impl App {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::thread;
+    use std::time::Duration;
+
+    use gtk;
+    use libxdo::XDo;
+    use tempdir::TempDir;
+    use webkit2gtk::WebViewExt;
+
+    use app::App;
+    use app::test_utils::XDoExt;
+
+    fn sleep_ms(ms: u64) {
+        thread::sleep(Duration::from_millis(ms));
+    }
+
+    #[test]
+    fn fill_login_form() {
+        gtk::init().unwrap();
+
+        let path = "/tmp/titanium_test";
+        let temp_dir = TempDir::new(path).unwrap();
+
+        let dir = env::current_dir().unwrap();
+        let cwd = dir.to_str().unwrap();
+        let url = format!("file://{}/tests/login_form1.html", cwd);
+        let js_username_value = "document.getElementById('username').value";
+        let js_password_value = "document.getElementById('password').value";
+
+        let app = App::new(Some(url), Some(temp_dir.path().to_str().unwrap().to_string()));
+
+        thread::spawn(|| {
+            let xdo = XDo::new(None).unwrap();
+            sleep_ms(1000);
+            xdo.enter_text("gi", 0).unwrap();
+            xdo.enter_text("username", 0).unwrap();
+            xdo.send_keysequence("Tab", 0).unwrap();
+            xdo.enter_text("password", 0).unwrap();
+            xdo.send_keysequence("Escape", 0).unwrap();
+            sleep_ms(500);
+            xdo.enter_command("password-save");
+            xdo.enter_text("gi", 0).unwrap();
+            for _ in 0..8 {
+                xdo.send_keysequence("BackSpace", 0).unwrap();
+            }
+            xdo.send_keysequence("Tab", 0).unwrap();
+            xdo.send_keysequence("BackSpace", 0).unwrap();
+            xdo.send_keysequence("Escape", 0).unwrap();
+            sleep_ms(500);
+            xdo.enter_command("password-load");
+            sleep_ms(500);
+            xdo.enter_command("quit");
+            xdo.enter_command("quit"); // FIXME: find out why two quit commands are needed.
+        });
+
+        gtk::main();
+
+        app.webview.run_javascript_with_callback(&format!("{}.length", js_username_value), |result| {
+            let result = result.unwrap();
+            let value = result.get_value().unwrap();
+            let context = result.get_global_context().unwrap();
+            let username_length = value.to_number(&context).unwrap() as i32;
+            assert_eq!(username_length, 8);
+            gtk::main_quit();
+        });
+
+        app.webview.run_javascript_with_callback(&format!("{}.length", js_password_value), |result| {
+            let result = result.unwrap();
+            let value = result.get_value().unwrap();
+            let context = result.get_global_context().unwrap();
+            let password_length = value.to_number(&context).unwrap() as i32;
+            assert_eq!(password_length, 8);
+            gtk::main_quit();
+        });
+
+        gtk::main();
+        gtk::main();
+    }
+}

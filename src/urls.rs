@@ -23,6 +23,18 @@ use regex::Regex;
 use url::Url;
 use url::percent_encoding::percent_decode;
 
+#[cfg(test)]
+pub fn base_url(url: &str) -> String {
+    if url.starts_with("file://") {
+        url.to_string()
+    }
+    else {
+        let base_url = get_base_url(url);
+        base_url.trim_left_matches("www.").to_string()
+    }
+}
+
+#[cfg(not(test))]
 /// Get the base URL without www.
 pub fn base_url(url: &str) -> String {
     let base_url = get_base_url(url);

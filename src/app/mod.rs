@@ -40,6 +40,7 @@ mod pass_filler;
 mod paths;
 mod popup;
 mod search_engine;
+mod test_utils;
 
 use std::cell::{RefCell};
 use std::collections::HashMap;

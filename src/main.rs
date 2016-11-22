@@ -137,6 +137,8 @@ extern crate glib_sys;
 extern crate gtk;
 extern crate gtk_sys;
 extern crate libc;
+#[cfg(test)]
+extern crate libxdo;
 extern crate log;
 #[macro_use]
 extern crate mg;
@@ -154,6 +156,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_yaml;
 extern crate simplelog;
+#[cfg(test)]
+extern crate tempdir;
 extern crate tempfile;
 extern crate titanium_common;
 extern crate url;

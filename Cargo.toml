@@ -71,6 +71,10 @@ version = "^0.1"
 git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
 
+[dev-dependencies]
+libxdo = "^0.4.1"
+tempdir = "^0.3"
+
 [features]
 default = ["cairo-rs/png", "gtk/v3_16", "webkit2gtk/v2_12"]
 
