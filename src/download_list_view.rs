@@ -142,11 +142,7 @@ impl DownloadListView {
         }
 
         // Delete the view after a certain amount of time after the download finishes.
-        let progress = download.get_estimated_progress();
-        let percent = (progress * 100.0) as i32;
-        if percent == 100 {
-            timeout_add!(DOWNLOAD_TIME_BEFORE_HIDE, self, delete(id));
-        }
+        timeout_add!(DOWNLOAD_TIME_BEFORE_HIDE, self, delete(id));
     }
 
     /// Check if there are active downloads.

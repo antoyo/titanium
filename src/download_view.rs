@@ -64,17 +64,34 @@ impl DownloadView {
         self.update_progress_bar(download);
 
         connect!(download, connect_received_data(download, _), self, update_progress_bar(download));
+        connect!(download, connect_finished(download), self, handle_finished(download));
     }
 
-    /// Update the progress and the text of the progress bar.
-    fn update_progress_bar(&mut self, download: &Download) {
+    /// Get the destination filename of the download.
+    /// Return the suggested filename if it does not exist.
+    fn get_filename(&self, download: &Download) -> String {
         let suggested_filename =
             download.get_request()
                 .and_then(|request| request.get_uri())
                 .and_then(|url| get_filename(&url));
-        let filename = download.get_destination()
+        download.get_destination()
             .and_then(|url| get_filename(&url))
-            .unwrap_or(suggested_filename.clone().unwrap_or_default());
+            .unwrap_or(suggested_filename.clone().unwrap_or_default())
+    }
+
+    /// Show the data of a finished download.
+    fn handle_finished(&self, download: &Download) {
+        let filename = self.get_filename(download);
+        let percent = 100;
+        self.view.set_fraction(1.0);
+        let (_, total_size) = get_data_sizes(download);
+        let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
+        self.view.set_text(Some(&format!("{} {}%{}", filename, percent, total_size)));
+    }
+
+    /// Update the progress and the text of the progress bar.
+    fn update_progress_bar(&mut self, download: &Download) {
+        let filename = self.get_filename(download);
         let progress = download.get_estimated_progress();
         self.view.set_fraction(progress);
         let percent = (progress * 100.0) as i32;
