@@ -111,6 +111,7 @@ impl BookmarkManager {
             CREATE TABLE IF NOT EXISTS bookmarks_tags
             ( bookmark_id INTEGER NOT NULL
             , tag_id INTEGER NOT NULL
+            , PRIMARY KEY (bookmark_id, tag_id)
             , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
             , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
             )", &[])?;
@@ -199,7 +200,8 @@ impl BookmarkManager {
                 let mut params: Vec<&ToSql> = vec![];
 
                 let mut title_idents = vec![];
-                for (index, title) in input.words.iter().enumerate() {
+                for title in &input.words {
+                    let index = params.len();
                     title_idents.push(format!("(title LIKE '%' || ${} || '%' OR url LIKE '%' || ${} || '%')", index, index + 1));
                     params.push(title);
                     params.push(title);
@@ -229,7 +231,7 @@ impl BookmarkManager {
                     };
 
                 if let Ok(mut statement) = connection.prepare(&format!("
-                        SELECT title, url, GROUP_CONCAT(tags.name, ' #')
+                        SELECT title, url, COALESCE(GROUP_CONCAT(tags.name, ' #'), '')
                         FROM bookmarks
                         LEFT OUTER JOIN bookmarks_tags
                             ON bookmarks.id = bookmarks_tags.bookmark_id
@@ -264,7 +266,7 @@ impl BookmarkManager {
                     ", &[&tag])?;
                     let tag_id = self.get_tag_id(connection, &tag)?;
                     connection.execute("
-                        INSERT INTO bookmarks_tags (bookmark_id, tag_id)
+                        INSERT OR IGNORE INTO bookmarks_tags (bookmark_id, tag_id)
                         VALUES ($1, $2)
                     ", &[&bookmark_id, &tag_id])?;
                 }

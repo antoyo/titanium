@@ -69,7 +69,7 @@ impl App {
             let tags = self.bookmark_manager.get_tags(&url);
             if let Some(tags) = tags {
                 let default_answer = tags.join(", ");
-                // TODO: tags completion.
+                // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
                 let input = self.app.blocking_input("Bookmark tags (separated by comma):", &default_answer);
                 // Do not edit tags when the user press Escape.
                 if let Some(input) = input {
