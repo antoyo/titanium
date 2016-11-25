@@ -82,7 +82,10 @@ impl BookmarkManager {
     pub fn connect(&self, filename: PathBuf) -> AppResult<()> {
         let mut connection = CONNECTION.lock()?;
         if connection.is_none() {
-            *connection = Some(Connection::open(filename)?);
+            let db = Connection::open(filename)?;
+            // Activate foreign key contraints in SQLite.
+            db.execute("PRAGMA foreign_keys = ON", &[])?;
+            *connection = Some(db);
         }
         Ok(())
     }
@@ -108,8 +111,8 @@ impl BookmarkManager {
             CREATE TABLE IF NOT EXISTS bookmarks_tags
             ( bookmark_id INTEGER NOT NULL
             , tag_id INTEGER NOT NULL
-            , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id)
-            , FOREIGN KEY(tag_id) REFERENCES tags(id)
+            , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
+            , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
             )", &[])?;
         }
         Ok(())
@@ -252,7 +255,6 @@ impl BookmarkManager {
     /// Set the tags of a bookmark.
     pub fn set_tags(&self, url: &str, tags: Vec<String>) -> AppResult<()> {
         if let Some(bookmark_id) = self.get_id(url) {
-            // TODO: refactor to use only two queries instead of a loop of queries.
             for tag in &tags {
                 let tag = tag.to_lowercase();
                 if let Some(ref connection) = *CONNECTION.lock()? {
