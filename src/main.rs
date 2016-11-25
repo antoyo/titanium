@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: crash when saving passwords on https://lichess4545.slack.com/
+ * TODO: use gnome keyring to encrypt the passwords.
  * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows).
  *
  * TODO: file watcher to sync bookmarks between windows.
@@ -50,6 +52,8 @@
  * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
+ * TODO: show an error for request blocked by host blocker.
+ * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
  * FIXME: ctrl-/ should not trigger the mapping for /.
  * TODO: allow using Backspace to remove the last hint character.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
@@ -63,8 +67,6 @@
  * TODO: message when search fails (and when it wraps to the start/end).
  * TODO: hide the scrollbars?
  * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
- * FIXME: download view can get stuck on: 0%, -2147483648: -2147483648 [512B/infYiB] while the
- * download is finished (perhaps when downloading a file present in the cache).
  * TODO: unselect text when focusing a field.
  * TODO: add a passthrough mode.
  * TODO: add help text for commands and settings.
@@ -138,6 +140,8 @@ extern crate glib;
 extern crate glib_sys;
 extern crate gtk;
 extern crate gtk_sys;
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 #[cfg(test)]
 extern crate libxdo;
@@ -152,6 +156,7 @@ extern crate number_prefix;
 extern crate open;
 extern crate password_store;
 extern crate regex;
+extern crate rusqlite;
 extern crate rustc_serialize;
 extern crate serde;
 #[macro_use]

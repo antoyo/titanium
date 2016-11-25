@@ -29,15 +29,10 @@ impl App {
         if let Some(url) = self.webview.get_uri() {
             let title = self.webview.get_title();
             let message = format!("Added bookmark: {}", url);
-            // TODO: remove when there are no RefCell anymore.
-            let mut error = None;
-            match (*self.bookmark_manager.borrow_mut()).add(url, title) {
+            match self.bookmark_manager.add(url, title) {
                 Ok(true) => self.app.info(&message),
                 Ok(false) => self.app.info("The current page is already in the bookmarks"),
-                Err(err) => error = Some(err),
-            }
-            if let Some(error) = error {
-                self.show_error(error);
+                Err(err) => self.show_error(err),
             }
         }
     }
@@ -45,19 +40,10 @@ impl App {
     /// Delete the current page from the bookmarks.
     pub fn delete_bookmark(&mut self) {
         if let Some(url) = self.webview.get_uri() {
-            // TODO: refactor when there is no RefCell anymore if possible.
-            let mut show_info = false;
-            let mut error = None;
-            match (*self.bookmark_manager.borrow_mut()).delete(&url) {
+            match self.bookmark_manager.delete(&url) {
                 Ok(true) => self.app.info(&format!("Deleted bookmark: {}", url)),
-                Ok(false) => show_info = true,
-                Err(err) => error = Some(err),
-            }
-            if let Some(error) = error {
-                self.show_error(error);
-            }
-            if show_info {
-                self.info_page_not_in_bookmarks();
+                Ok(false) => self.info_page_not_in_bookmarks(),
+                Err(err) => self.show_error(err),
             }
         }
     }
@@ -70,7 +56,7 @@ impl App {
             Some("open") | Some("win-open") =>
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
-                    (*self.bookmark_manager.borrow_mut()).delete(url).ok();
+                    self.bookmark_manager.delete(url).ok();
                     self.app.delete_current_completion_item();
                 },
             _ => (),
@@ -80,9 +66,7 @@ impl App {
     /// Edit the tags of the current page from the bookmarks.
     pub fn edit_bookmark_tags(&mut self) {
         if let Some(url) = self.webview.get_uri() {
-            let tags = {
-                (*self.bookmark_manager.borrow()).get_tags(&url)
-            };
+            let tags = self.bookmark_manager.get_tags(&url);
             if let Some(tags) = tags {
                 let default_answer = tags.join(", ");
                 // TODO: tags completion.
@@ -93,13 +77,8 @@ impl App {
                         .map(|tag| tag.trim().to_lowercase())
                         .filter(|tag| !tag.is_empty())
                         .collect();
-                    // TODO: refactor when there is no RefCell anymore if possible.
-                    let mut error = None;
-                    if let Err(err) = (*self.bookmark_manager.borrow_mut()).set_tags(&url, tags) {
-                        error = Some(err);
-                    }
-                    if let Some(error) = error {
-                        self.show_error(error);
+                    if let Err(err) = self.bookmark_manager.set_tags(&url, tags) {
+                        self.show_error(err);
                     }
                 }
             }

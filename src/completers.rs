@@ -19,11 +19,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::cell::RefCell;
 use std::cmp::Ordering::{Greater, Less};
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
 use mg::completion::{Completer, CompletionCell, CompletionResult};
 use mg::completion::Column::{self, AllVisible, Expand};
@@ -33,15 +31,15 @@ use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 
 /// A bookmark completer.
 pub struct BookmarkCompleter {
-    bookmarks: Rc<RefCell<BookmarkManager>>,
+    bookmarks: BookmarkManager,
     prefix: &'static str,
 }
 
 impl BookmarkCompleter {
     /// Create a new bookmark completer.
-    pub fn new(bookmarks: Rc<RefCell<BookmarkManager>>, prefix: &'static str) -> Self {
+    pub fn new(prefix: &'static str) -> Self {
         BookmarkCompleter {
-            bookmarks: bookmarks,
+            bookmarks: BookmarkManager::new(),
             prefix: prefix,
         }
     }
@@ -56,7 +54,9 @@ impl BookmarkCompleter {
             if word.starts_with('#') {
                 let mut tag = word.to_string();
                 tag.remove(0); // Remove the #.
-                tags.push(tag);
+                if !tag.is_empty() {
+                    tags.push(tag);
+                }
             }
             else {
                 words.push(word);
@@ -80,14 +80,13 @@ impl Completer for BookmarkCompleter {
     }
 
     fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
-        let bookmarks = &*self.bookmarks.borrow();
         let mut results = vec![];
         let query = BookmarkCompleter::parse_input(input);
 
-        for bookmark in bookmarks.query(query) {
+        for bookmark in self.bookmarks.query(query) {
             let tags =
                 if !bookmark.tags.is_empty() {
-                    format!("#{}", bookmark.tags.join(" #"))
+                    format!("#{}", bookmark.tags)
                 }
                 else {
                     String::new()

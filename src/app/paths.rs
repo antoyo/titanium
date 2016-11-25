@@ -27,7 +27,7 @@ use config_dir::ConfigDir;
 impl App {
     /// Get the config path of the bookmarks file.
     pub fn bookmark_path(config_dir: &ConfigDir) -> PathBuf {
-        config_dir.config_file("bookmarks")
+        config_dir.config_file("bookmarks.db")
             .expect("cannot create configuration directory")
     }
 

@@ -43,13 +43,11 @@ mod popup;
 mod search_engine;
 mod test_utils;
 
-use std::cell::{RefCell};
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::process::Command;
-use std::rc::Rc;
 
 use gdk::{EventButton, EventKey, CONTROL_MASK};
 use gtk::{self, ContainerExt, Inhibit, Widget, WidgetExt};
@@ -97,7 +95,7 @@ impl Display for FollowMode {
 /// Titanium application.
 pub struct App {
     app: Box<MgApp>,
-    bookmark_manager: Rc<RefCell<BookmarkManager>>,
+    bookmark_manager: BookmarkManager,
     config_dir: ConfigDir,
     default_search_engine: Option<String>,
     download_list_view: DownloadListView,
@@ -111,13 +109,13 @@ pub struct App {
 }
 
 impl App {
-    fn build(bookmark_manager: &Rc<RefCell<BookmarkManager>>, config_dir: &ConfigDir) -> Box<MgApp> {
+    fn build(config_dir: &ConfigDir) -> Box<MgApp> {
         let include_path = config_dir.config_home();
 
         ApplicationBuilder::new()
             .completer("file", FileCompleter::new())
-            .completer("open", BookmarkCompleter::new(bookmark_manager.clone(), "open"))
-            .completer("win-open", BookmarkCompleter::new(bookmark_manager.clone(), "win-open"))
+            .completer("open", BookmarkCompleter::new("open"))
+            .completer("win-open", BookmarkCompleter::new("win-open"))
             .include_path(include_path)
             .modes(hash! {
                 "f" => "follow",
@@ -129,8 +127,7 @@ impl App {
 
     pub fn new(homepage: Option<String>, config_dir: Option<String>) -> Box<Self> {
         let config_dir = ConfigDir::new(&config_dir).unwrap();
-        let bookmark_manager = Rc::new(RefCell::new(BookmarkManager::new(App::bookmark_path(&config_dir))));
-        let mut mg_app = App::build(&bookmark_manager, &config_dir);
+        let mut mg_app = App::build(&config_dir);
         mg_app.use_dark_theme();
         mg_app.set_window_title(APP_NAME);
 
@@ -154,7 +151,7 @@ impl App {
 
         let mut app = Box::new(App {
             app: mg_app,
-            bookmark_manager: bookmark_manager,
+            bookmark_manager: BookmarkManager::new(),
             config_dir: config_dir,
             default_search_engine: None,
             download_list_view: download_list_view,
@@ -169,15 +166,16 @@ impl App {
 
         app.create_events();
 
+        // Connect to the SQLite database before creating the config files so that the bookmark
+        // tables get created.
+        handle_error!(app.bookmark_manager.connect(App::bookmark_path(&app.config_dir)));
+
         // Create the events before parsing the config so that the settings are taken into account
         // and the commands are executed.
         app.parse_config();
 
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
         app.webview.open(&url);
-
-        let result = (*app.bookmark_manager.borrow_mut()).load();
-        app.handle_error(result);
 
         handle_error!(app.popup_manager.load());
         handle_error!(app.webview.load_passwords());

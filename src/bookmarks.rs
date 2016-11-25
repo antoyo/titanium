@@ -21,32 +21,32 @@
 
 //! Bookmark management.
 
-use std::collections::{BTreeMap, HashSet};
-use std::collections::btree_map::Values;
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
+use std::sync::Mutex;
 
-use serde_yaml;
+use rusqlite::Connection;
+use rusqlite::types::ToSql;
 
 use app::AppResult;
 
+lazy_static! {
+    static ref CONNECTION: Mutex<Option<Connection>> = Mutex::new(None);
+}
+
 /// A bookmark has a title and a URL and optionally some tags.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug)]
 pub struct Bookmark {
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub tags: Vec<String>,
-    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub tags: String,
     pub title: String,
     pub url: String,
 }
 
 impl Bookmark {
     /// Create a new bookmark.
-    pub fn new(url: String, title: Option<String>) -> Self {
+    pub fn new(url: String, title: String, tags: String) -> Self {
         Bookmark {
-            tags: vec![],
-            title: title.unwrap_or_default(),
+            tags: tags,
+            title: title,
             url: url,
         }
     }
@@ -54,94 +54,219 @@ impl Bookmark {
 
 /// A bookmark manager is use to add, search and remove bookmarks.
 pub struct BookmarkManager {
-    bookmarks: BTreeMap<String, Bookmark>,
-    filename: PathBuf,
-    tags: HashSet<String>,
 }
 
 impl BookmarkManager {
     /// Create a new bookmark manager.
-    pub fn new(filename: PathBuf) -> Self {
+    pub fn new() -> Self {
         BookmarkManager {
-            bookmarks: BTreeMap::new(),
-            filename: filename,
-            tags: HashSet::new(),
         }
     }
 
     /// Add a bookmark.
     /// Returns true if the bookmark was added.
-    pub fn add(&mut self, url: String, title: Option<String>) -> AppResult<bool> {
-        if self.bookmarks.contains_key(&url) {
-            Ok(false)
+    pub fn add(&self, url: String, title: Option<String>) -> AppResult<bool> {
+        if let Some(ref connection) = *CONNECTION.lock()? {
+            if let Ok(inserted_count) = connection.execute("
+                INSERT INTO bookmarks (title, url)
+                VALUES ($1, $2)
+                ", &[&title.unwrap_or_default(), &url])
+            {
+                return Ok(inserted_count > 0);
+            }
         }
-        else {
-            self.bookmarks.insert(url.clone(), Bookmark::new(url, title));
-            self.save()?;
-            Ok(true)
+        Ok(false)
+    }
+
+    /// Connect to the database if it is not already connected.
+    pub fn connect(&self, filename: PathBuf) -> AppResult<()> {
+        let mut connection = CONNECTION.lock()?;
+        if connection.is_none() {
+            *connection = Some(Connection::open(filename)?);
         }
+        Ok(())
+    }
+
+    /// Create the SQL tables for the bookmarks.
+    pub fn create_tables(&self) -> AppResult<()> {
+        if let Some(ref connection) = *CONNECTION.lock()? {
+            connection.execute("
+            CREATE TABLE IF NOT EXISTS bookmarks
+            ( id INTEGER PRIMARY KEY
+            , title TEXT NOT NULL
+            , url TEXT NOT NULL UNIQUE
+            , visit_count INTEGER NOT NULL DEFAULT 0
+            )", &[])?;
+
+            connection.execute("
+            CREATE TABLE IF NOT EXISTS tags
+            ( id INTEGER PRIMARY KEY
+            , name TEXT NOT NULL UNIQUE
+            )", &[])?;
+
+            connection.execute("
+            CREATE TABLE IF NOT EXISTS bookmarks_tags
+            ( bookmark_id INTEGER NOT NULL
+            , tag_id INTEGER NOT NULL
+            , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id)
+            , FOREIGN KEY(tag_id) REFERENCES tags(id)
+            )", &[])?;
+        }
+        Ok(())
     }
 
     /// Delete a bookmark.
     /// Returns true if a bookmark was deleted.
-    pub fn delete(&mut self, url: &str) -> AppResult<bool> {
-        let deleted = self.bookmarks.remove(url).is_some();
-        if deleted {
-            self.save()?;
+    pub fn delete(&self, url: &str) -> AppResult<bool> {
+        if let Some(ref connection) = *CONNECTION.lock()? {
+            if let Ok(deleted_count) = connection.execute("
+                DELETE FROM bookmarks
+                WHERE url = $1
+                ", &[&url.to_string()])
+            {
+                return Ok(deleted_count > 0);
+            }
         }
-        Ok(deleted)
+        Ok(false)
+    }
+
+    /// Get the id of a bookmark.
+    pub fn get_id(&self, url: &str) -> Option<i32> {
+        if let Ok(guard) = CONNECTION.lock() {
+            if let Some(ref connection) = *guard {
+                if let Ok(mut statement) = connection.prepare("
+                        SELECT id
+                        FROM bookmarks
+                        WHERE url = $1
+                    ")
+                {
+                    if let Ok(mut rows) = statement.query(&[&url.to_string()])
+                    {
+                        return rows.next().and_then(|row| row.ok().map(|row| row.get(0)));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Get the tag ID of a bookmark.
+    pub fn get_tag_id(&self, connection: &Connection, tag: &str) -> AppResult<i32> {
+        let mut statement = connection.prepare("
+            SELECT id
+            FROM tags
+            WHERE name = $1
+        ")?;
+        let mut rows = statement.query(&[&tag.to_string()])?;
+        let row = rows.next().unwrap(); // TODO: handle the error
+        let id = row.map(|row| row.get(0))?;
+        Ok(id)
     }
 
     /// Get the tags of a bookmark.
     pub fn get_tags(&self, url: &str) -> Option<Vec<String>> {
-        self.bookmarks.get(url)
-            .map(|bookmark| bookmark.tags.clone())
-    }
-
-    /// Load the bookmarks.
-    pub fn load(&mut self) -> AppResult<()> {
-        let reader = BufReader::new(File::open(&self.filename)?);
-        let bookmarks: Vec<Bookmark> = serde_yaml::from_reader(reader)?;
-
-        for bookmark in bookmarks {
-            for tag in &bookmark.tags {
-                self.tags.insert(tag.to_lowercase());
+        if let Ok(guard) = CONNECTION.lock() {
+            if let Some(ref connection) = *guard {
+                if let Ok(mut statement) = connection.prepare("
+                        SELECT name
+                        FROM tags
+                        INNER JOIN bookmarks_tags
+                            ON tags.id = bookmarks_tags.tag_id
+                        INNER JOIN bookmarks
+                            ON bookmarks_tags.bookmark_id = bookmarks.id
+                        WHERE url = $1
+                    ")
+                {
+                    if let Ok(rows) = statement.query_map(&[&url.to_string()], |row| {
+                            row.get(0)
+                        })
+                    {
+                        return rows.collect::<Result<Vec<_>, _>>().ok();
+                    }
+                }
             }
-            self.bookmarks.insert(bookmark.url.clone(), bookmark);
         }
-
-        Ok(())
+        None
     }
 
     /// Query the bookmarks.
-    pub fn query(&self, input: BookmarkInput) -> BookmarkIter {
-        BookmarkIter {
-            input: input,
-            iter: self.bookmarks.values(),
-        }
-    }
+    pub fn query(&self, input: BookmarkInput) -> Vec<Bookmark> {
+        if let Ok(guard) = CONNECTION.lock() {
+            if let Some(ref connection) = *guard {
+                let mut params: Vec<&ToSql> = vec![];
 
-    /// Save the bookmarks to the disk file.
-    fn save(&self) -> AppResult<()> {
-        let mut writer = BufWriter::new(File::create(&self.filename)?);
-        let bookmarks: Vec<_> = self.bookmarks.values().collect();
-        let yaml = serde_yaml::to_string(&bookmarks)?;
-        write!(writer, "{}", yaml)?;
-        Ok(())
+                let mut title_idents = vec![];
+                for (index, title) in input.words.iter().enumerate() {
+                    title_idents.push(format!("(title LIKE '%' || ${} || '%' OR url LIKE '%' || ${} || '%')", index, index + 1));
+                    params.push(title);
+                    params.push(title);
+                }
+                let title_idents = title_idents.join(" AND ");
+                let where_clause =
+                    if !title_idents.is_empty() {
+                        format!("WHERE {}", title_idents)
+                    }
+                    else {
+                        String::new()
+                    };
+
+                let delta = params.len();
+                let mut tag_idents = vec![];
+                for (index, tag) in input.tags.iter().enumerate() {
+                    tag_idents.push(format!("tags.name LIKE ${} || '%'", index + delta));
+                    params.push(tag);
+                }
+                let tag_idents = tag_idents.join(" OR ");
+                let having_clause =
+                    if !tag_idents.is_empty() {
+                        format!("HAVING COUNT(CASE WHEN {} THEN 1 END) = {}", tag_idents, input.tags.len())
+                    }
+                    else {
+                        String::new()
+                    };
+
+                if let Ok(mut statement) = connection.prepare(&format!("
+                        SELECT title, url, GROUP_CONCAT(tags.name, ' #')
+                        FROM bookmarks
+                        LEFT OUTER JOIN bookmarks_tags
+                            ON bookmarks.id = bookmarks_tags.bookmark_id
+                        LEFT OUTER JOIN tags
+                            ON bookmarks_tags.tag_id = tags.id
+                        {}
+                        GROUP BY url
+                        {}
+                    ", where_clause, having_clause))
+                {
+                    if let Ok(rows) = statement.query_map(&params, |row| {
+                            Bookmark::new(row.get(1), row.get(0), row.get(2))
+                        })
+                    {
+                        return rows.collect::<Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
+                    }
+                }
+            }
+        }
+        vec![]
     }
 
     /// Set the tags of a bookmark.
-    pub fn set_tags(&mut self, url: &str, tags: Vec<String>) -> AppResult<()> {
-        let mut edited = false;
-        if let Some(bookmark) = self.bookmarks.get_mut(url) {
+    pub fn set_tags(&self, url: &str, tags: Vec<String>) -> AppResult<()> {
+        if let Some(bookmark_id) = self.get_id(url) {
+            // TODO: refactor to use only two queries instead of a loop of queries.
             for tag in &tags {
-                self.tags.insert(tag.to_lowercase());
+                let tag = tag.to_lowercase();
+                if let Some(ref connection) = *CONNECTION.lock()? {
+                    connection.execute("
+                        INSERT OR IGNORE INTO tags (name)
+                        VALUES ($1)
+                    ", &[&tag])?;
+                    let tag_id = self.get_tag_id(connection, &tag)?;
+                    connection.execute("
+                        INSERT INTO bookmarks_tags (bookmark_id, tag_id)
+                        VALUES ($1, $2)
+                    ", &[&bookmark_id, &tag_id])?;
+                }
             }
-            bookmark.tags = tags;
-            edited = true;
-        }
-        if edited {
-            self.save()?;
         }
         Ok(())
     }
@@ -151,39 +276,4 @@ impl BookmarkManager {
 pub struct BookmarkInput {
     pub tags: Vec<String>,
     pub words: Vec<String>,
-}
-
-/// Bookmark iterator.
-pub struct BookmarkIter<'a> {
-    input: BookmarkInput,
-    iter: Values<'a, String, Bookmark>,
-}
-
-impl<'a> Iterator for BookmarkIter<'a> {
-    type Item = &'a Bookmark;
-
-    #[allow(while_let_on_iterator)]
-    fn next(&mut self) -> Option<Self::Item> {
-        'iter:
-        while let Some(bookmark) = self.iter.next() {
-            for tag in &self.input.tags {
-                let mut found = false;
-                for bookmark_tag in &bookmark.tags {
-                    if bookmark_tag.starts_with(tag) {
-                        found = true;
-                    }
-                }
-                if !found {
-                    continue 'iter;
-                }
-            }
-            for word in &self.input.words {
-                if !(bookmark.title.to_lowercase().contains(word) || bookmark.url.to_lowercase().contains(word)) {
-                    continue 'iter;
-                }
-            }
-            return Some(bookmark);
-        }
-        None
-    }
 }
