@@ -20,6 +20,7 @@
  */
 
 /*
+ * TODO: auto-delete tags.
  * TODO: allow to remove tags from bookmarks.
  * FIXME: crash when saving passwords on https://lichess4545.slack.com/
  * TODO: use gnome keyring to encrypt the passwords.

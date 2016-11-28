@@ -19,7 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use regex::Regex;
 use url::Url;
 use url::percent_encoding::percent_decode;
 
@@ -66,8 +65,6 @@ pub fn get_filename(url: &str) -> Option<String> {
 
 /// Check if the input string looks like a URL.
 pub fn is_url(input: &str) -> bool {
-    let regex = Regex::new(r"^[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_\+.~#?&//=]*$").unwrap();
-    let regex_scheme = Regex::new(r"^[a-zA-Z][a-zA-Z+.-]+://[-a-zA-Z0-9@:%_\+.~#?&//=]*$").unwrap();
-    regex.is_match(input) || regex_scheme.is_match(input) ||
+    (input.contains('.') && (Url::parse(input).is_ok() || Url::parse(&format!("http://{}", input)).is_ok())) ||
         input == "localhost"
 }
