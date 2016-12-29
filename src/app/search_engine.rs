@@ -43,6 +43,7 @@ impl App {
 
     /// If the url starts with a search engine keyword, transform the url to the URL of the search
     /// engine.
+    /// Otherwise, add http:// in the front of the URL if it looks like an URL.
     pub fn transform_url(&self, url: &str) -> String {
         let words: Vec<_> = url.split_whitespace().collect();
         let (engine_prefix, rest) =
@@ -62,6 +63,11 @@ impl App {
                 return engine_url.replace("{}", &rest);
             }
         }
-        url.to_string()
+        if !url.contains("://") {
+            format!("http://{}", url)
+        }
+        else {
+            url.to_string()
+        }
     }
 }

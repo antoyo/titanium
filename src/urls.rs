@@ -65,6 +65,7 @@ pub fn get_filename(url: &str) -> Option<String> {
 
 /// Check if the input string looks like a URL.
 pub fn is_url(input: &str) -> bool {
-    (input.contains('.') && (Url::parse(input).is_ok() || Url::parse(&format!("http://{}", input)).is_ok())) ||
+    Url::parse(input).is_ok() || (Url::parse(&format!("http://{}", input)).is_ok() &&
+                                  (input.contains('.') || input.contains(':'))) ||
         input == "localhost"
 }

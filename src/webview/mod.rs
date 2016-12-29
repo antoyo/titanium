@@ -23,7 +23,6 @@ mod password;
 mod scroll;
 mod settings;
 
-use std::borrow::Cow;
 use std::error::Error;
 use std::fs::{File, read_dir};
 use std::io::Read;
@@ -33,7 +32,6 @@ use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{WidgetExt, Window};
 use libc::getpid;
-use url::Url;
 use webkit2gtk::{
     self,
     CookiePersistentStorage,
@@ -72,7 +70,7 @@ pub struct WebView {
     message_server: MessageServer,
     new_window_callback: Option<Box<Fn(&str)>>,
     open_in_new_window: bool,
-    password_manager: PasswordManager,
+    pub password_manager: PasswordManager,
     scrolled_callback: Option<Box<Fn(i64)>>,
     search_backwards: bool,
     view: webkit2gtk::WebView,
@@ -281,13 +279,6 @@ impl WebView {
 
     /// Open the specified URL.
     pub fn open(&self, url: &str) {
-        let url: Cow<str> =
-            if Url::parse(url).is_ok() {
-                url.into()
-            }
-            else {
-                format!("http://{}", url).into()
-            };
         self.view.load_uri(&url);
     }
 
