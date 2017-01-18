@@ -30,6 +30,7 @@ use webkit2gtk_webextension::{
 };
 
 use dom::{ElementIter, is_hidden};
+use option_util::OptionExt;
 
 pub struct Credential {
     pub check: bool,
@@ -69,12 +70,12 @@ pub fn get_credentials(document: &DOMDocument) -> Option<Credential> {
     let mut username = String::new();
     let login_form = get_login_form(document);
     if let Some(login_form) = login_form {
-        let username_element = login_form.query_selector("input[type='text']").ok()
+        let username_element = login_form.query_selector("input[type='text']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = username_element {
             username = element.get_value().unwrap_or_default();
         }
-        let password_element = login_form.query_selector("input[type='password']").ok()
+        let password_element = login_form.query_selector("input[type='password']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = password_element {
             password = element.get_value().unwrap_or_default();
@@ -118,7 +119,7 @@ fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
 pub fn load_password(document: &DOMDocument, password: &str) {
     let password_input =
         find_login_form(document)
-            .and_then(|login_form| login_form.query_selector("input[type='password']").ok())
+            .and_then(|login_form| login_form.query_selector("input[type='password']").flatten())
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
     if let Some(password_input) = password_input {
         password_input.set_value(password);
@@ -129,7 +130,7 @@ pub fn load_password(document: &DOMDocument, password: &str) {
 pub fn load_username(document: &DOMDocument, username: &str) {
     let username_input =
         find_login_form(document)
-            .and_then(|login_form| login_form.query_selector("input[type='text']").ok())
+            .and_then(|login_form| login_form.query_selector("input[type='text']").flatten())
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
     if let Some(username_input) = username_input {
         username_input.set_value(username);

@@ -20,14 +20,26 @@
  */
 
 /*
+ * FIXME: running `cargo run -- fsf.org` opens about:blank.
+ * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
+ * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
+ * FIXME: I can set tags on URLs that are not bookmarked.
+ * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/.
+ * FIXME: follow open in a new window after a follow-win.
+ * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
+ * FIXME: web process crash on print (follow onclick="javascript:print").
  * TODO: auto-delete tags.
  * TODO: allow to remove tags from bookmarks.
- * FIXME: crash when saving passwords on https://lichess4545.slack.com/
- * TODO: use gnome keyring to encrypt the passwords.
- * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows).
+ * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows: use a thread and/or catch_unwind()).
  *
- * TODO: file watcher to sync bookmarks between windows.
- * TODO: lock the file read/write.
+ * TODO: unlock the password store when loading a password.
+ * FIXME: loading credentials does not work.
+ * FIXME: saving empty credentials on https://lichess4545.slack.com/
+ *
+ * TODO: switch to one UI process (and one DBus server to see if it resolves the timeout issues).
+ * TODO: save the current URLs of every window in case of a crash.
+ * TODO: command to restore the last closed window.
+ *
  * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
  * alphebetical order).
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
@@ -42,7 +54,6 @@
  * TODO: Create a gdbus binding that works similar to elm subscriptions.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
- * FIXME: panic when clicking the link at the bottom of developpeur.cool.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
  * TODO: show an error when there are no hints.
@@ -74,6 +85,7 @@
  * TODO: add help text for commands and settings.
  * TODO: handle network errors.
  * TODO: support marks.
+ * FIXME: titanium seems slower than other browsers.
  * TODO: preferred languages.
  * TODO: store cache.
  * TODO: add a command to delete history, …
@@ -129,7 +141,6 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
-#![feature(proc_macro)]
 #![warn(missing_docs)]
 
 extern crate cairo;
@@ -147,6 +158,7 @@ extern crate lazy_static;
 extern crate libc;
 #[cfg(test)]
 extern crate libxdo;
+#[macro_use]
 extern crate log;
 #[macro_use]
 extern crate mg;
@@ -156,14 +168,10 @@ extern crate mg_settings;
 extern crate mg_settings_macros;
 extern crate number_prefix;
 extern crate open;
-extern crate password_store;
-extern crate regex;
 extern crate rusqlite;
 extern crate rustc_serialize;
-extern crate serde;
 #[macro_use]
-extern crate serde_derive;
-extern crate serde_yaml;
+extern crate secret;
 extern crate simplelog;
 #[cfg(test)]
 extern crate tempdir;

@@ -40,19 +40,11 @@ impl CookieAcceptPolicy {
     }
 }
 
-#[derive(Clone, PartialEq, Setting)]
-pub enum PasswordStorage {
-    #[default]
-    Cleartext,
-    Pass,
-}
-
 #[derive(Default, Settings)]
 pub struct AppSettings {
     pub cookie_accept: CookieAcceptPolicy,
     pub hint_chars: String,
     pub home_page: String,
-    pub password_storage: PasswordStorage,
     pub webkit_allow_file_access_from_file_urls: bool,
     pub webkit_allow_modal_dialogs: bool,
     pub webkit_auto_load_images: bool,

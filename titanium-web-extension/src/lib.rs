@@ -36,6 +36,7 @@ mod dom;
 mod hints;
 mod login_form;
 mod message_server;
+mod option_util;
 mod scroll;
 
 use std::cell::Cell;

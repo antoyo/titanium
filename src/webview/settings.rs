@@ -24,7 +24,6 @@ use settings::AppSettingsVariant::{
     CookieAccept,
     HintChars,
     HomePage,
-    PasswordStorage,
     WebkitAllowFileAccessFromFileUrls,
     WebkitAllowModalDialogs,
     WebkitAutoLoadImages,
@@ -93,7 +92,6 @@ impl WebView {
             match *setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) | HomePage(_) => (),
-                PasswordStorage(ref storage) => self.password_manager.set_storage(storage),
                 WebkitAllowFileAccessFromFileUrls(value) =>
                     settings.set_allow_file_access_from_file_urls(value),
                 WebkitAllowModalDialogs(value) =>

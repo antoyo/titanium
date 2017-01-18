@@ -23,7 +23,7 @@ use url::Url;
 use url::percent_encoding::percent_decode;
 
 #[cfg(test)]
-pub fn base_url(url: &str) -> String {
+pub fn base_url(url: &str) -> Option<String> {
     if url.starts_with("file://") {
         url.to_string()
     }
@@ -35,23 +35,23 @@ pub fn base_url(url: &str) -> String {
 
 #[cfg(not(test))]
 /// Get the base URL without www.
-pub fn base_url(url: &str) -> String {
-    let base_url = get_base_url(url);
-    base_url.trim_left_matches("www.").to_string()
+pub fn base_url(url: &str) -> Option<String> {
+    get_base_url(url)
+        .map(|base_url| base_url.trim_left_matches("www.").to_string())
 }
 
 /// Get the base URL (domain and tld) of an URL.
-/// Returns an empty string in case there are no hosts.
-pub fn get_base_url(url: &str) -> String {
-    let parsed_url = Url::parse(url).unwrap();
-    let mut base_url = parsed_url.host_str().unwrap_or("").to_string();
-    // Remove all sub-domains.
-    let mut period_count = base_url.chars().filter(|&c| c == '.').count();
-    while period_count > 1 {
-        base_url = base_url.chars().skip_while(|&c| c != '.').skip(1).collect();
-        period_count = base_url.chars().filter(|&c| c == '.').count();
-    }
-    base_url
+pub fn get_base_url(url: &str) -> Option<String> {
+    Url::parse(url).ok().map(|parsed_url| {
+        let mut base_url = parsed_url.host_str().unwrap_or("").to_string();
+        // Remove all sub-domains.
+        let mut period_count = base_url.chars().filter(|&c| c == '.').count();
+        while period_count > 1 {
+            base_url = base_url.chars().skip_while(|&c| c != '.').skip(1).collect();
+            period_count = base_url.chars().filter(|&c| c == '.').count();
+        }
+        base_url
+    })
 }
 
 /// Get the filename from the URL.

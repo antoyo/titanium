@@ -117,9 +117,9 @@ impl App {
             .completer("open", BookmarkCompleter::new("open"))
             .completer("win-open", BookmarkCompleter::new("win-open"))
             .include_path(include_path)
-            .modes(hash! {
-                "f" => "follow",
-                "i" => "insert",
+            .modes(str_hash! {
+                f => "follow",
+                i => "insert",
             })
             .settings(AppSettings::default())
             .build()
@@ -141,7 +141,7 @@ impl App {
         let download_list_view = DownloadListView::new();
         vbox.add(&*download_list_view);
 
-        let password_manager = PasswordManager::new(App::password_path(&config_dir));
+        let password_manager = PasswordManager::new();
         let webview = WebView::new(password_manager, &config_dir);
         vbox.add(&**webview);
 
@@ -174,11 +174,12 @@ impl App {
         // and the commands are executed.
         app.parse_config();
 
+        app.create_password_keyring();
+
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
         app.webview.open(&url);
 
         handle_error!(app.popup_manager.load());
-        handle_error!(app.webview.load_passwords());
 
         app.create_variables();
 
@@ -289,7 +290,7 @@ impl App {
             Normal => self.app.set_mode("normal"),
             Open(url) => self.open(&url),
             PasswordDelete => self.delete_password(),
-            PasswordLoad => { let _ = self.load_password(); },
+            PasswordLoad => self.load_password(),
             PasswordSave => self.save_password(),
             PasswordSubmit => self.submit_login_form(),
             PasteUrl => self.paste_url(),

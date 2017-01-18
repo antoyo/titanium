@@ -11,7 +11,6 @@ default = ["webkit2gtk-webextension/v2_12"]
 
 [dependencies]
 log = "^0.3"
-regex = "^0.1"
 simplelog = "^0.4"
 url = "^1.2"
 xdg = "^2.0"
@@ -22,7 +21,7 @@ version = "0.0.1"
 
 [dependencies.gio-sys]
 git = "https://github.com/gtk-rs/sys"
-version = "0.3.1"
+version = "0.3.2"
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"
@@ -30,14 +29,15 @@ version = "0.1.0"
 
 [dependencies.glib-sys]
 git = "https://github.com/gtk-rs/sys"
-version = "0.3.1"
+version = "0.3.2"
 
 [dependencies.titanium-common]
 git = "https://github.com/antoyo/titanium"
 version = "^0.1"
 
 [dependencies.webkit2gtk-webextension]
-git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
+path = "../../webkit2gtk-webextension"
+#git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
 version = "^0.1"
 
 [dependencies.webkit2gtk-webextension-sys]
@@ -45,4 +45,4 @@ git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
 version = "^0.2"
 
 [replace]
-"https://github.com/gtk-rs/sys#glib-sys:0.3.1" = { git = "https://github.com/antoyo/sys" }
+"https://github.com/gtk-rs/sys#glib-sys:0.3.2" = { git = "https://github.com/antoyo/sys" }

@@ -19,54 +19,55 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use glib::error;
+use secret::Service;
+
 use super::{App, AppResult};
 
 impl App {
+    /// Create the password collection in gnome keyring.
+    pub fn create_password_keyring(&mut self) {
+        connect_static!(Service, get(service), self, init_service(service));
+    }
+
     /// Delete the password for the current URL.
     pub fn delete_password(&mut self) {
-        if self.webview.has_multiple_passwords() {
-            // TODO
-        }
-        else {
-            match self.webview.delete_password() {
-                Ok(true) => self.app.info("Password deleted"),
-                Ok(false) => self.app.info("No password for the current URL"),
-                Err(err) => self.show_error(err),
-            }
+        self.webview.delete_password();
+        /*Ok(true) => self.app.info("Password deleted"),
+          Ok(false) => self.app.info("No password for the current URL"),
+          Err(err) => self.show_error(err),*/
+    }
+
+    fn init_service(&mut self, service: Result<Service, error::Error>) {
+        // TODO: handle errors.
+        if let Ok(service) = service {
+            self.webview.password_manager.init(service);
         }
     }
 
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
-    pub fn load_password(&mut self) -> AppResult<bool> {
-        if self.webview.has_multiple_passwords() {
-            // TODO
-        }
-        else {
-            match self.webview.load_password() {
-                Ok(true) => return Ok(true),
-                Ok(false) => self.app.info("No password for the current URL"),
-                Err(err) => self.show_error(err),
-            }
-        }
-        Ok(false)
+    pub fn load_password(&mut self) {
+        self.webview.load_username_password();
+        /*Ok(true) => return Ok(true),
+          Ok(false) => self.app.info("No password for the current URL"),
+          Err(err) => self.show_error(err),*/
     }
 
     /// Save the password from the currently focused login form into the store.
     pub fn save_password(&mut self) {
-        match self.webview.save_password() {
-            Ok(true) => self.app.info("Password added"),
-            Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
-            Err(err) => self.show_error(err),
-        }
+        self.webview.save_password();
+        /*Ok(true) => self.app.info("Password added"),
+          Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
+          Err(err) => self.show_error(err),*/
     }
 
     /// Load the username and password in the login form and submit it.
     pub fn submit_login_form(&mut self) {
-        if let Ok(true) = self.load_password() {
-            handle_error!(self.webview.submit_login_form());
-        }
+        self.load_password();
+        // TODO: put the next line in a callback.
+        handle_error!(self.webview.submit_login_form());
     }
 }
 

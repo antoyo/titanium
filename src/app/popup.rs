@@ -61,17 +61,21 @@ impl App {
     /// Otherwise, ask to the user whether to open it.
     pub fn handle_popup(&mut self, url: String) {
         // Block popup.
-        let base_url = get_base_url(&url);
-        if !self.popup_manager.is_whitelisted(&url) {
-            if self.popup_manager.is_blacklisted(&url) {
-                self.app.warning(&format!("Not opening popup from {} since it is blacklisted.", base_url));
+        if let Some(base_url) = get_base_url(&url) {
+            if !self.popup_manager.is_whitelisted(&url) {
+                if self.popup_manager.is_blacklisted(&url) {
+                    self.app.warning(&format!("Not opening popup from {} since it is blacklisted.", base_url));
+                }
+                else {
+                    self.ask_open_popup(url, base_url);
+                }
             }
             else {
-                self.ask_open_popup(url, base_url);
+                self.open_in_new_window_handling_error(&url);
             }
         }
         else {
-            self.open_in_new_window_handling_error(&url);
+            warn!("Not opening the popup {}", url);
         }
     }
 

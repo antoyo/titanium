@@ -10,13 +10,8 @@ libc = "^0.2"
 log = "^0.3"
 number_prefix = "^0.2"
 open = "^1.1"
-password-store = "^0.1.0"
-regex = "^0.1"
 rusqlite = "^0.7.3"
 rustc-serialize = "^0.3"
-serde = "^0.8.16"
-serde_derive = "^0.8.16"
-serde_yaml = "^0.5.0"
 simplelog = "^0.4"
 tempfile = "^2.1"
 url = "^1.2"
@@ -55,7 +50,8 @@ git = "https://github.com/gtk-rs/sys"
 version = "0.3.1"
 
 [dependencies.mg]
-git = "https://github.com/antoyo/mg"
+path = "../mg"
+#git = "https://github.com/antoyo/mg"
 
 [dependencies.mg-settings]
 git = "https://github.com/antoyo/mg-settings"
@@ -64,6 +60,11 @@ version = "^0.0.5-pre"
 [dependencies.mg-settings-macros]
 git = "https://github.com/antoyo/mg-settings"
 version = "^0.0.1"
+
+[dependencies.secret]
+#git = "https://github.com/antoyo/secret-rs"
+path = "../secret"
+version = "^0.1"
 
 [dependencies.titanium-common]
 git = "https://github.com/antoyo/titanium"
@@ -79,8 +80,3 @@ tempdir = "^0.3"
 
 [features]
 default = ["cairo-rs/png", "gtk/v3_16", "webkit2gtk/v2_12"]
-
-[replace]
-
-[replace."yaml-rust:0.3.4"]
-git = "https://github.com/chyh1990/yaml-rust"

@@ -21,160 +21,170 @@
 
 //! Password management.
 
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
-use std::ops::Not;
-use std::path::PathBuf;
+use std::collections::HashMap;
 
-use password_store::PasswordStore;
-use serde_yaml;
+use glib::error;
+use secret::{Collection, Item, PasswordError, Schema, Service};
+use secret::SchemaAttributeType::{self, Boolean};
 
-use app::{AppResult, APP_NAME};
-use settings::PasswordStorage;
+use app::AppResult;
 use urls::base_url;
 
-/// Username/password for a website.
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Credential {
-    #[serde(default, skip_serializing_if = "Not::not")]
-    pub check: bool,
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub password: String,
-    pub username: String,
-}
-
-impl Credential {
-    /// Create a new credential.
-    fn new(username: &str, check: bool) -> Self {
-        Credential {
-            check: check,
-            password: String::new(),
-            username: username.to_string(),
-        }
-    }
-}
-
-/// Credentials is a map of URL to a list of usernames.
-type Credentials = BTreeMap<String, Vec<Credential>>;
+const KEYRING_NAME: &'static str = "Titanium Passwords";
 
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
-    credentials: Credentials,
-    filename: PathBuf,
-    storage: PasswordStorage,
+    collection: Option<Collection>,
+    schema: Schema,
 }
 
 impl PasswordManager {
     /// Create a new password manager.
-    pub fn new(filename: PathBuf) -> Self {
+    pub fn new() -> Self {
+        let schema = Schema::new("com.titanium.Passwords", hash! {
+            check => Boolean,
+            url => SchemaAttributeType::String,
+            username => SchemaAttributeType::String,
+        });
         PasswordManager {
-            credentials: BTreeMap::new(),
-            filename: filename,
-            storage: PasswordStorage::Cleartext,
+            collection: None,
+            schema: schema,
         }
     }
 
     /// Add a credential.
     /// Returns true if the credential was added.
-    pub fn add(&mut self, url: &str, username: &str, password: &str, check: bool) -> AppResult<bool> {
-        let url = base_url(url);
-        let mut found = false;
-        {
-            let credentials = self.credentials.entry(url.to_string()).or_insert_with(Vec::new);
-            for credential in credentials.iter() {
-                if credential.username == username {
-                    found = true;
+    pub fn add(&mut self, url: &str, username: &str, password: &str, check: bool) {
+        if let Some(url) = base_url(url) {
+            let check = false; // TODO
+            let attributes =
+                if check {
+                    str_hash! {
+                        check => check,
+                        url => url,
+                        username => username,
+                    }
+                }
+                else {
+                    str_hash! {
+                        url => url,
+                        username => username,
+                    }
+                };
+            // TODO: handle errors.
+            if let Some(ref collection) = self.collection {
+                collection.item_create(&self.schema,
+                    &format!("Password for {} on {}", username, url), password, &attributes, |_|
+                {
+                    // TODO: show an error if any.
+                });
+            }
+        }
+        else {
+            warn!("Not adding the credentials for {}", url);
+        }
+    }
+
+    fn assign_collection(&mut self, collection: Result<Collection, error::Error>) {
+        // TODO: handle error.
+        self.collection = Some(collection.unwrap());
+    }
+
+    fn create_keyring_if_needed(&mut self, result: Result<bool, error::Error>, service: Service) {
+        if let Ok(true) = result {
+            let mut exists = false;
+            let collections = service.get_collections();
+            for collection in collections {
+                if collection.get_label() == Some(KEYRING_NAME.to_string()) {
+                    exists = true;
+                    self.collection = Some(collection);
                 }
             }
-            let mut credential = Credential::new(username, check);
-            if self.storage == PasswordStorage::Cleartext {
-                credential.password = password.to_string();
+
+            if !exists {
+                // TODO: handle error.
+                connect_static!(Collection, create[KEYRING_NAME](collection), self, assign_collection(collection));
             }
-            credentials.push(credential);
         }
-        if self.storage == PasswordStorage::Pass {
-            PasswordStore::insert(&PasswordManager::path(&url, username), password)?;
-        }
-        self.save()?;
-        Ok(!found)
     }
 
     /// Delete a password.
     /// Returns true if a credential was deleted.
-    pub fn delete(&mut self, url: &str, username: &str) -> AppResult<bool> {
-        let url = base_url(url);
-        let mut deleted = false;
-        let mut delete_url = false;
-        if let Some(credentials) = self.credentials.get_mut(&url) {
-            let last_len = credentials.len();
-            credentials.retain(|credential| credential.username == username);
-            deleted = credentials.len() != last_len;
-            delete_url = credentials.is_empty();
-            if deleted && self.storage == PasswordStorage::Pass {
-                PasswordStore::remove(&PasswordManager::path(&url, username))?;
-            }
+    pub fn delete(&mut self, url: &str, username: &str) {
+        if let Some(url) = base_url(url) {
+            // TODO: handle error.
+            self.get_one(str_hash! {
+                url => url,
+                username => username,
+            }, |item| {
+                item.delete(|_| {});
+                // TODO: show an info.
+                // TODO: show an error if any.
+            });
         }
-        if delete_url {
-            self.credentials.remove(&url);
+        else {
+            warn!("Not deleting the password for {}", url);
         }
-        if deleted {
-            self.save()?;
-        }
-        Ok(deleted)
     }
 
-    /// Get the credentials for a `url`.
-    pub fn get_credentials(&self, url: &str) -> Option<&[Credential]> {
-        let url = base_url(url);
-        self.credentials.get(&url)
-            .map(Vec::as_slice)
+    /// Search for items in the keyring, returning the first one.
+    fn get_one<F: Fn(Item) + 'static>(&self, attributes: HashMap<String, String>, callback: F) {
+        if let Some(ref collection) = self.collection {
+            collection.search(&self.schema, &attributes, move |items| {
+                if let Ok(mut items) = items {
+                    if !items.is_empty() {
+                        callback(items.remove(0));
+                    }
+                }
+            });
+        }
+    }
+
+    /// Get the usernames for a `url`.
+    pub fn get_usernames<F: Fn(Vec<String>) + 'static>(&self, url: &str, callback: F) {
+        if let Some(url) = base_url(url) {
+            if let Some(ref collection) = self.collection {
+                collection.search(&self.schema, &str_hash! {
+                    url => url,
+                }, move |items| {
+                    // TODO: handle error.
+                    if let Ok(items) = items {
+                        let mut usernames = vec![];
+                        for item in items {
+                            let attributes = item.get_attributes();
+                            if let Some(username) = attributes.get("username") {
+                                usernames.push(username.clone());
+                            }
+                        }
+                        callback(usernames);
+                    }
+                });
+            }
+        }
+        else {
+            warn!("Cannot get the usernames for {}", url);
+        }
     }
 
     /// Get the password for a `url` and username.
-    pub fn get_password(&self, url: &str, username: &str) -> AppResult<String> {
-        if self.storage == PasswordStorage::Pass {
-            let url = base_url(url);
-            Ok(PasswordStore::get(&PasswordManager::path(&url, username))?)
-        }
-        else if let Some(credentials) = self.get_credentials(url) {
-            for credential in credentials {
-                if credential.username == username {
-                    return Ok(credential.password.clone());
+    pub fn get_password<F: Fn(Result<String, PasswordError>) + 'static>(&self, url: &str, username: &str, callback: F) {
+        if let Some(url) = base_url(url) {
+            self.get_one(str_hash! {
+                url => url,
+                username => username,
+            }, move |item| {
+                if let Some(password) = item.get_secret().and_then(|secret| secret.get_text()) {
+                    callback(Ok(password))
                 }
-            }
-            // TODO: implement proper error handling.
-            panic!("No credential for the current URL and username".to_string());
+            });
         }
         else {
-            // TODO: implement proper error handling.
-            panic!("No credential for the current URL".to_string());
+            warn!("Cannot get the password for {}", url);
         }
     }
 
-    /// Load the usernames.
-    pub fn load(&mut self) -> AppResult<()> {
-        let reader = BufReader::new(File::open(&self.filename)?);
-        self.credentials = serde_yaml::from_reader(reader)?;
-
-        Ok(())
-    }
-
-    /// Get the password store path from the `url` and `username`.
-    fn path(url: &str, username: &str) -> String {
-        format!("{}/{}/{}", APP_NAME, url, username)
-    }
-
-    /// Save the credentials to the disk file.
-    fn save(&self) -> AppResult<()> {
-        let mut writer = BufWriter::new(File::create(&self.filename)?);
-        let yaml = serde_yaml::to_string(&self.credentials)?;
-        write!(writer, "{}", yaml)?;
-        Ok(())
-    }
-
-    /// Set the password storage.
-    pub fn set_storage(&mut self, storage: &PasswordStorage) {
-        self.storage = storage.clone();
+    pub fn init(&mut self, service: Service) {
+        // TODO: only init when saving the first password.
+        connect!(service.clone(), load_collections(loaded), self, create_keyring_if_needed(loaded, service));
     }
 }

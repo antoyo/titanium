@@ -71,3 +71,8 @@ impl App {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // TODO
+}

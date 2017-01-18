@@ -30,8 +30,6 @@ use super::{App, AppResult};
 impl App {
     /// Create the default configuration files and directories if it does not exist.
     fn create_config_files(&self, config_path: &Path) -> AppResult<()> {
-        let passwords_path = App::password_path(&self.config_dir);
-
         let stylesheets_path = self.config_dir.config_file("stylesheets")?;
         let scripts_path = self.config_dir.config_file("scripts")?;
         let popups_path = self.config_dir.config_file("popups")?;
@@ -49,7 +47,6 @@ impl App {
         self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
         self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
         self.create_default_config_file(&hosts_path, include_str!("../../config/hosts"))?;
-        self.create_default_config_file(&passwords_path, include_str!("../../config/passwords"))?;
         self.bookmark_manager.create_tables()?;
 
         let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(&self.config_dir);

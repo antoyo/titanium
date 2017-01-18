@@ -50,18 +50,24 @@ impl PopupManager {
 
     /// Blacklist the specified url.
     pub fn blacklist(&mut self, url: &str) -> AppResult<()> {
-        self.blacklisted_urls.insert(get_base_url(url).to_string());
-        self.save_blacklist()
+        if let Some(url) = get_base_url(url) {
+            self.blacklisted_urls.insert(url.to_string());
+            self.save_blacklist()
+        }
+        else {
+            warn!("Not blacklisting {}", url);
+            Ok(())
+        }
     }
 
     /// Check if the specified url is blacklisted.
     pub fn is_blacklisted(&self, url: &str) -> bool {
-        self.blacklisted_urls.contains(&get_base_url(url))
+        self.blacklisted_urls.contains(&get_base_url(url).unwrap_or_else(String::new))
     }
 
     /// Check if the specified url is whitelisted.
     pub fn is_whitelisted(&self, url: &str) -> bool {
-        self.whitelisted_urls.contains(&get_base_url(url))
+        self.whitelisted_urls.contains(&get_base_url(url).unwrap_or_else(String::new))
     }
 
     /// Load the urls from the files.
@@ -103,7 +109,13 @@ impl PopupManager {
 
     /// Whitelist the specified url.
     pub fn whitelist(&mut self, url: &str) -> AppResult<()> {
-        self.whitelisted_urls.insert(get_base_url(url).to_string());
-        self.save_whitelist()
+        if let Some(url) = get_base_url(url) {
+            self.whitelisted_urls.insert(url.to_string());
+            self.save_whitelist()
+        }
+        else {
+            warn!("Not whitelisting {}", url);
+            Ok(())
+        }
     }
 }

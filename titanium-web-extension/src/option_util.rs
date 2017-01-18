@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,24 +19,18 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::path::PathBuf;
+pub trait OptionExt<T> {
+    fn flatten(self) -> Option<T>;
+}
 
-use app::App;
-use config_dir::ConfigDir;
-
-impl App {
-    /// Get the config path of the bookmarks file.
-    pub fn bookmark_path(config_dir: &ConfigDir) -> PathBuf {
-        config_dir.config_file("bookmarks.db")
-            .expect("cannot create configuration directory")
+impl<T> OptionExt<T> for Option<Option<T>> {
+    fn flatten(self) -> Option<T> {
+        self.and_then(|option| option)
     }
+}
 
-    /// Get the whitelist and blacklist path.
-    pub fn popup_path(config_dir: &ConfigDir) -> (PathBuf, PathBuf) {
-        ( config_dir.config_file("popups/whitelist")
-            .expect("cannot create configuration directory")
-        , config_dir.config_file("popups/blacklist")
-            .expect("cannot create configuration directory")
-        )
+impl<S, T> OptionExt<T> for Result<Option<T>, S> {
+    fn flatten(self) -> Option<T> {
+        self.ok().flatten()
     }
 }
