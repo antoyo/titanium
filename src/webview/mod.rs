@@ -343,8 +343,8 @@ impl WebView {
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
-    pub fn set_open_in_new_window(&mut self) {
-        self.open_in_new_window = true;
+    pub fn set_open_in_new_window(&mut self, in_new_window: bool) {
+        self.open_in_new_window = in_new_window;
     }
 
     /// Set whether the search is backward or not.

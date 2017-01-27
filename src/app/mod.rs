@@ -275,6 +275,7 @@ impl App {
             FocusInput => self.focus_input(),
             Follow => {
                 self.follow_mode = FollowMode::Click;
+                self.webview.set_open_in_new_window(false);
                 self.app.set_mode("follow");
                 handle_error!(self.webview.follow_link(self.hint_chars()))
             },
@@ -315,7 +316,7 @@ impl App {
             Stop => self.webview.stop_loading(),
             WinFollow => {
                 self.follow_mode = FollowMode::Click;
-                self.webview.set_open_in_new_window();
+                self.webview.set_open_in_new_window(true);
                 self.app.set_mode("follow");
                 handle_error!(self.webview.follow_link(self.hint_chars()))
             },
