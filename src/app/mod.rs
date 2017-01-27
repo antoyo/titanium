@@ -177,7 +177,7 @@ impl App {
         app.create_password_keyring();
 
         let url = homepage.unwrap_or(app.app.settings().home_page.clone());
-        app.webview.open(&url);
+        app.open(&url);
 
         handle_error!(app.popup_manager.load());
 
