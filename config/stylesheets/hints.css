@@ -5,6 +5,7 @@
     font-family: "DejaVu Sans Mono", FreeMono, "Liberation Mono", "Lucida Console", monospace !important;
     font-size: small !important;
     font-weight: bold !important;
+    line-height: normal !important;
     max-width: none !important;
     padding: 1px 2px !important;
     width: auto !important;
