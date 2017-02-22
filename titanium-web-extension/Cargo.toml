@@ -36,8 +36,7 @@ git = "https://github.com/antoyo/titanium"
 version = "^0.1"
 
 [dependencies.webkit2gtk-webextension]
-path = "../../webkit2gtk-webextension"
-#git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
+git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
 version = "^0.1"
 
 [dependencies.webkit2gtk-webextension-sys]

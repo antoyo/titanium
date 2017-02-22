@@ -86,7 +86,9 @@ impl DownloadView {
         self.view.set_fraction(1.0);
         let (_, total_size) = get_data_sizes(download);
         let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-        self.view.set_text(Some(&format!("{} {}%{}", filename, percent, total_size)));
+        // TODO: switch back to &format!() when it compiles on stable.
+        let text = format!("{} {}%{}", filename, percent, total_size);
+        self.view.set_text(Some(text.as_ref()));
     }
 
     /// Update the progress and the text of the progress bar.
@@ -100,7 +102,9 @@ impl DownloadView {
         let mut updated = false;
         if percent == 100 {
             let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-            self.view.set_text(Some(&format!("{} {}%{}", filename, percent, total_size)));
+            // TODO: switch back to &format!() when it compiles on stable.
+            let text = format!("{} {}%{}", filename, percent, total_size);
+            self.view.set_text(Some(text.as_ref()));
         }
         else if let Ok(duration) = self.last_update.elapsed() {
             // Update the text once per second.
@@ -110,7 +114,9 @@ impl DownloadView {
                     .map(|time| format!(", {}", time))
                     .unwrap_or_default();
                 let total_size = total_size.map(|size| format!("/{}", size)).unwrap_or_default();
-                self.view.set_text(Some(&format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size, total_size)));
+                // TODO: switch back to &format!() when it compiles on stable.
+                let text = format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size, total_size);
+                self.view.set_text(Some(text.as_ref()));
                 self.was_shown = true;
             }
         }

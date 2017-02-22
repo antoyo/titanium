@@ -50,8 +50,7 @@ git = "https://github.com/gtk-rs/sys"
 version = "0.3.1"
 
 [dependencies.mg]
-path = "../mg"
-#git = "https://github.com/antoyo/mg"
+git = "https://github.com/antoyo/mg"
 
 [dependencies.mg-settings]
 git = "https://github.com/antoyo/mg-settings"
@@ -62,12 +61,11 @@ git = "https://github.com/antoyo/mg-settings"
 version = "^0.0.1"
 
 [dependencies.secret]
-#git = "https://github.com/antoyo/secret-rs"
-path = "../secret"
+git = "https://github.com/antoyo/secret-rs"
 version = "^0.1"
 
 [dependencies.titanium-common]
-git = "https://github.com/antoyo/titanium"
+path = "titanium-common"
 version = "^0.1"
 
 [dependencies.webkit2gtk]
