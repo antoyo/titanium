@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,20 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::ffi::CStr;
+use std::env::{home_dir, temp_dir};
 
-pub use glib_sys::G_USER_DIRECTORY_DOWNLOAD;
-use glib_sys::{GUserDirectory, g_get_user_special_dir};
+use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 
-/// Returns the full path of a special directory using its logical id.
-pub fn get_user_special_dir(user_directory: GUserDirectory) -> Option<String> {
-    unsafe {
-        let path = g_get_user_special_dir(user_directory);
-        if path.is_null() {
-            None
-        }
-        else {
-            Some(CStr::from_ptr(path).to_str().unwrap().to_string())
-        }
-    }
+/// Get the download directory if it can be retrieved, else returns the home directory.
+pub fn download_dir() -> String {
+    let dir = get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD)
+        .map(|dir| From::from(dir))
+        .or_else(|| home_dir())
+        .unwrap_or_else(|| temp_dir());
+    format!("{}/", dir.to_str().unwrap().to_string())
 }

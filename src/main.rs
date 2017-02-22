@@ -188,6 +188,7 @@ mod commands;
 mod completers;
 mod config_dir;
 mod dialogs;
+mod download;
 mod download_view;
 mod download_list_view;
 mod file;

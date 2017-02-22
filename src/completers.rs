@@ -27,7 +27,7 @@ use mg::completion::{Completer, CompletionCell, CompletionResult};
 use mg::completion::Column::{self, AllVisible, Expand};
 
 use bookmarks::{BookmarkInput, BookmarkManager};
-use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
+use download::download_dir;
 
 /// A bookmark completer.
 pub struct BookmarkCompleter {
@@ -112,7 +112,7 @@ pub struct FileCompleter {
 impl FileCompleter {
     /// Create a new file completer.
     pub fn new() -> Self {
-        let path = Path::new(&get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD)).to_path_buf();
+        let path = Path::new(&download_dir()).to_path_buf();
         FileCompleter {
             current_directory: path,
         }

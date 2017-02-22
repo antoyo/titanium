@@ -28,14 +28,14 @@ use mg::DialogResult::{Answer, Shortcut};
 use webkit2gtk::Download;
 
 use dialogs::CustomDialog;
+use download::download_dir;
 use file::gen_unique_filename;
-use glib_ext::{get_user_special_dir, G_USER_DIRECTORY_DOWNLOAD};
 use super::App;
 
 impl App {
     /// Handle the download decide destination event.
     pub fn handle_decide_destination(&mut self, download: &Download, suggested_filename: &str) -> bool {
-        let default_path = format!("{}/", get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD));
+        let default_path = download_dir();
         let destination = self.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
         match destination {
             Answer(Some(destination)) => {
