@@ -9,5 +9,3 @@ search-engine wikipedia http://en.wikipedia.org/w/index.php?search={}
 set hint-chars = hjklasdfgyuiopqwertnmzxcvb
 
 set cookie-accept = always
-
-set password-storage = cleartext
