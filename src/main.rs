@@ -20,17 +20,37 @@
  */
 
 /*
- * FIXME: running `cargo run -- fsf.org` opens about:blank.
+ * FIXME: error Unacceptable TLS certificate
+ * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
+ * https://zinascii.com/2014/a-posix-queue-implementation.html
+ * FIXME: this page freeze: https://medium.com/@eeue56/top-6-ways-to-make-your-elm-app-crash-at-runtime-562b2fa92d70#.cfg55os82
+ * FIXME: scrolling hides the info message.
+ * FIXME: scrolling goes too far when zoomed in.
+ * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
+ * TODO: modal dialog for authentication.
+ * TODO: add a --redirect option or redirect command to bypass the adblocker.
+ * TODO: show an error when a page is blocked by the adblocker.
+ * FIXME: google is very slow.
+ * FIXME: saying no to overwrite a download crashes.
+ * FIXME: the browser (opened with window-new) is closed when the parent process is closed (mutt).
+ * FIXME: sometimes, the page load percentage stays shown after the load is finished.
+ * FIXME: some pages are white: https://devswag.com/products/classic-rust-t-shirt
  * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
- * FIXME: I can set tags on URLs that are not bookmarked.
- * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/.
- * FIXME: follow open in a new window after a follow-win.
- * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * FIXME: web process crash on print (follow onclick="javascript:print").
+ * FIXME: web process crashes on travis CI build page.
+ *
+ * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
+ * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
+ * FIXME: I can set tags on URLs that are not bookmarked.
+ * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/
+ * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
  * TODO: allow to remove tags from bookmarks.
  * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows: use a thread and/or catch_unwind()).
+ * FIXME: hitting the 's' key on https://developer.github.com/ scroll to the search bar.
+ * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
+ * TODO: auto-detect static bars at the bottom/top of webpages to scroll less when one is present.
  *
  * TODO: unlock the password store when loading a password.
  * FIXME: loading credentials does not work.
@@ -41,7 +61,8 @@
  * TODO: command to restore the last closed window.
  *
  * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
- * alphebetical order).
+ * alphebetical order) and perhaps also by relevance (like the percentage of tags/words that
+ * matches).
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
  * property="og:article:tag"/> is a start).
  *
@@ -69,6 +90,8 @@
  * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
  * FIXME: ctrl-/ should not trigger the mapping for /.
  * TODO: allow using Backspace to remove the last hint character.
+ * TODO: hide HTML in title/bookmarks?
+ * FIXME: the window sometimes does not hide when quitting: it hides when a new window is shown.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
  * FIXME: sometimes does not go to insert mode after focusing first input.
@@ -86,6 +109,10 @@
  * TODO: handle network errors.
  * TODO: support marks.
  * FIXME: titanium seems slower than other browsers.
+ * TODO: show a star next to the url of a bookmarked site.
+ * TODO: find a way to recover accidently removed bookmarks (bookmark to readd bookmarks from a
+ * stack of removed bookmarks? another shortcut which is harder to do C-S-d?).
+ * TODO: warn when adding a bookmarks that has the same URL as another one, except with(out) a /.
  * TODO: preferred languages.
  * TODO: store cache.
  * TODO: add a command to delete history, …
@@ -106,6 +133,7 @@
  * TODO: plugin to block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
  * FIXME: trigger a GTK+ event to activate hints (this will fix clicking on a link hidden by
  * another element).
+ * FIXME: popup not blocked on bnc.ca.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
@@ -125,7 +153,6 @@
  * TODO: add command (;f) to focus frame.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
- * FIXME: cannot scroll on http://dudzik.co/digress-into-development/syntax-off/.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
  * starting a download when the page is still loading).
  * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
