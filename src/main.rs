@@ -20,6 +20,7 @@
  */
 
 /*
+ * FIXME: negative zoom level.
  * FIXME: running `cargo run -- fsf.org` opens about:blank.
  * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
