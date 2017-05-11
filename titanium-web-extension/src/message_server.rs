@@ -201,7 +201,10 @@ dbus_class!("com.titanium.client", class MessageServer
             for tag_name in &tag_names {
                 let iter = ElementIter::new(document.get_elements_by_tag_name(tag_name));
                 for element in iter {
-                    if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element) {
+                    let tabindex = element.get_attribute("tabindex");
+                    if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
+                        && tabindex != Some("-1".to_string())
+                    {
                         element.focus();
                         return true;
                     }
