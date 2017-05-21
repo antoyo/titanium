@@ -28,6 +28,9 @@
  * TODO: use tokio-process to communicate with pass?
  *
  * TODO: shortcut to open the current URL's root.
+ *
+ * FIXME: negative zoom level.
+ * FIXME: running `cargo run -- fsf.org` opens about:blank.
  * FIXME: error Unacceptable TLS certificate
  * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
  * https://zinascii.com/2014/a-posix-queue-implementation.html
