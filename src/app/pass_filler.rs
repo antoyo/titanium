@@ -20,54 +20,53 @@
  */
 
 use glib::error;
-use secret::Service;
 
 use super::{App, AppResult};
 
 impl App {
     /// Create the password collection in gnome keyring.
     pub fn create_password_keyring(&mut self) {
-        connect_static!(Service, get(service), self, init_service(service));
+        //connect_static!(Service, get(service), self, init_service(service));
     }
 
     /// Delete the password for the current URL.
-    pub fn delete_password(&mut self) {
-        self.webview.delete_password();
+    pub fn delete_password(&self) {
+        self.webview.widget_mut().delete_password();
         /*Ok(true) => self.app.info("Password deleted"),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
     }
 
-    fn init_service(&mut self, service: Result<Service, error::Error>) {
+    /*fn init_service(&mut self, service: Result<Service, error::Error>) {
         // TODO: handle errors.
         if let Ok(service) = service {
-            self.webview.password_manager.init(service);
+            self.webview.widget().password_manager.init(service);
         }
-    }
+    }*/
 
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
-    pub fn load_password(&mut self) {
-        self.webview.load_username_password();
+    pub fn load_password(&self) {
+        self.webview.widget_mut().load_username_password();
         /*Ok(true) => return Ok(true),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
     }
 
     /// Save the password from the currently focused login form into the store.
-    pub fn save_password(&mut self) {
-        self.webview.save_password();
+    pub fn save_password(&self) {
+        self.webview.widget_mut().save_password();
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
           Err(err) => self.show_error(err),*/
     }
 
     /// Load the username and password in the login form and submit it.
-    pub fn submit_login_form(&mut self) {
+    pub fn submit_login_form(&self) {
         self.load_password();
         // TODO: put the next line in a callback.
-        handle_error!(self.webview.submit_login_form());
+        handle_error!(self.webview.widget().submit_login_form());
     }
 }
 
@@ -130,7 +129,7 @@ mod tests {
 
         gtk::main();
 
-        app.webview.run_javascript_with_callback(&format!("{}.length", js_username_value), |result| {
+        app.webview.widget().run_javascript_with_callback(&format!("{}.length", js_username_value), |result| {
             let result = result.unwrap();
             let value = result.get_value().unwrap();
             let context = result.get_global_context().unwrap();
@@ -139,7 +138,7 @@ mod tests {
             gtk::main_quit();
         });
 
-        app.webview.run_javascript_with_callback(&format!("{}.length", js_password_value), |result| {
+        app.webview.widget().run_javascript_with_callback(&format!("{}.length", js_password_value), |result| {
             let result = result.unwrap();
             let value = result.get_value().unwrap();
             let context = result.get_global_context().unwrap();

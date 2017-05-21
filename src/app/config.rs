@@ -21,66 +21,25 @@
 
 //! Manage the configuration of the application.
 
-use std::fs::{File, OpenOptions, create_dir_all};
-use std::io::{self, Write};
+use std::fs::OpenOptions;
+use std::io;
 use std::path::Path;
 
+use config_dir::ConfigDir;
 use super::{App, AppResult};
 
+use mg::parse_config;
+use mg::DefaultConfig::{self, Dir, File};
+
 impl App {
-    /// Create the default configuration files and directories if it does not exist.
-    fn create_config_files(&self, config_path: &Path) -> AppResult<()> {
-        let stylesheets_path = self.config_dir.config_file("stylesheets")?;
-        let scripts_path = self.config_dir.config_file("scripts")?;
-        let popups_path = self.config_dir.config_file("popups")?;
-        create_dir_all(stylesheets_path)?;
-        create_dir_all(scripts_path)?;
-        create_dir_all(popups_path)?;
-        create_dir_all(self.config_dir.data_home())?;
-
-        let keys_path = self.config_dir.config_file("keys")?;
-        let webkit_config_path = self.config_dir.config_file("webkit")?;
-        let hints_css_path = self.config_dir.config_file("stylesheets/hints.css")?;
-        let hosts_path = self.config_dir.data_file("hosts")?;
-        self.create_default_config_file(config_path, include_str!("../../config/config"))?;
-        self.create_default_config_file(&keys_path, include_str!("../../config/keys"))?;
-        self.create_default_config_file(&webkit_config_path, include_str!("../../config/webkit"))?;
-        self.create_default_config_file(&hints_css_path, include_str!("../../config/stylesheets/hints.css"))?;
-        self.create_default_config_file(&hosts_path, include_str!("../../config/hosts"))?;
-        self.bookmark_manager.create_tables()?;
-
-        let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(&self.config_dir);
-        create_file(&popup_whitelist_path)?;
-        create_file(&popup_blacklist_path)?;
-
-        Ok(())
-    }
-
-    /// Create the config file with its default content if it does not exist.
-    fn create_default_config_file(&self, path: &Path, content: &'static str) -> AppResult<()> {
-        if !path.exists() {
-            let mut file = File::create(path)?;
-            write!(file, "{}", content)?;
-        }
-        Ok(())
-    }
-
     /// Create the variables accessible from the config files.
     pub fn create_variables(&mut self) {
-        connect!(self.app, add_variable["url"], self, get_current_url);
+        //connect!(self.app, add_variable["url"], self, get_current_url);
     }
 
     /// Get the webview current URL.
     fn get_current_url(&self) -> String {
-        self.webview.get_uri().unwrap()
-    }
-
-    /// Create the missing config files and parse the config files.
-    pub fn parse_config(&mut self) {
-        let config_path = self.config_dir.config_file("config")
-            .expect("cannot create configuration directory");
-        handle_error!(self.create_config_files(config_path.as_path()));
-        handle_error!(self.app.parse_config(config_path));
+        self.webview.widget().get_uri().unwrap()
     }
 }
 
@@ -88,4 +47,34 @@ impl App {
 fn create_file(path: &Path) -> io::Result<()> {
     OpenOptions::new().create(true).write(true).open(path)?;
     Ok(())
+}
+
+/// Get the default configuration files and directories.
+pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
+    let stylesheets_path = config_dir.config_file("stylesheets");
+    let scripts_path = config_dir.config_file("scripts");
+    let popups_path = config_dir.config_file("popups");
+
+    let config_path = config_dir.config_file("config");
+    let keys_path = config_dir.config_file("keys");
+    let webkit_config_path = config_dir.config_file("webkit");
+    let hints_css_path = config_dir.config_file("stylesheets/hints.css");
+    let hosts_path = config_dir.data_file("hosts");
+
+    vec![ Dir(stylesheets_path)
+        , Dir(scripts_path)
+        , Dir(popups_path)
+        , Dir(Ok(config_dir.data_home()))
+        , File(keys_path, include_str!("../../config/keys"))
+        , File(config_path, include_str!("../../config/config"))
+        , File(webkit_config_path, include_str!("../../config/webkit"))
+        , File(hints_css_path, include_str!("../../config/stylesheets/hints.css"))
+        , File(hosts_path, include_str!("../../config/hosts"))
+        ]
+
+    //self.model.bookmark_manager.create_tables()?;
+
+    /*let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(&self.config_dir);
+      create_file(&popup_whitelist_path)?;
+      create_file(&popup_blacklist_path)?;*/
 }

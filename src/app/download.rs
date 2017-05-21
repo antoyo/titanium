@@ -27,7 +27,6 @@ use std::path::Path;
 use mg::DialogResult::{Answer, Shortcut};
 use webkit2gtk::Download;
 
-use dialogs::CustomDialog;
 use download::download_dir;
 use file::gen_unique_filename;
 use super::App;
@@ -36,7 +35,7 @@ impl App {
     /// Handle the download decide destination event.
     pub fn handle_decide_destination(&mut self, download: &Download, suggested_filename: &str) -> bool {
         let default_path = download_dir();
-        let destination = self.app.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
+        let destination = self.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
         match destination {
             Answer(Some(destination)) => {
                 let path = Path::new(&destination);
@@ -51,7 +50,7 @@ impl App {
                 let download_destination = download_destination.to_str().unwrap();
                 if exists {
                     let message = &format!("Do you want to overwrite {}?", download_destination);
-                    let answer = self.app.blocking_yes_no_question(message);
+                    let answer = self.blocking_yes_no_question(message);
                     if answer {
                         download.set_allow_overwrite(true);
                     }
@@ -66,7 +65,7 @@ impl App {
                     let temp_dir = temp_dir();
                     let download_destination = gen_unique_filename(suggested_filename);
                     let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
-                    self.download_list_view.add_file_to_open(&destination);
+                    self.download_list_view.widget_mut().add_file_to_open(&destination);
                     download.set_destination(&destination);
                 }
             },

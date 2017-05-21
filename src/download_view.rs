@@ -63,8 +63,8 @@ impl DownloadView {
         // the list
         self.update_progress_bar(download);
 
-        connect!(download, connect_received_data(download, _), self, update_progress_bar(download));
-        connect!(download, connect_finished(download), self, handle_finished(download));
+        //connect!(download, connect_received_data(download, _), self, update_progress_bar(download));
+        //connect!(download, connect_finished(download), self, handle_finished(download));
     }
 
     /// Get the destination filename of the download.

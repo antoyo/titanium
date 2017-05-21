@@ -36,19 +36,19 @@ impl App {
         if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
             if key_char.is_alphanumeric() {
                 if let Some(key_char) = key_char.to_lowercase().next() {
-                    match self.webview.enter_hint_key(key_char) {
+                    match self.webview.widget().enter_hint_key(key_char) {
                         Ok(should_click) => {
                             if should_click {
-                                let result = self.webview.activate_hint(self.follow_mode.to_string());
+                                let result = self.webview.widget().activate_hint(self.model.follow_mode.to_string());
                                 self.hide_hints();
                                 if let Some(result) = result.ok().and_then(Action::from_i32) {
                                     match result {
                                         FileInput => {
                                             if let Ok(file) = self.file_input(vec![]) {
-                                                handle_error!(self.webview.select_file(&file));
+                                                handle_error!(self.webview.widget().select_file(&file));
                                             }
                                         },
-                                        GoInInsertMode => self.app.set_mode("insert"),
+                                        GoInInsertMode => self.mg.widget_mut().set_mode("insert"),
                                         NoAction => (),
                                     }
                                 }
@@ -63,13 +63,13 @@ impl App {
     }
 
     /// Hide the hints and return to normal mode.
-    pub fn hide_hints(&mut self) {
-        handle_error!(self.webview.hide_hints());
-        self.app.set_mode("normal");
+    pub fn hide_hints(&self) {
+        handle_error!(self.webview.widget().hide_hints());
+        self.mg.widget_mut().set_mode("normal");
     }
 
     /// Get the hint characters from the settings.
-    pub fn hint_chars(&self) -> &str {
-        &self.app.settings().hint_chars
+    pub fn hint_chars(&self) -> String {
+        self.mg.widget().settings().hint_chars.clone()
     }
 }

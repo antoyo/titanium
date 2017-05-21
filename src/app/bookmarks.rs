@@ -25,23 +25,23 @@ use super::App;
 
 impl App {
     /// Add the current page to the bookmarks.
-    pub fn bookmark(&mut self) {
-        if let Some(url) = self.webview.get_uri() {
-            let title = self.webview.get_title();
+    pub fn bookmark(&self) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            let title = self.webview.widget().get_title();
             let message = format!("Added bookmark: {}", url);
-            match self.bookmark_manager.add(url, title) {
-                Ok(true) => self.app.info(&message),
-                Ok(false) => self.app.info("The current page is already in the bookmarks"),
+            match self.model.bookmark_manager.add(url, title) {
+                Ok(true) => self.mg.widget_mut().info(&message),
+                Ok(false) => self.mg.widget_mut().info("The current page is already in the bookmarks"),
                 Err(err) => self.show_error(err),
             }
         }
     }
 
     /// Delete the current page from the bookmarks.
-    pub fn delete_bookmark(&mut self) {
-        if let Some(url) = self.webview.get_uri() {
-            match self.bookmark_manager.delete(&url) {
-                Ok(true) => self.app.info(&format!("Deleted bookmark: {}", url)),
+    pub fn delete_bookmark(&self) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            match self.model.bookmark_manager.delete(&url) {
+                Ok(true) => self.mg.widget_mut().info(&format!("Deleted bookmark: {}", url)),
                 Ok(false) => self.info_page_not_in_bookmarks(),
                 Err(err) => self.show_error(err),
             }
@@ -49,35 +49,35 @@ impl App {
     }
 
     /// Delete the bookmark selected in completion.
-    pub fn delete_selected_bookmark(&mut self) {
-        let command = self.app.get_command();
+    pub fn delete_selected_bookmark(&self) {
+        let command = self.mg.widget().get_command().unwrap_or_default();
         let mut command = command.split_whitespace();
         match command.next() {
             Some("open") | Some("win-open") =>
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
-                    self.bookmark_manager.delete(url).ok();
-                    self.app.delete_current_completion_item();
+                    self.model.bookmark_manager.delete(url).ok();
+                    self.mg.widget().delete_current_completion_item();
                 },
             _ => (),
         }
     }
 
     /// Edit the tags of the current page from the bookmarks.
-    pub fn edit_bookmark_tags(&mut self) {
-        if let Some(url) = self.webview.get_uri() {
-            let tags = self.bookmark_manager.get_tags(&url);
+    pub fn edit_bookmark_tags(&self) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            let tags = self.model.bookmark_manager.get_tags(&url);
             if let Some(tags) = tags {
                 let default_answer = tags.join(", ");
                 // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
-                let input = self.app.blocking_input("Bookmark tags (separated by comma):", &default_answer);
+                let input = self.blocking_input("Bookmark tags (separated by comma):", &default_answer);
                 // Do not edit tags when the user press Escape.
                 if let Some(input) = input {
                     let tags: Vec<_> = input.split(',')
                         .map(|tag| tag.trim().to_lowercase())
                         .filter(|tag| !tag.is_empty())
                         .collect();
-                    if let Err(err) = self.bookmark_manager.set_tags(&url, tags) {
+                    if let Err(err) = self.model.bookmark_manager.set_tags(&url, tags) {
                         self.show_error(err);
                     }
                 }
@@ -89,7 +89,7 @@ impl App {
     }
 
     /// Show an information message to tell that the current page is not in the bookmarks.
-    fn info_page_not_in_bookmarks(&mut self) {
-        self.app.info("The current page is not in the bookmarks");
+    fn info_page_not_in_bookmarks(&self) {
+        self.mg.widget_mut().info("The current page is not in the bookmarks");
     }
 }

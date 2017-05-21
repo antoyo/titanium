@@ -87,9 +87,9 @@ impl WebView {
     }
 
     /// Adjust the webkit settings.
-    pub fn setting_changed(&mut self, setting: &AppSettingsVariant) {
+    pub fn setting_changed(&self, setting: AppSettingsVariant) {
         if let Some(settings) = self.view.get_settings() {
-            match *setting {
+            match setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) | HomePage(_) => (),
                 WebkitAllowFileAccessFromFileUrls(value) =>

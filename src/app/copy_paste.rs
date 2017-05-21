@@ -27,25 +27,25 @@ use super::App;
 
 impl App {
     /// Copy the URL in the system clipboard.
-    pub fn copy_url(&mut self) {
-        let clipboard = self.webview.get_display()
+    pub fn copy_url(&self) {
+        let clipboard = self.webview.widget().get_display()
             .and_then(|display| Clipboard::get_default(&display));
         if let Some(clipboard) = clipboard {
-            if let Some(url) = self.webview.get_uri() {
+            if let Some(url) = self.webview.widget().get_uri() {
                 clipboard.set_text(&url);
-                self.app.info(&format!("Copied URL to clipboard: {}", url));
+                self.info(&format!("Copied URL to clipboard: {}", url));
             }
             else {
-                self.app.error("No URL to copy");
+                self.error("No URL to copy");
             }
         }
         else {
-            self.app.error("Cannot get the system clipboard");
+            self.error("Cannot get the system clipboard");
         }
     }
 
     /// Open the url from the system clipboard.
-    pub fn paste_url(&mut self) {
+    pub fn paste_url(&self) {
         if let Some(url) = self.get_url_from_clipboard() {
             self.open(&url);
         }

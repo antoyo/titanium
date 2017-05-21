@@ -31,13 +31,13 @@ impl App {
         let args: Vec<_> = args.split_whitespace().collect();
         if args.len() == 2 {
             let keyword = args[0].to_string();
-            if self.default_search_engine.is_none() {
-                self.default_search_engine = Some(keyword.clone());
+            if self.model.default_search_engine.is_none() {
+                self.model.default_search_engine = Some(keyword.clone());
             }
-            self.search_engines.insert(keyword, args[1].to_string());
+            self.model.search_engines.insert(keyword, args[1].to_string());
         }
         else {
-            self.app.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));
+            self.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));
         }
     }
 
@@ -47,19 +47,19 @@ impl App {
     pub fn transform_url(&self, url: &str) -> String {
         let words: Vec<_> = url.split_whitespace().collect();
         let (engine_prefix, rest) =
-            if words.len() > 1 && self.search_engines.contains_key(words[0]) {
+            if words.len() > 1 && self.model.search_engines.contains_key(words[0]) {
                 let rest = url.chars().skip_while(|&c| c != ' ').collect::<String>();
                 let rest = rest.trim().to_string();
                 (Some(words[0].to_string()), rest)
             }
             else if !is_url(url) {
-                (self.default_search_engine.clone(), url.to_string())
+                (self.model.default_search_engine.clone(), url.to_string())
             }
             else {
                 (None, String::new())
             };
         if let Some(ref prefix) = engine_prefix {
-            if let Some(engine_url) = self.search_engines.get(prefix) {
+            if let Some(engine_url) = self.model.search_engines.get(prefix) {
                 return engine_url.replace("{}", &rest);
             }
         }

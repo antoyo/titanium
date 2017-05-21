@@ -24,8 +24,6 @@
 use std::collections::HashMap;
 
 use glib::error;
-use secret::{Collection, Item, PasswordError, Schema, Service};
-use secret::SchemaAttributeType::{self, Boolean};
 
 use app::AppResult;
 use urls::base_url;
@@ -34,21 +32,14 @@ const KEYRING_NAME: &'static str = "Titanium Passwords";
 
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
-    collection: Option<Collection>,
-    schema: Schema,
+    //collection: Option<Collection>,
+    //schema: Schema,
 }
 
 impl PasswordManager {
     /// Create a new password manager.
     pub fn new() -> Self {
-        let schema = Schema::new("com.titanium.Passwords", hash! {
-            check => Boolean,
-            url => SchemaAttributeType::String,
-            username => SchemaAttributeType::String,
-        });
         PasswordManager {
-            collection: None,
-            schema: schema,
         }
     }
 
@@ -57,7 +48,7 @@ impl PasswordManager {
     pub fn add(&mut self, url: &str, username: &str, password: &str, check: bool) {
         if let Some(url) = base_url(url) {
             let check = false; // TODO
-            let attributes =
+            /*let attributes =
                 if check {
                     str_hash! {
                         check => check,
@@ -70,63 +61,46 @@ impl PasswordManager {
                         url => url,
                         username => username,
                     }
-                };
+                };*/
             // TODO: handle errors.
-            if let Some(ref collection) = self.collection {
-                collection.item_create(&self.schema,
+            /*if let Some(ref collection) = self.collection {
+                /*collection.item_create(&self.schema,
                     &format!("Password for {} on {}", username, url), password, &attributes, |_|
                 {
                     // TODO: show an error if any.
-                });
-            }
+                });*/
+            }*/
         }
         else {
             warn!("Not adding the credentials for {}", url);
         }
     }
 
-    fn assign_collection(&mut self, collection: Result<Collection, error::Error>) {
+    /*fn assign_collection(&mut self, collection: Result<Collection, error::Error>) {
         // TODO: handle error.
         self.collection = Some(collection.unwrap());
-    }
-
-    fn create_keyring_if_needed(&mut self, result: Result<bool, error::Error>, service: Service) {
-        if let Ok(true) = result {
-            let mut exists = false;
-            let collections = service.get_collections();
-            for collection in collections {
-                if collection.get_label() == Some(KEYRING_NAME.to_string()) {
-                    exists = true;
-                    self.collection = Some(collection);
-                }
-            }
-
-            if !exists {
-                // TODO: handle error.
-                connect_static!(Collection, create[KEYRING_NAME](collection), self, assign_collection(collection));
-            }
-        }
-    }
+    }*/
 
     /// Delete a password.
     /// Returns true if a credential was deleted.
     pub fn delete(&mut self, url: &str, username: &str) {
         if let Some(url) = base_url(url) {
             // TODO: handle error.
-            self.get_one(str_hash! {
+            /*self.get_one(str_hash! {
                 url => url,
                 username => username,
             }, |item| {
                 item.delete(|_| {});
                 // TODO: show an info.
                 // TODO: show an error if any.
-            });
+            });*/
         }
         else {
             warn!("Not deleting the password for {}", url);
         }
     }
 
+    /*
     /// Search for items in the keyring, returning the first one.
     fn get_one<F: Fn(Item) + 'static>(&self, attributes: HashMap<String, String>, callback: F) {
         if let Some(ref collection) = self.collection {
@@ -138,13 +112,13 @@ impl PasswordManager {
                 }
             });
         }
-    }
+    }*/
 
     /// Get the usernames for a `url`.
     pub fn get_usernames<F: Fn(Vec<String>) + 'static>(&self, url: &str, callback: F) {
         if let Some(url) = base_url(url) {
-            if let Some(ref collection) = self.collection {
-                collection.search(&self.schema, &str_hash! {
+            /*if let Some(ref collection) = self.collection {
+                /*collection.search(&self.schema, &str_hash! {
                     url => url,
                 }, move |items| {
                     // TODO: handle error.
@@ -158,14 +132,15 @@ impl PasswordManager {
                         }
                         callback(usernames);
                     }
-                });
-            }
+                });*/
+            }*/
         }
         else {
             warn!("Cannot get the usernames for {}", url);
         }
     }
 
+    /*
     /// Get the password for a `url` and username.
     pub fn get_password<F: Fn(Result<String, PasswordError>) + 'static>(&self, url: &str, username: &str, callback: F) {
         if let Some(url) = base_url(url) {
@@ -181,10 +156,5 @@ impl PasswordManager {
         else {
             warn!("Cannot get the password for {}", url);
         }
-    }
-
-    pub fn init(&mut self, service: Service) {
-        // TODO: only init when saving the first password.
-        connect!(service.clone(), load_collections(loaded), self, create_keyring_if_needed(loaded, service));
-    }
+    }*/
 }

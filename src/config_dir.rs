@@ -27,6 +27,7 @@ use xdg::{BaseDirectories, BaseDirectoriesError};
 use app::APP_NAME;
 use self::ConfigDirOption::{Path, Xdg};
 
+#[derive(Clone)]
 enum ConfigDirOption {
     Path(PathBuf),
     Xdg(BaseDirectories),
@@ -34,6 +35,7 @@ enum ConfigDirOption {
 
 /// Configuration directory manager.
 /// If `config_dir` is `None`, the XDG directory will be used.
+#[derive(Clone)]
 pub struct ConfigDir {
     dir: ConfigDirOption,
 }

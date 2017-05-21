@@ -21,7 +21,7 @@
 
 use webkit2gtk;
 
-#[derive(Setting)]
+#[derive(Clone, Setting)]
 pub enum CookieAcceptPolicy {
     #[default]
     Always,

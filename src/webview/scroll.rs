@@ -28,30 +28,23 @@ const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
 impl WebView {
-    /// Connect the scrolled event.
-    pub fn connect_scrolled<F: Fn(i64) + 'static>(&mut self, callback: F) {
-        self.scrolled_callback = Some(Box::new(callback));
-    }
-
     /// Emit the scrolled event.
     pub fn emit_scrolled_event(&self) -> Inhibit {
-        if let Some(ref callback) = self.scrolled_callback {
-            if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
-                callback(scroll_percentage);
-            }
-        }
+        /* if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
+            self.model.relm.stream().emit(Scroll(scroll_percentage));
+        }*/
         Inhibit(false)
     }
 
     /// Scroll by the specified number of pixels.
     fn scroll(&self, pixels: i32) -> AppResult<()> {
-        self.message_server.scroll_by(pixels as i64)?;
+        //self.message_server.scroll_by(pixels as i64)?;
         Ok(())
     }
 
     /// Scroll to the bottom of the page.
     pub fn scroll_bottom(&self) -> AppResult<()> {
-        self.message_server.scroll_bottom()?;
+        //self.message_server.scroll_bottom()?;
         Ok(())
     }
 
@@ -74,19 +67,19 @@ impl WebView {
 
     /// Scroll towards the left of the page.
     pub fn scroll_left(&self) -> AppResult<()> {
-        self.message_server.scroll_by_x(-SCROLL_LINE_HORIZONTAL)?;
+        //self.message_server.scroll_by_x(-SCROLL_LINE_HORIZONTAL)?;
         Ok(())
     }
 
     /// Scroll towards the right of the page.
     pub fn scroll_right(&self) -> AppResult<()> {
-        self.message_server.scroll_by_x(SCROLL_LINE_HORIZONTAL)?;
+        //self.message_server.scroll_by_x(SCROLL_LINE_HORIZONTAL)?;
         Ok(())
     }
 
     /// Scroll to the top of the page.
     pub fn scroll_top(&self) -> AppResult<()> {
-        self.message_server.scroll_top()?;
+        //self.message_server.scroll_top()?;
         Ok(())
     }
 

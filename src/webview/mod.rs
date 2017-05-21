@@ -27,11 +27,14 @@ use std::error::Error;
 use std::fs::{File, read_dir};
 use std::io::Read;
 use std::ops::Deref;
+use std::mem;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{WidgetExt, Window};
 use libc::getpid;
+use relm::{Relm, Widget};
+use relm_attributes::widget;
 use webkit2gtk::{
     self,
     CookiePersistentStorage,
@@ -60,59 +63,78 @@ use webkit2gtk::UserStyleLevel::User;
 
 use app::AppResult;
 use config_dir::ConfigDir;
-use message_server::MessageServer;
 use pass_manager::PasswordManager;
+use self::Msg::*;
 use stylesheet::get_stylesheet_and_whitelist;
 
-/// Webkit-based view.
-pub struct WebView {
+pub struct Model {
+    config_dir: ConfigDir,
     find_controller: FindController,
-    message_server: MessageServer,
-    new_window_callback: Option<Box<Fn(&str)>>,
+    //message_server: MessageServer,
     open_in_new_window: bool,
     pub password_manager: PasswordManager,
+    relm: Relm<WebView>,
     scrolled_callback: Option<Box<Fn(i64)>>,
     search_backwards: bool,
-    view: webkit2gtk::WebView,
+}
+
+#[derive(Msg)]
+pub enum Msg {
+    Close,
+    NewWindow(String),
+    Scroll(i64),
+}
+
+#[widget]
+impl Widget for WebView {
+    fn init_view(&mut self) {
+        self.model.find_controller = self.view.get_find_controller().unwrap();
+    }
+
+    fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
+        Model {
+            config_dir,
+            find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
+            //message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions"),
+            open_in_new_window: false,
+            password_manager: PasswordManager::new(),
+            relm: relm.clone(),
+            scrolled_callback: None,
+            search_backwards: false,
+        }
+    }
+
+    fn update(&mut self, event: Msg) {
+    }
+
+    view! {
+        #[name="view"]
+        webkit2gtk::WebView({
+            user_content_manager: UserContentManager::new(), // FIXME: seems to be deallocated.
+            web_context: WebView::initialize_web_extension(&self.model.config_dir)
+        }) {
+            close => Close,
+            vexpand: true,
+            // Emit the scroll event whenever the view is drawn.
+            draw(_, _) => return self.emit_scrolled_event(),
+            decide_policy(_, policy_decision, policy_decision_type) =>
+                return self.decide_policy(policy_decision, policy_decision_type),
+        }
+    }
 }
 
 impl WebView {
-    /// Create a new web view.
-    pub fn new(password_manager: PasswordManager, config_dir: &ConfigDir) -> Box<Self> {
-        let (context, message_server) = WebView::initialize_web_extension(config_dir);
-
-        let view = webkit2gtk::WebView::new_with_context_and_user_content_manager(&context, &UserContentManager::new());
-        view.set_vexpand(true);
-
-        let find_controller = view.get_find_controller().unwrap();
-
-        let mut webview =
-            Box::new(WebView {
-                find_controller: find_controller,
-                message_server: message_server,
-                new_window_callback: None,
-                open_in_new_window: false,
-                password_manager: password_manager,
-                scrolled_callback: None,
-                search_backwards: false,
-                view: view,
-            });
-
-        webview.create_events();
-
-        webview
-    }
-
     /// Activate the selected hint.
     pub fn activate_hint(&self, follow_mode: String) -> AppResult<i32> {
         self.view.grab_focus();
-        self.message_server.activate_hint(&follow_mode)
-            .map_err(From::from)
+        Ok(0)
+        /*self.message_server.activate_hint(&follow_mode)
+            .map_err(From::from)*/
     }
 
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult<()> {
-        self.message_server.activate_selection()?;
+        //self.message_server.activate_selection()?;
         Ok(())
     }
 
@@ -158,19 +180,6 @@ impl WebView {
         }
     }
 
-    /// Connect the new window event.
-    pub fn connect_new_window<F: Fn(&str) + 'static>(&mut self, callback: F) {
-        self.new_window_callback = Some(Box::new(callback));
-    }
-
-    /// Create the events.
-    fn create_events(&mut self) {
-        // Emit the scroll event whenever the view is drawn.
-        connect!(self.view, connect_draw(_, _), self, emit_scrolled_event);
-        connect!(self.view, connect_decide_policy(_, policy_decision, policy_decision_type),
-            self, decide_policy(policy_decision, policy_decision_type));
-    }
-
     /// Handle the decide policy event.
     fn decide_policy(&mut self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
         if policy_decision_type == NavigationAction {
@@ -186,46 +195,51 @@ impl WebView {
 
     /// Emit the new window event.
     pub fn emit_new_window_event(&self, url: &str) {
-        if let Some(ref callback) = self.new_window_callback {
-            callback(url);
-        }
+        self.model.relm.stream().emit(NewWindow(url.to_string()));
     }
 
     /// Send a key to the web process to process with the current hints.
     pub fn enter_hint_key(&self, key_char: char) -> Result<bool, Box<Error>> {
-        self.message_server.enter_hint_key(key_char)
-            .map_err(From::from)
+        Ok(false)
+        /*self.message_server.enter_hint_key(key_char)
+            .map_err(From::from)*/
     }
 
     /// Clear the current search.
     pub fn finish_search(&self) {
         self.search("");
-        self.find_controller.search_finish();
+        self.model.find_controller.search_finish();
     }
 
     /// Focus the first input element.
     pub fn focus_input(&self) -> AppResult<bool> {
         self.view.grab_focus();
-        self.message_server.focus_input()
-            .map_err(From::from)
+        Ok(false) // TODO: remove.
+        /*self.message_server.focus_input()
+            .map_err(From::from)*/
     }
 
     /// Follow a link.
     pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
-        self.message_server.show_hints(hint_chars)?;
+        //self.message_server.show_hints(hint_chars)?;
         Ok(())
+    }
+
+    /// Get the web context.
+    pub fn get_context(&self) -> WebContext {
+        self.view.get_context().expect("No web context")
     }
 
     /// Handle follow link in new window.
     fn handle_navigation_action(&mut self, policy_decision: PolicyDecision) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
-            if self.open_in_new_window && policy_decision.get_navigation_type() == LinkClicked {
+            if self.model.open_in_new_window && policy_decision.get_navigation_type() == LinkClicked {
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
-                    self.open_in_new_window = false;
+                    self.model.open_in_new_window = false;
                     self.emit_new_window_event(&url);
                     return true;
                 }
@@ -248,12 +262,12 @@ impl WebView {
 
     /// Hide the hints.
     pub fn hide_hints(&self) -> AppResult<()> {
-        self.message_server.hide_hints()?;
+        //self.message_server.hide_hints()?;
         Ok(())
     }
 
     /// Create the context and initialize the web extension.
-    fn initialize_web_extension(config_dir: &ConfigDir) -> (WebContext, MessageServer) {
+    fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
         let context = WebContext::get_default().unwrap();
         if cfg!(debug_assertions) {
             context.set_web_extensions_directory("titanium-web-extension/target/debug");
@@ -265,7 +279,6 @@ impl WebView {
 
         let pid = unsafe { getpid() };
         let server_name = format!("com.titanium.process{}", pid);
-        let message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions");
 
         context.set_web_extensions_initialization_user_data(&server_name.to_variant());
 
@@ -274,7 +287,7 @@ impl WebView {
         let cookie_manager = context.get_cookie_manager().unwrap();
         cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
 
-        (context, message_server)
+        context
     }
 
     /// Open the specified URL.
@@ -296,60 +309,60 @@ impl WebView {
         let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height);
         let context = Context::new(&surface);
         self.view.draw(&context);
-        let file = File::create(path).unwrap();
-        surface.write_to_png(file).unwrap();
+        let mut file = File::create(path).unwrap();
+        surface.write_to_png(&mut file).unwrap();
     }
 
     /// Search some text.
     pub fn search(&self, input: &str) {
         let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
         let other_options =
-            if self.search_backwards {
+            if self.model.search_backwards {
                 FIND_OPTIONS_BACKWARDS
             }
             else {
                 FindOptions::empty()
             };
         let options = default_options | other_options;
-        self.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.find_controller.search(input, options.bits(), ::std::u32::MAX);
+        self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);
     }
 
     /// Search the next occurence of the search text.
     pub fn search_next(&self) {
-        if self.search_backwards {
-            self.find_controller.search_previous();
+        if self.model.search_backwards {
+            self.model.find_controller.search_previous();
         }
         else {
-            self.find_controller.search_next();
+            self.model.find_controller.search_next();
         }
     }
 
     /// Search the previous occurence of the search text.
     pub fn search_previous(&self) {
-        if self.search_backwards {
-            self.find_controller.search_next();
+        if self.model.search_backwards {
+            self.model.find_controller.search_next();
         }
         else {
-            self.find_controller.search_previous();
+            self.model.find_controller.search_previous();
         }
     }
 
     /// Set the value of an input[type="file"].
     pub fn select_file(&self, file: &str) -> AppResult<()> {
-        self.message_server.select_file(file)?;
+        //self.message_server.select_file(file)?;
         Ok(())
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
     pub fn set_open_in_new_window(&mut self, in_new_window: bool) {
-        self.open_in_new_window = in_new_window;
+        self.model.open_in_new_window = in_new_window;
     }
 
     /// Set whether the search is backward or not.
     pub fn set_search_backward(&mut self, backward: bool) {
-        self.search_backwards = backward;
+        self.model.search_backwards = backward;
     }
 
     /// Show the web inspector.

@@ -24,10 +24,11 @@
 use std::env::{home_dir, temp_dir};
 use std::path::Path;
 
+use mg::{DialogBuilder, DialogResult};
+use mg_settings::key::Key::{Char, Control};
 use webkit2gtk::{FileChooserRequest, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
-use dialogs::CustomDialog;
 use self::FileInputError::*;
 use super::App;
 
@@ -39,7 +40,7 @@ pub enum FileInputError {
 
 impl App {
     /// Show a file input dialog.
-    pub fn file_input(&mut self, selected_files: Vec<String>) -> Result<String, FileInputError> {
+    pub fn file_input(&self, selected_files: Vec<String>) -> Result<String, FileInputError> {
         let file =
             if selected_files.is_empty() {
                 let dir = home_dir()
@@ -51,7 +52,7 @@ impl App {
             else {
                 selected_files[0].clone()
             };
-        if let Some(file) = self.app.blocking_file_input("Select file", &file) {
+        if let Some(file) = self.blocking_file_input("Select file", &file) {
             {
                 let path = Path::new(&file);
                 if !path.exists() {
@@ -69,7 +70,7 @@ impl App {
     }
 
     /// Show a non-modal file chooser dialog when the user activates a file input.
-    pub fn handle_file_chooser(&mut self, file_chooser_request: &FileChooserRequest) -> bool {
+    pub fn handle_file_chooser(&self, file_chooser_request: &FileChooserRequest) -> bool {
         // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
         if file_chooser_request.get_select_multiple() {
             // TODO: support multiple files (use a boolean column that is converted to a pixmap).
@@ -81,11 +82,11 @@ impl App {
                 Ok(file) => file_chooser_request.select_files(&[&file]),
                 Err(Cancelled) => file_chooser_request.cancel(),
                 Err(FileDoesNotExist) => {
-                    self.app.error("Please select an existing file");
+                    self.error("Please select an existing file");
                     file_chooser_request.cancel();
                 },
                 Err(SelectedDirectory) => {
-                    self.app.error("Please select a file, not a directory");
+                    self.error("Please select a file, not a directory");
                     file_chooser_request.cancel();
                 },
             }
@@ -94,27 +95,60 @@ impl App {
     }
 
     /// Handle the script dialog event.
-    pub fn handle_script_dialog(&mut self, script_dialog: &ScriptDialog) -> bool {
+    pub fn handle_script_dialog(&self, script_dialog: &ScriptDialog) -> bool {
         match script_dialog.get_dialog_type() {
             Alert => {
-                self.app.alert(&format!("[JavaScript] {}", script_dialog.get_message()));
+                self.mg.widget_mut().alert(&format!("[JavaScript] {}", script_dialog.get_message()));
             },
             Confirm => {
-                let confirmed = self.app.blocking_yes_no_question(&format!("[JavaScript] {}", script_dialog.get_message()));
+                let confirmed = self.mg.widget_mut().blocking_yes_no_question(&self.model.relm,
+                    &format!("[JavaScript] {}", script_dialog.get_message()));
                 script_dialog.confirm_set_confirmed(confirmed);
             },
             BeforeUnloadConfirm => {
-                let confirmed = self.app.blocking_yes_no_question("[JavaScript] Do you really want to leave this page?");
+                let confirmed = self.mg.widget_mut().blocking_yes_no_question(&self.model.relm,
+                    "[JavaScript] Do you really want to leave this page?");
                 script_dialog.confirm_set_confirmed(confirmed);
             },
             Prompt => {
                 let default_answer = script_dialog.prompt_get_default_text().to_string();
-                let input = self.app.blocking_input(&format!("[JavaScript] {}", script_dialog.get_message()), &default_answer);
+                let input = self.blocking_input(&format!("[JavaScript] {}", script_dialog.get_message()),
+                    &default_answer);
                 let input = input.unwrap_or_default();
                 script_dialog.prompt_set_text(&input);
             },
             _ => (),
         }
         true
+    }
+
+    /// Show a blocking iniput dialog with file completion for download destination selection.
+    /// It contains the C-x shortcut to open the file instead of downloading it.
+    pub fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult {
+        let builder = DialogBuilder::new()
+            .blocking(true)
+            .completer("file")
+            .default_answer(default_answer)
+            .message(message)
+            .shortcut(Control(Box::new(Char('x'))), "download");
+        self.mg.widget_mut().show_dialog(&self.model.relm, builder)
+    }
+
+    /// Show a blocking input dialog with file completion.
+    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
+        let builder = DialogBuilder::new()
+            .blocking(true)
+            .completer("file")
+            .default_answer(default_answer)
+            .message(message);
+        self.mg.widget_mut().show_dialog_without_shortcuts(&self.model.relm, builder)
+    }
+
+    pub fn blocking_input(&self, message: &str, default_answer: &str) -> Option<String> {
+        self.mg.widget_mut().blocking_input(&self.model.relm, message, default_answer)
+    }
+
+    pub fn blocking_yes_no_question(&self, message: &str) -> bool {
+        self.mg.widget_mut().blocking_yes_no_question(&self.model.relm, message)
     }
 }

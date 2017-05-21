@@ -20,6 +20,14 @@
  */
 
 /*
+ * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
+ * callback.
+ * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
+ * FIXME: Invalid read of size 8 (see valgrind).
+ *
+ * TODO: use tokio-process to communicate with pass?
+ *
+ * TODO: shortcut to open the current URL's root.
  * FIXME: error Unacceptable TLS certificate
  * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
  * https://zinascii.com/2014/a-posix-queue-implementation.html
@@ -168,18 +176,15 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
+#![feature(proc_macro)]
 #![warn(missing_docs)]
 
 extern crate cairo;
-#[macro_use]
-extern crate gdbus;
-extern crate docopt;
+extern crate futures;
 extern crate gdk;
-extern crate gio_sys;
 extern crate glib;
 extern crate glib_sys;
 extern crate gtk;
-extern crate gtk_sys;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
@@ -189,17 +194,22 @@ extern crate libxdo;
 extern crate log;
 #[macro_use]
 extern crate mg;
-#[macro_use]
 extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
 extern crate number_prefix;
 extern crate open;
+#[macro_use]
+extern crate relm;
+extern crate relm_attributes;
+#[macro_use]
+extern crate relm_derive;
 extern crate rusqlite;
 extern crate rustc_serialize;
-#[macro_use]
-extern crate secret;
 extern crate simplelog;
+extern crate structopt;
+#[macro_use]
+extern crate structopt_derive;
 #[cfg(test)]
 extern crate tempdir;
 extern crate tempfile;
@@ -214,7 +224,6 @@ mod clipboard;
 mod commands;
 mod completers;
 mod config_dir;
-mod dialogs;
 mod download;
 mod download_view;
 mod download_list_view;
@@ -228,38 +237,30 @@ mod stylesheet;
 mod urls;
 mod webview;
 
-use docopt::Docopt;
 use log::LogLevel::Error;
+use relm::Widget;
 use simplelog::{Config, LogLevelFilter, TermLogger};
+use structopt::StructOpt;
 
 use app::App;
 
-const USAGE: &'static str = "
-Titanium web browser.
-
-Usage:
-    titanium [<url>] [--config=<dir>] [--log]
-
-Options:
-    --config=<dir>  The configuration directory.
-    --log           Show the log messages.
-";
-
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, StructOpt)]
+#[structopt(about="Titanium web browser.")]
 struct Args {
-    arg_url: Option<String>,
-    flag_config: Option<String>,
-    flag_log: bool,
+    #[structopt(short="c", long="config", help="The configuration directory.")]
+    config: Option<String>,
+    #[structopt(short="l", long="log", help="Show the log messages.")]
+    log: bool,
+    #[structopt(help="Url to open on startup")]
+    url: Option<String>,
 }
 
 fn main() {
     gtk::init().unwrap();
 
-    let args: Args = Docopt::new(USAGE)
-        .and_then(|decoder| decoder.decode())
-        .unwrap_or_else(|error| error.exit());
+    let args = Args::from_args();
 
-    if args.flag_log {
+    if args.log {
         let config = Config {
             time: Some(Error),
             level: Some(Error),
@@ -269,7 +270,5 @@ fn main() {
         TermLogger::init(LogLevelFilter::max(), config).unwrap();
     }
 
-    let _app = App::new(args.arg_url, args.flag_config);
-
-    gtk::main();
+    App::run((args.url, args.config)).unwrap();
 }

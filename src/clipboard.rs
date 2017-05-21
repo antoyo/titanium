@@ -30,7 +30,7 @@ use app::App;
 impl App {
     /// Get the URL from the clipboard if there is one.
     /// If there are no URLs in the clipboard, this will show errors.
-    pub fn get_url_from_clipboard(&mut self) -> Option<String> {
+    pub fn get_url_from_clipboard(&self) -> Option<String> {
         let clipboard = Display::get_default()
             .and_then(|display| Clipboard::get_default(&display));
         if let Some(clipboard) = clipboard {

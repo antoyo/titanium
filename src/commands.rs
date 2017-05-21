@@ -25,6 +25,8 @@ pub enum AppCommand {
     ActivateSelection,
     #[help(text="Go back in the history")]
     Back,
+    #[special_command(incremental, identifier="?")]
+    BackwardSearch(String),
     #[help(text="Add the current page to the bookmarks")]
     Bookmark,
     #[help(text="Delete the current page from the bookmarks")]
@@ -103,6 +105,8 @@ pub enum AppCommand {
     ScrollUpHalf,
     #[completion(hidden)]
     ScrollUpLine,
+    #[special_command(incremental, identifier="/")]
+    Search(String),
     #[completion(hidden)]
     SearchNext,
     #[completion(hidden)]
@@ -122,8 +126,3 @@ pub enum AppCommand {
     #[help(text="Zoom the current page out")]
     ZoomOut,
 }
-
-special_commands!(SpecialCommand {
-    BackwardSearch('?', always),
-    Search('/', always),
-});

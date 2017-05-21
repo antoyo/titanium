@@ -21,7 +21,7 @@
 
 //! Message server interface.
 
-dbus_interface!(
+/*dbus_interface!(
 #[dbus("com.titanium.client")]
 interface MessageServer {
     fn activate_hint(&mut self, follow_mode: &str) -> i32;
@@ -41,4 +41,4 @@ interface MessageServer {
     fn show_hints(&mut self, hint_chars: &str);
     fn submit_login_form(&self);
 }
-);
+);*/
