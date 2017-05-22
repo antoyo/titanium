@@ -42,13 +42,16 @@ use webkit2gtk_webextension::{
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
     DOMNodeExt,
+    URIRequest,
     WebExtension,
+    WebPage,
 };
 
 use titanium_common::{ExtCodec, Message};
 use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
 use titanium_common::Message::*;
 
+use adblocker::Adblocker;
 use dom::{
     ElementIter,
     get_body,
@@ -63,6 +66,10 @@ use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use login_form::{get_credentials, load_password, load_username, submit_login_form};
 use scroll::Scrollable;
 use self::Msg::*;
+
+lazy_static! {
+    static ref ADBLOCKER: Adblocker = Adblocker::new();
+}
 
 macro_rules! get_document {
     ($_self:ident) => {{
@@ -95,6 +102,7 @@ pub struct Model {
     hint_map: HashMap<String, DOMElement>,
     last_hovered_element: Option<DOMElement>,
     page_id: Option<u64>,
+    relm: Relm<MessageClient>,
     writer: FramedWrite<WriteHalf<UnixStream>, ExtCodec>,
 }
 
@@ -102,7 +110,7 @@ pub struct Model {
 pub enum Msg {
     MsgRecv(Message),
     MsgError(Box<bincode::ErrorKind>),
-    SetPageId(u64),
+    PageCreated(WebPage),
 }
 
 impl Update for MessageClient {
@@ -122,6 +130,7 @@ impl Update for MessageClient {
             hint_map: HashMap::new(),
             last_hovered_element: None,
             page_id: None,
+            relm: relm.clone(),
             writer,
         }
     }
@@ -154,7 +163,12 @@ impl Update for MessageClient {
                 SubmitLoginForm() => self.submit_login_form(),
                 _ => (), // TODO: log unexpected messages?
             },
-            SetPageId(page_id) => self.model.page_id = Some(page_id),
+            PageCreated(page) => {
+                // TODO: this should be disconnected later somehow.
+                connect!(self.model.relm, page, connect_send_request(_, request, _),
+                    return block_request(request));
+                self.model.page_id = Some(page.get_id())
+            },
         }
     }
 }
@@ -362,8 +376,9 @@ impl MessageClient {
     // Send a message to the server.
     fn send(&mut self, msg: Message) {
         if let Ok(AsyncSink::Ready) = self.model.writer.start_send(msg) {
-            // TODO: log error.
-            self.model.writer.poll_complete();
+            if let Err(error) = self.model.writer.poll_complete() {
+                error!("Cannot send message to UI process: {}", error);
+            }
         }
     }
 
@@ -415,4 +430,11 @@ impl MessageClient {
         let document = get_document!(self);
         submit_login_form(&document);
     }
+}
+
+fn block_request(request: &URIRequest) -> bool {
+    if let Some(url) = request.get_uri() {
+        return ADBLOCKER.should_block(&url);
+    }
+    false
 }

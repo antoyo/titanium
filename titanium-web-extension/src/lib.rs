@@ -24,6 +24,8 @@ extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate simplelog;
 #[macro_use]
@@ -53,9 +55,8 @@ use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::WebExtension;
 
-use adblocker::Adblocker;
 use message_client::MessageClient;
-use message_client::Msg::SetPageId;
+use message_client::Msg::PageCreated;
 
 web_extension_init!();
 
@@ -72,24 +73,13 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     };
     TermLogger::init(LogLevelFilter::max(), config).ok();
 
-    /*{
-        extension.connect_page_created(move |_, page| {
-            let adblocker = Adblocker::new();
-            page.connect_send_request(move |_, request, _| {
-                if let Some(url) = request.get_uri() {
-                    return adblocker.should_block(&url);
-                }
-                false
-            });
-        });
-    }*/
-
     let server_name = user_data.get_str();
     if let Some(server_name) = server_name {
         let client = MessageClient::new(server_name, extension);
 
         if let Ok(ref client) = client {
-            connect!(client.widget().model.extension, connect_page_created(_, page), client, SetPageId(page.get_id()));
+            connect!(client.widget().model.extension, connect_page_created(_, page),
+                client, PageCreated(page.clone()));
         }
 
         // Don't drop the client to keep receiving the messages on the stream.
