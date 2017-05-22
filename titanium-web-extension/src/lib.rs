@@ -19,13 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#[macro_use]
-extern crate gdbus;
-extern crate gio_sys;
+extern crate bincode;
+extern crate fg_uds;
+extern crate futures;
+extern crate futures_glib;
 #[macro_use]
 extern crate log;
 extern crate simplelog;
+#[macro_use]
+extern crate relm_state;
+#[macro_use]
+extern crate relm_derive_state;
 extern crate titanium_common;
+extern crate tokio_io;
 extern crate url;
 extern crate xdg;
 #[macro_use]
@@ -35,14 +41,11 @@ mod adblocker;
 mod dom;
 mod hints;
 mod login_form;
-mod message_server;
+mod message_client;
 mod option_util;
 mod scroll;
 
-use std::cell::Cell;
-use std::collections::HashMap;
 use std::mem::forget;
-use std::rc::Rc;
 
 use glib::variant::Variant;
 use log::LogLevel::Error;
@@ -51,7 +54,8 @@ use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::WebExtension;
 
 use adblocker::Adblocker;
-use message_server::MessageServer;
+use message_client::MessageClient;
+use message_client::Msg::SetPageId;
 
 web_extension_init!();
 
@@ -59,6 +63,7 @@ pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
+    // TODO: Don't show trace.
     let config = Config {
         time: Some(Error),
         level: Some(Error),
@@ -67,12 +72,8 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     };
     TermLogger::init(LogLevelFilter::max(), config).ok();
 
-    let current_page_id = Rc::new(Cell::new(0));
-
-    {
-        let current_page_id = current_page_id.clone();
+    /*{
         extension.connect_page_created(move |_, page| {
-            current_page_id.set(page.get_id());
             let adblocker = Adblocker::new();
             page.connect_send_request(move |_, request, _| {
                 if let Some(url) = request.get_uri() {
@@ -81,13 +82,16 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
                 false
             });
         });
-    }
+    }*/
 
     let server_name = user_data.get_str();
     if let Some(server_name) = server_name {
-        let mut message_server: MessageServer = MessageServer::new(
-            server_name, current_page_id, extension, String::new(), HashMap::new(), None, None);
-        message_server.run("/com/titanium/WebExtensions");
-        forget(message_server);
+        let client = MessageClient::new(server_name, extension);
+
+        if let Ok(ref client) = client {
+            connect!(client.widget().model.extension, connect_page_created(_, page), client, SetPageId(page.get_id()));
+        }
+
+        forget(client);
     }
 }

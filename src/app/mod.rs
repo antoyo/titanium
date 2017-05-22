@@ -69,7 +69,7 @@ use self::config::default_config;
 use self::Msg::*;
 use settings::AppSettings;
 use webview::WebView;
-use webview::Msg::{Close, NewWindow, Scroll};
+use webview::Msg::{Action, Close, GoToInsertMode, NewWindow, Scroll};
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const LEFT_BUTTON: u32 = 1;
@@ -82,7 +82,7 @@ static MODES: Modes = &[
 pub type AppResult<T> = Result<T, Box<Error>>;
 
 #[derive(Clone, Copy)]
-enum FollowMode {
+pub enum FollowMode {
     Click,
     Hover,
 }
@@ -102,7 +102,6 @@ pub struct Model {
     bookmark_manager: BookmarkManager,
     config_dir: ConfigDir,
     default_search_engine: Option<String>,
-    follow_mode: FollowMode,
     hovered_link: Option<String>,
     init_url: Option<String>,
     relm: Relm<App>,
@@ -141,7 +140,6 @@ impl Widget for App {
             bookmark_manager: BookmarkManager::new(),
             config_dir,
             default_search_engine: None,
-            follow_mode: FollowMode::Click,
             hovered_link: None,
             init_url,
             relm: relm.clone(),
@@ -152,9 +150,9 @@ impl Widget for App {
 
     fn update(&mut self, event: Msg) {
         match event {
-            Command(command) => self.handle_command(command),
-            DecideDownloadDestination(resolver, download, suggested_filename) => {
-                resolver.resolve(self.handle_decide_destination(&download, &suggested_filename));
+            Command(ref command) => self.handle_command(command),
+            DecideDownloadDestination(ref resolver, ref download, ref suggested_filename) => {
+                resolver.resolve(self.handle_decide_destination(download, suggested_filename));
             },
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
             TryClose => self.quit(),
@@ -178,13 +176,15 @@ impl Widget for App {
                 orientation: Vertical,
                 #[name="download_list_view"]
                 DownloadListView {
-                    DecideDestination(resolver, download, suggested_filename) =>
-                        DecideDownloadDestination(resolver, download, suggested_filename),
+                    DecideDestination(ref resolver, ref download, ref suggested_filename) =>
+                        DecideDownloadDestination(resolver.clone(), download.clone(), suggested_filename.clone()),
                 },
                 #[name="webview"]
                 WebView(self.model.config_dir.clone()) {
+                    Action(action) => self.activate_action(action),
                     Close => WebViewClose,
-                    NewWindow(url) => self.open_in_new_window_handling_error(&url),
+                    GoToInsertMode => Command(Insert),
+                    NewWindow(ref url) => self.open_in_new_window_handling_error(url),
                     Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
                     button_release_event(_, event) => return self.handle_button_release(event),
                     create(_, action) => return self.handle_create(action),
@@ -207,8 +207,8 @@ impl Widget for App {
             StatusBarItem {
             },
             AppClose => TryClose,
-            CustomCommand(command) => Command(command),
-            SettingChanged(setting) => self.webview.widget().setting_changed(setting),
+            CustomCommand(ref command) => Command(command.clone()),
+            SettingChanged(ref setting) => self.webview.widget().setting_changed(setting),
             key_press_event(_, event_key) => return self.handle_key_press(event_key),
         }
     }
@@ -222,10 +222,7 @@ impl App {
 
     /// Focus the first input element.
     fn focus_input(&self) {
-        let result = self.webview.widget().focus_input();
-        if let Ok(true) = result {
-            self.mg.widget_mut().set_mode("insert")
-        }
+        self.webview.widget().focus_input();
     }
 
     /// Get the title or the url if there are no title.
@@ -253,13 +250,13 @@ impl App {
     }
 
     /// Handle the command.
-    fn handle_command(&mut self, command: AppCommand) {
-        match command {
+    fn handle_command(&mut self, command: &AppCommand) {
+        match *command {
             ActivateSelection => handle_error!(self.webview.widget().activate_selection()),
             Back => self.webview.widget().go_back(),
-            BackwardSearch(input) => {
+            BackwardSearch(ref input) => {
                 self.webview.widget_mut().set_search_backward(true);
-                self.webview.widget().search(&input);
+                self.webview.widget().search(input);
             },
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
@@ -267,12 +264,12 @@ impl App {
             ClearCache => self.clear_cache(),
             CopyUrl => self.copy_url(),
             DeleteAllCookies => self.delete_all_cookies(),
-            DeleteCookies(domain) => self.delete_cookies(&domain),
+            DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.widget().finish_search(),
             FocusInput => self.focus_input(),
             Follow => {
-                self.model.follow_mode = FollowMode::Click;
+                self.webview.widget_mut().set_follow_mode(FollowMode::Click);
                 self.webview.widget_mut().set_open_in_new_window(false);
                 self.mg.widget_mut().set_mode("follow");
                 handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
@@ -280,14 +277,14 @@ impl App {
             Forward => self.webview.widget().go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
-                self.model.follow_mode = FollowMode::Hover;
+                self.webview.widget_mut().set_follow_mode(FollowMode::Hover);
                 self.mg.widget_mut().set_mode("follow");
                 handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
             },
             Insert => self.mg.widget_mut().set_mode("insert"),
             Inspector => self.webview.widget().show_inspector(),
             Normal => self.mg.widget_mut().set_mode("normal"),
-            Open(url) => self.open(&url),
+            Open(ref url) => self.open(url),
             PasswordDelete => self.delete_password(),
             PasswordLoad => self.load_password(),
             PasswordSave => self.save_password(),
@@ -297,7 +294,7 @@ impl App {
             Quit => self.quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
-            Screenshot(path) => self.webview.widget().screenshot(&path),
+            Screenshot(ref path) => self.webview.widget().screenshot(path),
             ScrollBottom => handle_error!(self.webview.widget().scroll_bottom()),
             ScrollDown => handle_error!(self.webview.widget().scroll_down_page()),
             ScrollDownHalf => handle_error!(self.webview.widget().scroll_down_half_page()),
@@ -308,21 +305,21 @@ impl App {
             ScrollUp => handle_error!(self.webview.widget().scroll_up_page()),
             ScrollUpHalf => handle_error!(self.webview.widget().scroll_up_half_page()),
             ScrollUpLine => handle_error!(self.webview.widget().scroll_up_line()),
-            Search(input) => {
+            Search(ref input) => {
                 self.webview.widget_mut().set_search_backward(false);
-                self.webview.widget().search(&input);
+                self.webview.widget().search(input);
             },
-            SearchEngine(args) => self.add_search_engine(&args),
+            SearchEngine(ref args) => self.add_search_engine(args),
             SearchNext => self.webview.widget().search_next(),
             SearchPrevious => self.webview.widget().search_previous(),
             Stop => self.webview.widget().stop_loading(),
             WinFollow => {
-                self.model.follow_mode = FollowMode::Click;
+                self.webview.widget_mut().set_follow_mode(FollowMode::Click);
                 self.webview.widget_mut().set_open_in_new_window(true);
                 self.mg.widget_mut().set_mode("follow");
                 handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
             },
-            WinOpen(url) => self.open_in_new_window_handling_error(&url),
+            WinOpen(ref url) => self.open_in_new_window_handling_error(url),
             WinPasteUrl => self.win_paste_url(),
             ZoomIn => self.zoom_in(),
             ZoomNormal => self.zoom_normal(),

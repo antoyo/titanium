@@ -21,6 +21,8 @@
 
 use gtk::{Inhibit, WidgetExt};
 
+use titanium_common::Message::{GetScrollPercentage, ScrollBottom, ScrollBy, ScrollByX, ScrollTop};
+
 use app::AppResult;
 use super::WebView;
 
@@ -30,22 +32,18 @@ const SCROLL_LINE_VERTICAL: i32 = 40;
 impl WebView {
     /// Emit the scrolled event.
     pub fn emit_scrolled_event(&self) -> Inhibit {
-        /* if let Ok(scroll_percentage) = self.message_server.get_scroll_percentage() {
-            self.model.relm.stream().emit(Scroll(scroll_percentage));
-        }*/
+        let result = self.server_send(GetScrollPercentage());
         Inhibit(false)
     }
 
     /// Scroll by the specified number of pixels.
     fn scroll(&self, pixels: i32) -> AppResult<()> {
-        //self.message_server.scroll_by(pixels as i64)?;
-        Ok(())
+        self.server_send(ScrollBy(pixels as i64))
     }
 
     /// Scroll to the bottom of the page.
     pub fn scroll_bottom(&self) -> AppResult<()> {
-        //self.message_server.scroll_bottom()?;
-        Ok(())
+        self.server_send(ScrollBottom())
     }
 
     /// Scroll down by one line.
@@ -67,20 +65,17 @@ impl WebView {
 
     /// Scroll towards the left of the page.
     pub fn scroll_left(&self) -> AppResult<()> {
-        //self.message_server.scroll_by_x(-SCROLL_LINE_HORIZONTAL)?;
-        Ok(())
+        self.server_send(ScrollByX(-SCROLL_LINE_HORIZONTAL))
     }
 
     /// Scroll towards the right of the page.
     pub fn scroll_right(&self) -> AppResult<()> {
-        //self.message_server.scroll_by_x(SCROLL_LINE_HORIZONTAL)?;
-        Ok(())
+        self.server_send(ScrollByX(SCROLL_LINE_HORIZONTAL))
     }
 
     /// Scroll to the top of the page.
     pub fn scroll_top(&self) -> AppResult<()> {
-        //self.message_server.scroll_top()?;
-        Ok(())
+        self.server_send(ScrollTop())
     }
 
     /// Scroll up by one line.

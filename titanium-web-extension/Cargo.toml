@@ -1,39 +1,39 @@
 [package]
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
 name = "titanium-web-extension"
 version = "0.1.0"
-authors = ["Antoni Boucher <bouanto@zoho.com>"]
-
-[lib]
-crate-type = ["dylib"]
-
-[features]
-default = ["webkit2gtk-webextension/v2_12"]
 
 [dependencies]
+bincode = "^0.8.0"
+glib = "^0.1.3"
+glib-sys = "^0.3.4"
 log = "^0.3"
+serde = "^1.0.7"
 simplelog = "^0.4"
+tokio-io = "^0.1.1"
 url = "^1.2"
 xdg = "^2.0"
 
-[dependencies.gdbus]
-git = "https://github.com/antoyo/gdbus-rs"
-version = "0.0.1"
+[dependencies.fg-uds]
+git = "https://github.com/antoyo/fg-uds-rs"
 
-[dependencies.gio-sys]
-git = "https://github.com/gtk-rs/sys"
-version = "0.3.2"
+[dependencies.futures]
+branch = "spawn-trait"
+git = "https://github.com/alexcrichton/futures-rs"
 
-[dependencies.glib]
-git = "https://github.com/gtk-rs/glib"
-version = "0.1.0"
+[dependencies.futures-glib]
+git = "https://github.com/antoyo/futures-glib-rs"
 
-[dependencies.glib-sys]
-git = "https://github.com/gtk-rs/sys"
-version = "0.3.2"
+[dependencies.relm-derive-state]
+branch = "feature/futures-glib"
+git = "https://github.com/antoyo/relm"
+
+[dependencies.relm-state]
+branch = "feature/futures-glib"
+git = "https://github.com/antoyo/relm"
 
 [dependencies.titanium-common]
-git = "https://github.com/antoyo/titanium"
-version = "^0.1"
+path = "../titanium-common"
 
 [dependencies.webkit2gtk-webextension]
 git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
@@ -43,5 +43,14 @@ version = "^0.1"
 git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
 version = "^0.2"
 
+[features]
+default = ["webkit2gtk-webextension/v2_12"]
+
+[lib]
+crate-type = ["dylib"]
+
 [replace]
-"https://github.com/gtk-rs/sys#glib-sys:0.3.2" = { git = "https://github.com/antoyo/sys" }
+
+[replace."futures:0.1.13"]
+branch = "spawn-trait"
+git = "https://github.com/alexcrichton/futures-rs"

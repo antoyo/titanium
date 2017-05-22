@@ -1,6 +1,11 @@
 [package]
+authors = ["Antoni Boucher <bouanto@zoho.com>"]
 name = "titanium-common"
 version = "0.1.0"
-authors = ["Antoni Boucher <bouanto@zoho.com>"]
 
 [dependencies]
+bincode = "^0.8.0"
+bytes = "^0.4.3"
+serde = "^1.0.7"
+serde_derive = "^1.0.7"
+tokio-io = "^0.1.1"

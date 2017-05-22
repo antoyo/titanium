@@ -21,6 +21,120 @@
 
 //! Message server interface.
 
+use std::collections::HashMap;
+use std::fs::remove_file;
+use std::io;
+
+use bincode;
+use futures::{AsyncSink, Future, Sink};
+use fg_uds::{UnixListener, UnixStream};
+use futures_glib::MainContext;
+use relm::{Component, Relm, Update, execute};
+use tokio_io::AsyncRead;
+use tokio_io::codec::{FramedRead, FramedWrite};
+use tokio_io::io::WriteHalf;
+
+use titanium_common::{ExtCodec, Result, Message};
+use titanium_common::Message::ScrollPercentage;
+
+use self::Msg::*;
+
+// TODO: put in the home directory.
+pub const PATH: &str = "/tmp/titanium";
+
+struct Client {
+    writer: FramedWrite<WriteHalf<UnixStream>, ExtCodec>,
+}
+
+pub struct MessageServer {
+    model: Model,
+}
+
+pub struct Model {
+    clients: HashMap<usize, Client>,
+    listener: Option<UnixListener>,
+    relm: Relm<MessageServer>,
+}
+
+#[derive(Msg)]
+pub enum Msg {
+    ClientConnect(UnixStream),
+    IncomingError(String), // TODO: use a better type.
+    MsgRecv(usize, Message),
+    MsgError(Box<bincode::ErrorKind>),
+}
+
+impl Update for MessageServer {
+    type Model = Model;
+    type ModelParam = UnixListener;
+    type Msg = Msg;
+
+    fn model(relm: &Relm<Self>, listener: UnixListener) -> Model {
+        Model {
+            clients: HashMap::new(),
+            listener: Some(listener),
+            relm: relm.clone(),
+        }
+    }
+
+    fn new(_relm: &Relm<Self>, model: Self::Model) -> Option<Self> {
+        Some(MessageServer {
+            model,
+        })
+    }
+
+    fn subscriptions(&mut self, relm: &Relm<MessageServer>) {
+        relm.connect_exec(self.model.listener.take().expect("listener").incoming(),
+            |(stream, _addr)| ClientConnect(stream),
+            |error| IncomingError(error.to_string()));
+    }
+
+    fn update(&mut self, event: Msg) {
+        match event {
+            ClientConnect(stream) => {
+                let client_id = 0;
+                let (reader, writer) = stream.split();
+                let reader = FramedRead::new(reader, ExtCodec);
+                let writer = FramedWrite::new(writer, ExtCodec);
+                self.model.clients.insert(client_id, Client {
+                    writer,
+                });
+                self.model.relm.connect_exec(reader, move |msg| MsgRecv(client_id, msg), MsgError);
+            },
+            IncomingError(error) => println!("{}", error), // TODO
+            MsgError(error) => println!("Error: {}", error), // TODO,
+            MsgRecv(client_id, message) => match message {
+                // To be listened by the app.
+                ScrollPercentage(percentage) => (),
+                _ => (), // TODO: log unexpected messages?
+            },
+        }
+    }
+}
+
+impl MessageServer {
+    pub fn new() -> io::Result<Component<Self>> {
+        let cx = MainContext::default(|cx| cx.clone());
+        // TODO: should be removed on Drop instead (or the connection close should remove it
+        // automtically?).
+        remove_file(PATH).ok();
+        let listener = UnixListener::bind(PATH, &cx)?;
+        Ok(execute::<MessageServer>(listener))
+    }
+
+    pub fn send(&mut self, client: usize, msg: Message) -> Result<()> {
+        if let Some(client) = self.model.clients.get_mut(&client) {
+            if let Ok(AsyncSink::Ready) = client.writer.start_send(msg) {
+                client.writer.poll_complete()?;
+            }
+        }
+        else {
+            // TODO: return Err
+        }
+        Ok(())
+    }
+}
+
 /*dbus_interface!(
 #[dbus("com.titanium.client")]
 interface MessageServer {

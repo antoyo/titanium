@@ -33,7 +33,7 @@ use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{WidgetExt, Window};
 use libc::getpid;
-use relm::{Relm, Widget};
+use relm::{Component, Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     self,
@@ -61,16 +61,23 @@ use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
-use app::AppResult;
+// TODO: remove coupling between webview and app modules.
+use app::{AppResult, FollowMode};
 use config_dir::ConfigDir;
+use message_server::{MessageServer, PATH};
+use message_server::Msg::MsgRecv;
 use pass_manager::PasswordManager;
 use self::Msg::*;
 use stylesheet::get_stylesheet_and_whitelist;
+use titanium_common::Message;
+use titanium_common::Message::*;
 
 pub struct Model {
+    client: usize,
     config_dir: ConfigDir,
-    find_controller: FindController,
-    //message_server: MessageServer,
+    //find_controller: FindController,
+    follow_mode: FollowMode,
+    message_server: Component<MessageServer>,
     open_in_new_window: bool,
     pub password_manager: PasswordManager,
     relm: Relm<WebView>,
@@ -80,7 +87,10 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
+    Action(i32),
+    ClickElement,
     Close,
+    GoToInsertMode,
     NewWindow(String),
     Scroll(i64),
 }
@@ -88,14 +98,21 @@ pub enum Msg {
 #[widget]
 impl Widget for WebView {
     fn init_view(&mut self) {
-        self.model.find_controller = self.view.get_find_controller().unwrap();
+        //self.model.find_controller = self.view.get_find_controller().unwrap();
+        let message_server = &self.model.message_server;
+        connect!(message_server@MsgRecv(_, ScrollPercentage(percentage)), self.model.relm, Scroll(percentage));
+        connect!(message_server@MsgRecv(_, ClickHintElement()), self.model.relm, ClickElement);
+        connect!(message_server@MsgRecv(_, ActivateAction(action)), self.model.relm, Action(action));
+        connect!(message_server@MsgRecv(_, EnterInsertMode()), self.model.relm, GoToInsertMode);
     }
 
     fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
         Model {
+            client: 0, // TODO: real client ID.
             config_dir,
-            find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
-            //message_server = MessageServer::new(&server_name, "/com/titanium/WebExtensions"),
+            //find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
+            follow_mode: FollowMode::Click,
+            message_server: MessageServer::new().unwrap(), // TODO: handle error elsewhere.
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
             relm: relm.clone(),
@@ -105,6 +122,13 @@ impl Widget for WebView {
     }
 
     fn update(&mut self, event: Msg) {
+        match event {
+            ClickElement => {
+                let result = self.activate_hint();
+                self.hide_hints();
+            },
+            _ => ()
+        }
     }
 
     view! {
@@ -125,17 +149,14 @@ impl Widget for WebView {
 
 impl WebView {
     /// Activate the selected hint.
-    pub fn activate_hint(&self, follow_mode: String) -> AppResult<i32> {
+    pub fn activate_hint(&self) -> AppResult<()> {
         self.view.grab_focus();
-        Ok(0)
-        /*self.message_server.activate_hint(&follow_mode)
-            .map_err(From::from)*/
+        self.server_send(ActivateHint(self.model.follow_mode.to_string()))
     }
 
     /// Activate the link in the selection
     pub fn activate_selection(&self) -> AppResult<()> {
-        //self.message_server.activate_selection()?;
-        Ok(())
+        self.server_send(ActivateSelection())
     }
 
     /// Add the user scripts.
@@ -199,30 +220,25 @@ impl WebView {
     }
 
     /// Send a key to the web process to process with the current hints.
-    pub fn enter_hint_key(&self, key_char: char) -> Result<bool, Box<Error>> {
-        Ok(false)
-        /*self.message_server.enter_hint_key(key_char)
-            .map_err(From::from)*/
+    pub fn enter_hint_key(&self, key_char: char) -> AppResult<()> {
+        self.server_send(EnterHintKey(key_char))
     }
 
     /// Clear the current search.
     pub fn finish_search(&self) {
         self.search("");
-        self.model.find_controller.search_finish();
+        //self.model.find_controller.search_finish();
     }
 
     /// Focus the first input element.
-    pub fn focus_input(&self) -> AppResult<bool> {
+    pub fn focus_input(&self) -> AppResult<()> {
         self.view.grab_focus();
-        Ok(false) // TODO: remove.
-        /*self.message_server.focus_input()
-            .map_err(From::from)*/
+        self.server_send(FocusInput())
     }
 
     /// Follow a link.
     pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
-        //self.message_server.show_hints(hint_chars)?;
-        Ok(())
+        self.server_send(ShowHints(hint_chars.to_string()))
     }
 
     /// Get the web context.
@@ -262,8 +278,7 @@ impl WebView {
 
     /// Hide the hints.
     pub fn hide_hints(&self) -> AppResult<()> {
-        //self.message_server.hide_hints()?;
-        Ok(())
+        self.server_send(HideHints())
     }
 
     /// Create the context and initialize the web extension.
@@ -277,10 +292,10 @@ impl WebView {
             context.set_web_extensions_directory(install_path);
         }
 
-        let pid = unsafe { getpid() };
-        let server_name = format!("com.titanium.process{}", pid);
+        //let pid = unsafe { getpid() };
+        //let server_name = format!("com.titanium.process{}", pid);
 
-        context.set_web_extensions_initialization_user_data(&server_name.to_variant());
+        context.set_web_extensions_initialization_user_data(&PATH.to_variant());
 
         let cookie_path = config_dir.data_file("cookies")
             .expect("cannot create data directory");
@@ -324,34 +339,43 @@ impl WebView {
                 FindOptions::empty()
             };
         let options = default_options | other_options;
-        self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);
+        /*self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);*/
     }
 
     /// Search the next occurence of the search text.
     pub fn search_next(&self) {
-        if self.model.search_backwards {
+        /*if self.model.search_backwards {
             self.model.find_controller.search_previous();
         }
         else {
             self.model.find_controller.search_next();
-        }
+        }*/
     }
 
     /// Search the previous occurence of the search text.
     pub fn search_previous(&self) {
-        if self.model.search_backwards {
+        /*if self.model.search_backwards {
             self.model.find_controller.search_next();
         }
         else {
             self.model.find_controller.search_previous();
-        }
+        }*/
     }
 
     /// Set the value of an input[type="file"].
-    pub fn select_file(&self, file: &str) -> AppResult<()> {
-        //self.message_server.select_file(file)?;
-        Ok(())
+    pub fn select_file(&self, file: String) -> AppResult<()> {
+        self.server_send(SelectFile(file))
+    }
+
+    pub fn set_follow_mode(&mut self, follow_mode: FollowMode) {
+        self.model.follow_mode = follow_mode;
+    }
+
+    fn server_send(&self, message: Message) -> AppResult<()> {
+        // TODO: rename widget_mut().
+        self.model.message_server.widget_mut().send(self.model.client, message)
+            .map_err(From::from)
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a

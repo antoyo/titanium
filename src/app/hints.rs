@@ -31,31 +31,26 @@ use super::App;
 use titanium_common::Action::{self, FileInput, GoInInsertMode, NoAction};
 
 impl App {
+    pub fn activate_action(&self, action: i32) {
+        if let Some(result) = Action::from_i32(action) {
+            match result {
+                FileInput => {
+                    if let Ok(file) = self.file_input(vec![]) {
+                        handle_error!(self.webview.widget().select_file(file));
+                    }
+                },
+                GoInInsertMode => self.mg.widget_mut().set_mode("insert"),
+                NoAction => (),
+            }
+        }
+    }
+
     /// In follow mode, send the key to the web process.
     pub fn handle_follow_key_press(&mut self, event_key: &EventKey) -> Inhibit {
         if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
             if key_char.is_alphanumeric() {
                 if let Some(key_char) = key_char.to_lowercase().next() {
-                    match self.webview.widget().enter_hint_key(key_char) {
-                        Ok(should_click) => {
-                            if should_click {
-                                let result = self.webview.widget().activate_hint(self.model.follow_mode.to_string());
-                                self.hide_hints();
-                                if let Some(result) = result.ok().and_then(Action::from_i32) {
-                                    match result {
-                                        FileInput => {
-                                            if let Ok(file) = self.file_input(vec![]) {
-                                                handle_error!(self.webview.widget().select_file(&file));
-                                            }
-                                        },
-                                        GoInInsertMode => self.mg.widget_mut().set_mode("insert"),
-                                        NoAction => (),
-                                    }
-                                }
-                            }
-                        },
-                        Err(error) => self.show_error(error),
-                    }
+                    self.webview.widget().enter_hint_key(key_char);
                 }
             }
         }

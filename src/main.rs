@@ -20,6 +20,7 @@
  */
 
 /*
+ * TODO: handle errors from uds communication.
  * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
  * callback.
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
@@ -182,8 +183,11 @@
 #![feature(proc_macro)]
 #![warn(missing_docs)]
 
+extern crate bincode;
 extern crate cairo;
+extern crate fg_uds;
 extern crate futures;
+extern crate futures_glib;
 extern crate gdk;
 extern crate glib;
 extern crate glib_sys;
@@ -217,6 +221,7 @@ extern crate structopt_derive;
 extern crate tempdir;
 extern crate tempfile;
 extern crate titanium_common;
+extern crate tokio_io;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
