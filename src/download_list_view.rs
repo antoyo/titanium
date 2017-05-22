@@ -19,8 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::rc::Rc;
-
 use glib::Cast;
 use gtk::{self, Container, ContainerExt, Continue, FlowBox, IsA, SelectionMode, WidgetExt};
 use relm::{Relm, Resolver, Widget};

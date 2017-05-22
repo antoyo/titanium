@@ -236,7 +236,6 @@ mod download;
 mod download_view;
 mod download_list_view;
 mod file;
-mod glib_ext;
 mod message_server;
 mod pass_manager;
 mod popup_manager;
