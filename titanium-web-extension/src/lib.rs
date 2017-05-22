@@ -75,10 +75,10 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
 
     let server_name = user_data.get_str();
     if let Some(server_name) = server_name {
-        let client = MessageClient::new(server_name, extension);
+        let client = MessageClient::new(server_name, extension.clone());
 
         if let Ok(ref client) = client {
-            connect!(client.widget().model.extension, connect_page_created(_, page),
+            connect!(extension, connect_page_created(_, page),
                 client, PageCreated(page.clone()));
         }
 

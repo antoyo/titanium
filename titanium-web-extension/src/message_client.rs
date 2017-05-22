@@ -92,12 +92,12 @@ macro_rules! get_page {
 }
 
 pub struct MessageClient {
-    pub model: Model, // TODO: make it private.
+    model: Model,
 }
 
 pub struct Model {
     activated_file_input: Option<DOMHTMLInputElement>,
-    pub extension: WebExtension, // TODO: make it private.
+    extension: WebExtension,
     hint_keys: String,
     hint_map: HashMap<String, DOMElement>,
     last_hovered_element: Option<DOMElement>,
