@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -92,6 +92,7 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
             connect!(client.widget().model.extension, connect_page_created(_, page), client, SetPageId(page.get_id()));
         }
 
+        // Don't drop the client to keep receiving the messages on the stream.
         forget(client);
     }
 }
