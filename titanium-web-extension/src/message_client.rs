@@ -191,7 +191,7 @@ impl MessageClient {
     }
 
     // Click on the link of the selected text.
-    fn activate_selection(&self) -> () {
+    fn activate_selection(&self) {
         let result = get_page!(self)
             .and_then(|page| page.get_dom_document())
             .and_then(|document| document.get_default_view())
@@ -289,7 +289,7 @@ impl MessageClient {
     }
 
     // Hide all the hints.
-    fn hide_hints(&self) -> () {
+    fn hide_hints(&self) {
         let page = get_page!(self);
         let elements = page.as_ref()
             .and_then(|page| page.get_dom_document())
@@ -312,47 +312,47 @@ impl MessageClient {
     // FIXME: use one method with two parameters to load the username and the password at the same
     // time.
     // Load the password in the login form.
-    fn load_password(&self, password: &str) -> () {
+    fn load_password(&self, password: &str) {
         let document = get_document!(self);
         load_password(&document, password);
     }
 
     // Load the username in the login form.
-    fn load_username(&self, username: &str) -> () {
+    fn load_username(&self, username: &str) {
         let document = get_document!(self);
         load_username(&document, username);
     }
 
     // Scroll to the bottom of the page.
-    fn scroll_bottom(&self) -> () {
+    fn scroll_bottom(&self) {
         if let Some(page) = get_page!(self) {
             page.scroll_bottom();
         }
     }
 
     // Scroll by the specified amount of pixels.
-    fn scroll_by(&self, pixels: i64) -> () {
+    fn scroll_by(&self, pixels: i64) {
         if let Some(page) = get_page!(self) {
             page.scroll_by(pixels);
         }
     }
 
     // Scroll horizontally by the specified amount of pixels.
-    fn scroll_by_x(&self, pixels: i64) -> () {
+    fn scroll_by_x(&self, pixels: i64) {
         if let Some(page) = get_page!(self) {
             page.scroll_by_x(pixels);
         }
     }
 
     // Scroll to the top of the page.
-    fn scroll_top(&self) -> () {
+    fn scroll_top(&self) {
         if let Some(page) = get_page!(self) {
             page.scroll_top();
         }
     }
 
     // Set the selected file on the input[type="file"].
-    fn select_file(&mut self, file: &str) -> () {
+    fn select_file(&mut self, file: &str) {
         if let Some(ref input_file) = self.model.activated_file_input.take() {
             // FIXME: this is not working.
             input_file.set_value(file);
@@ -397,7 +397,7 @@ impl MessageClient {
     }
 
     // Show the hint of elements using the hint characters.
-    fn show_hints(&mut self, hint_chars: &str) -> () {
+    fn show_hints(&mut self, hint_chars: &str) {
         self.model.hint_keys.clear();
         let page = get_page!(self);
         let body = page.as_ref().and_then(|page| get_body(page));
@@ -411,7 +411,7 @@ impl MessageClient {
     }
 
     // Submit the login form.
-    fn submit_login_form(&self) -> () {
+    fn submit_login_form(&self) {
         let document = get_document!(self);
         submit_login_form(&document);
     }
