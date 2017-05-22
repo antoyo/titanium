@@ -100,10 +100,17 @@ impl Widget for WebView {
     fn init_view(&mut self) {
         //self.model.find_controller = self.view.get_find_controller().unwrap();
         let message_server = &self.model.message_server;
-        connect!(message_server@MsgRecv(_, ScrollPercentage(percentage)), self.model.relm, Scroll(percentage));
-        connect!(message_server@MsgRecv(_, ClickHintElement()), self.model.relm, ClickElement);
-        connect!(message_server@MsgRecv(_, ActivateAction(action)), self.model.relm, Action(action));
-        connect!(message_server@MsgRecv(_, EnterInsertMode()), self.model.relm, GoToInsertMode);
+        connect!(message_server@MsgRecv(_, ref msg), self.model.relm, match *msg {
+            ActivateAction(action) => Some(Action(action)),
+            ClickHintElement() => Some(ClickElement),
+            Credentials(_, _) => None, // TODO
+            EnterInsertMode() => Some(GoToInsertMode),
+            ScrollPercentage(percentage) => Some(Scroll(percentage)),
+            _ => {
+                warn!("Unexpected message received: {:?}", msg);
+                None
+            },
+        });
     }
 
     fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {

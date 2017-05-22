@@ -65,6 +65,7 @@ pub const APP_NAME: &'static str = "titanium";
 #[no_mangle]
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
     // TODO: Don't show trace.
+    // TODO: show in colors?
     let config = Config {
         time: Some(Error),
         level: Some(Error),
@@ -78,8 +79,7 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
         let client = MessageClient::new(server_name, extension.clone());
 
         if let Ok(ref client) = client {
-            connect!(extension, connect_page_created(_, page),
-                client, PageCreated(page.clone()));
+            connect!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
         }
 
         // Don't drop the client to keep receiving the messages on the stream.

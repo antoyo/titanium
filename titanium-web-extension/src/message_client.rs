@@ -144,7 +144,7 @@ impl Update for MessageClient {
     fn update(&mut self, event: Msg) {
         match event {
             MsgError(error) => println!("Error: {}", error),
-            MsgRecv(message) => match message {
+            MsgRecv(msg) => match msg {
                 ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
                 ActivateSelection() => self.activate_selection(),
                 EnterHintKey(key) => self.enter_hint_key(key),
@@ -161,7 +161,7 @@ impl Update for MessageClient {
                 SelectFile(file) => self.select_file(&file),
                 ShowHints(hint_chars) => self.show_hints(&hint_chars),
                 SubmitLoginForm() => self.submit_login_form(),
-                _ => (), // TODO: log unexpected messages?
+                _ => warn!("Unexpected message received: {:?}", msg),
             },
             PageCreated(page) => {
                 // TODO: this should be disconnected later somehow.
