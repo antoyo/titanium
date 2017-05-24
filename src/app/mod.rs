@@ -129,8 +129,8 @@ impl Widget for App {
         handle_error!(self.model.popup_manager.load());
 
         // TODO
-        /*app.create_password_keyring();
-        app.create_variables();*/
+        //app.create_password_keyring();
+        self.create_variables();
     }
 
     fn model(relm: &Relm<Self>, (init_url, config_dir): (Option<String>, Option<String>)) -> Model {

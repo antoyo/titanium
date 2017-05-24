@@ -25,21 +25,20 @@ use std::fs::OpenOptions;
 use std::io;
 use std::path::Path;
 
-use config_dir::ConfigDir;
-use super::{App, AppResult};
-
 use mg::parse_config;
 use mg::DefaultConfig::{self, Dir, File};
+use relm::Widget;
+
+use config_dir::ConfigDir;
+use super::{App, AppResult};
 
 impl App {
     /// Create the variables accessible from the config files.
     pub fn create_variables(&mut self) {
-        //connect!(self.app, add_variable["url"], self, get_current_url);
-    }
-
-    /// Get the webview current URL.
-    fn get_current_url(&self) -> String {
-        self.webview.widget().get_uri().unwrap()
+        let webview = self.webview.widget().root().clone();
+        self.mg.widget_mut().set_variables(vec![("url", Box::new(move || {
+            webview.get_uri().unwrap_or_default()
+        }))]);
     }
 }
 
