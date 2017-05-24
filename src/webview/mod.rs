@@ -75,7 +75,7 @@ use titanium_common::Message::*;
 pub struct Model {
     client: usize,
     config_dir: ConfigDir,
-    //find_controller: FindController,
+    find_controller: FindController,
     follow_mode: FollowMode,
     message_server: Component<MessageServer>,
     open_in_new_window: bool,
@@ -98,7 +98,7 @@ pub enum Msg {
 #[widget]
 impl Widget for WebView {
     fn init_view(&mut self) {
-        //self.model.find_controller = self.view.get_find_controller().unwrap();
+        self.model.find_controller = self.view.get_find_controller().unwrap();
         let message_server = &self.model.message_server;
         connect!(message_server@MsgRecv(_, ref msg), self.model.relm, match *msg {
             ActivateAction(action) => Some(Action(action)),
@@ -117,7 +117,7 @@ impl Widget for WebView {
         Model {
             client: 0, // TODO: real client ID.
             config_dir,
-            //find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
+            find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
             follow_mode: FollowMode::Click,
             message_server: MessageServer::new().unwrap(), // TODO: handle error elsewhere.
             open_in_new_window: false,
@@ -234,7 +234,7 @@ impl WebView {
     /// Clear the current search.
     pub fn finish_search(&self) {
         self.search("");
-        //self.model.find_controller.search_finish();
+        self.model.find_controller.search_finish();
     }
 
     /// Focus the first input element.
@@ -346,28 +346,28 @@ impl WebView {
                 FindOptions::empty()
             };
         let options = default_options | other_options;
-        /*self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);*/
+        self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);
     }
 
     /// Search the next occurence of the search text.
     pub fn search_next(&self) {
-        /*if self.model.search_backwards {
+        if self.model.search_backwards {
             self.model.find_controller.search_previous();
         }
         else {
             self.model.find_controller.search_next();
-        }*/
+        }
     }
 
     /// Search the previous occurence of the search text.
     pub fn search_previous(&self) {
-        /*if self.model.search_backwards {
+        if self.model.search_backwards {
             self.model.find_controller.search_next();
         }
         else {
             self.model.find_controller.search_previous();
-        }*/
+        }
     }
 
     /// Set the value of an input[type="file"].
