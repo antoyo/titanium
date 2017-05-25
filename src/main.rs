@@ -27,6 +27,7 @@
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
+ * TODO: switch to error-chain.
  * TODO: use tokio-process to communicate with pass?
  *
  * TODO: shortcut to open the current URL's root.

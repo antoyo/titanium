@@ -19,8 +19,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::time::Duration;
+
+use futures_glib::Timeout;
 use glib::Cast;
-use gtk::{self, Container, ContainerExt, Continue, FlowBox, IsA, SelectionMode, WidgetExt};
+use gtk::{self, Container, ContainerExt, FlowBox, IsA, SelectionMode, WidgetExt};
 use relm::{Relm, Resolver, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{Download, Error};
@@ -30,7 +33,7 @@ use download_view::DownloadView;
 use file::open;
 use self::Msg::*;
 
-const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2000;
+const DOWNLOAD_TIME_BEFORE_HIDE: u64 = 2000;
 
 type DecideDestinationCallback = Fn(Download, String) -> bool;
 
@@ -46,6 +49,9 @@ pub struct Model {
 pub enum Msg {
     Add(Download),
     DecideDestination(Resolver<bool>, Download, String),
+    DownloadFailed(Error, u32),
+    DownloadFinished(Download, u32),
+    Remove(u32),
 }
 
 #[widget]
@@ -64,6 +70,9 @@ impl Widget for DownloadListView {
         match event {
             Add(download) => self.add(download),
             DecideDestination(_, _, _) => (), // To be listened by the user.
+            DownloadFailed(error, id) => self.handle_failed(&error, id),
+            DownloadFinished(download, id) => self.handle_finished(&download, id),
+            Remove(id) => self.delete(id),
         }
     }
 
@@ -87,8 +96,8 @@ impl DownloadListView {
             async |resolver| DecideDestination(resolver, download.clone(), suggested_filename.to_string()));
 
         let id = self.model.current_id;
-        //connect!(download, connect_failed(_, error), self, handle_failed(error, id));
-        //connect!(download, connect_finished(download), self, handle_finished(download, id));
+        connect!(self.model.relm, download, connect_failed(_, error), DownloadFailed(error.clone(), id));
+        connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone(), id));
 
         // TODO: call add_widget() instead.
         self.view.add(&**download_view);
@@ -107,14 +116,13 @@ impl DownloadListView {
     }
 
     /// Delete a view and remove it from its parent.
-    fn delete(&mut self, id: u32) -> Continue {
+    fn delete(&mut self, id: u32) {
         let index = self.model.download_views.iter()
             .position(|download_view| download_view.id == id);
         if let Some(index) = index {
             let download_view = self.model.download_views.remove(index);
             remove_from_flow_box(&**download_view);
         }
-        Continue(false)
     }
 
     /// Handle the download failed event.
@@ -141,7 +149,8 @@ impl DownloadListView {
         }
 
         // Delete the view after a certain amount of time after the download finishes.
-        //timeout_add!(DOWNLOAD_TIME_BEFORE_HIDE, self, delete(id));
+        let timeout = Timeout::new(Duration::from_secs(DOWNLOAD_TIME_BEFORE_HIDE));
+        self.model.relm.connect_exec_ignore_err(timeout, move |_| Remove(id));
     }
 
     /// Check if there are active downloads.

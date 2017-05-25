@@ -285,7 +285,7 @@ impl App {
             Back => self.webview.widget().go_back(),
             BackwardSearch(ref input) => {
                 self.webview.widget_mut().set_search_backward(true);
-                self.webview.widget().search(input);
+                handle_error!(self.webview.widget().search(input));
             },
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
@@ -295,7 +295,7 @@ impl App {
             DeleteAllCookies => self.delete_all_cookies(),
             DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
-            FinishSearch => self.webview.widget().finish_search(),
+            FinishSearch => handle_error!(self.webview.widget().finish_search()),
             FocusInput => handle_error!(self.focus_input()),
             Follow => {
                 self.model.follow_mode = FollowMode::Click;
@@ -336,11 +336,11 @@ impl App {
             ScrollUpLine => handle_error!(self.scroll_up_line()),
             Search(ref input) => {
                 self.webview.widget_mut().set_search_backward(false);
-                self.webview.widget().search(input);
+                handle_error!(self.webview.widget().search(input));
             },
             SearchEngine(ref args) => self.add_search_engine(args),
-            SearchNext => self.webview.widget().search_next(),
-            SearchPrevious => self.webview.widget().search_previous(),
+            SearchNext => handle_error!(self.webview.widget().search_next()),
+            SearchPrevious => handle_error!(self.webview.widget().search_previous()),
             Stop => self.webview.widget().stop_loading(),
             WinFollow => {
                 self.model.follow_mode = FollowMode::Click;
@@ -398,7 +398,7 @@ impl App {
     /// Go back to normal mode.
     fn handle_load_changed(&self, load_event: LoadEvent) {
         if load_event == Started {
-            self.webview.widget().finish_search();
+            handle_error!(self.webview.widget().finish_search());
             handle_error!(self.webview.widget().add_stylesheets(&self.model.config_dir));
             handle_error!(self.webview.widget().add_scripts(&self.model.config_dir));
 

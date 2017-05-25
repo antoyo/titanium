@@ -25,7 +25,6 @@ mod settings;
 use std::fs::{File, read_dir};
 use std::io::Read;
 use std::ops::Deref;
-use std::mem;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
@@ -66,7 +65,6 @@ use stylesheet::get_stylesheet_and_whitelist;
 
 pub struct Model {
     config_dir: ConfigDir,
-    find_controller: FindController,
     open_in_new_window: bool,
     pub password_manager: PasswordManager,
     relm: Relm<WebView>,
@@ -81,14 +79,9 @@ pub enum Msg {
 
 #[widget]
 impl Widget for WebView {
-    fn init_view(&mut self) {
-        self.model.find_controller = self.view.get_find_controller().unwrap();
-    }
-
     fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
         Model {
             config_dir,
-            find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
             relm: relm.clone(),
@@ -167,10 +160,18 @@ impl WebView {
         self.model.relm.stream().emit(NewWindow(url.to_string()));
     }
 
+    /// Get the find controller.
+    fn find_controller(&self) -> AppResult<FindController> {
+        // TODO: handle error.
+        Ok(self.view.get_find_controller().expect("find controller"))
+            //.ok_or(Box::new("cannot get find controller".to_string()))
+    }
+
     /// Clear the current search.
-    pub fn finish_search(&self) {
-        self.search("");
-        self.model.find_controller.search_finish();
+    pub fn finish_search(&self) -> AppResult<()> {
+        self.search("")?;
+        self.find_controller()?.search_finish();
+        Ok(())
     }
 
     /// Get the web context.
@@ -254,7 +255,7 @@ impl WebView {
     }
 
     /// Search some text.
-    pub fn search(&self, input: &str) {
+    pub fn search(&self, input: &str) -> AppResult<()> {
         let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
         let other_options =
             if self.model.search_backwards {
@@ -264,28 +265,31 @@ impl WebView {
                 FindOptions::empty()
             };
         let options = default_options | other_options;
-        self.model.find_controller.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.model.find_controller.search(input, options.bits(), ::std::u32::MAX);
+        self.find_controller()?.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.find_controller()?.search(input, options.bits(), ::std::u32::MAX);
+        Ok(())
     }
 
     /// Search the next occurence of the search text.
-    pub fn search_next(&self) {
+    pub fn search_next(&self) -> AppResult<()> {
         if self.model.search_backwards {
-            self.model.find_controller.search_previous();
+            self.find_controller()?.search_previous();
         }
         else {
-            self.model.find_controller.search_next();
+            self.find_controller()?.search_next();
         }
+        Ok(())
     }
 
     /// Search the previous occurence of the search text.
-    pub fn search_previous(&self) {
+    pub fn search_previous(&self) -> AppResult<()> {
         if self.model.search_backwards {
-            self.model.find_controller.search_next();
+            self.find_controller()?.search_next();
         }
         else {
-            self.model.find_controller.search_previous();
+            self.find_controller()?.search_previous();
         }
+        Ok(())
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
