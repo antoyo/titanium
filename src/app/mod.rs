@@ -37,6 +37,7 @@ mod pass_filler;
 mod paths;
 mod popup;
 mod search_engine;
+mod server;
 mod test_utils;
 
 use std::collections::HashMap;
@@ -45,12 +46,12 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::process::Command;
 
-use gdk::{EventButton, EventKey, CONTROL_MASK};
+use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
 use gtk::{self, ContainerExt, Inhibit, OrientableExt, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{AppClose, Completers, CustomCommand, DefaultConfig, Mg, Modes, SettingChanged, StatusBarItem};
 use mg_settings::errors::ErrorKind;
-use relm::{Relm, Resolver, Widget};
+use relm::{Component, Relm, Resolver, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{Download, HitTestResult, NavigationAction, WebViewExt};
 use webkit2gtk::LoadEvent::{self, Finished, Started};
@@ -63,13 +64,15 @@ use completers::{BookmarkCompleter, FileCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
 use download_list_view::Msg::{Add, DecideDestination};
+use message_server::{MessageServer, PATH};
+use message_server::Msg::MsgRecv;
 use pass_manager::PasswordManager;
 use popup_manager::PopupManager;
 use self::config::default_config;
 use self::Msg::*;
 use settings::AppSettings;
 use webview::WebView;
-use webview::Msg::{Action, Close, GoToInsertMode, NewWindow, Scroll};
+use webview::Msg::{Close, NewWindow};
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const LEFT_BUTTON: u32 = 1;
@@ -100,10 +103,13 @@ impl Display for FollowMode {
 
 pub struct Model {
     bookmark_manager: BookmarkManager,
+    client: usize,
     config_dir: ConfigDir,
     default_search_engine: Option<String>,
+    follow_mode: FollowMode,
     hovered_link: Option<String>,
     init_url: Option<String>,
+    message_server: Component<MessageServer>,
     relm: Relm<App>,
     popup_manager: PopupManager,
     search_engines: HashMap<String, String>,
@@ -111,9 +117,13 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
+    Action(i32),
+    ClickElement,
     Command(AppCommand),
     DecideDownloadDestination(Resolver<bool>, Download, String),
+    GoToInsertMode,
     PopupDecision(Option<String>, String),
+    Scroll(i64),
     TryClose,
     WebViewClose,
 }
@@ -121,6 +131,8 @@ pub enum Msg {
 #[widget]
 impl Widget for App {
     fn init_view(&mut self) {
+        handle_error!(self.model.bookmark_manager.create_tables());
+
         let url = self.model.init_url.take().unwrap_or(self.mg.widget().settings().home_page.clone());
         // FIXME: don't open here.
         self.webview.widget().open(&url);
@@ -131,17 +143,26 @@ impl Widget for App {
         // TODO
         //app.create_password_keyring();
         self.create_variables();
+
+        self.listen_messages();
     }
 
     fn model(relm: &Relm<Self>, (init_url, config_dir): (Option<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config_dir).unwrap();
-        let popup_manager = PopupManager::new(App::popup_path(&config_dir));
+        // TODO: better error handling.
+        let (whitelist, blacklist) = App::popup_path(&config_dir);
+        let whitelist = whitelist.expect("cannot create configuration directory");
+        let blacklist = blacklist.expect("cannot create configuration directory");
+        let popup_manager = PopupManager::new((whitelist, blacklist));
         Model {
             bookmark_manager: BookmarkManager::new(),
+            client: 0, // TODO: real client ID.
             config_dir,
             default_search_engine: None,
+            follow_mode: FollowMode::Click,
             hovered_link: None,
             init_url,
+            message_server: MessageServer::new().unwrap(), // TODO: handle error elsewhere.
             relm: relm.clone(),
             popup_manager,
             search_engines: HashMap::new(),
@@ -150,11 +171,15 @@ impl Widget for App {
 
     fn update(&mut self, event: Msg) {
         match event {
+            Action(action) => self.activate_action(action),
+            ClickElement => self.click_hint_element(),
             Command(ref command) => self.handle_command(command),
             DecideDownloadDestination(ref resolver, ref download, ref suggested_filename) => {
                 resolver.resolve(self.handle_decide_destination(download, suggested_filename));
             },
+            GoToInsertMode => self.go_in_insert_mode(),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
+            Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
             TryClose => self.quit(),
             WebViewClose => gtk::main_quit(),
         }
@@ -181,14 +206,13 @@ impl Widget for App {
                 },
                 #[name="webview"]
                 WebView(self.model.config_dir.clone()) {
-                    Action(action) => self.activate_action(action),
                     Close => WebViewClose,
-                    GoToInsertMode => Command(Insert),
                     NewWindow(ref url) => self.open_in_new_window_handling_error(url),
-                    Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
                     button_release_event(_, event) => return self.handle_button_release(event),
                     create(_, action) => return self.handle_create(action),
                     context.download_started(_, download) => download_list_view@Add(download.clone()),
+                    // Emit the scroll event whenever the view is drawn.
+                    draw(_, _) => return self.emit_scrolled_event(),
                     load_changed(_, load_event) => self.handle_load_changed(load_event),
                     mouse_target_changed(_, hit_test_result, _) => self.mouse_target_changed(hit_test_result),
                     resource_load_started(_, _, _) => self.set_title(),
@@ -220,9 +244,14 @@ impl App {
         self.mg.widget_mut().error(ErrorKind::Msg(error.to_string()).into());
     }
 
-    /// Focus the first input element.
-    fn focus_input(&self) {
-        self.webview.widget().focus_input();
+    /// Give the focus to the webview.
+    fn focus_webview(&self) {
+        self.webview.widget().root().grab_focus();
+    }
+
+    /// Get the size of the webview.
+    fn get_webview_allocation(&self) -> Rectangle {
+        self.webview.widget().root().get_allocation()
     }
 
     /// Get the title or the url if there are no title.
@@ -252,7 +281,7 @@ impl App {
     /// Handle the command.
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
-            ActivateSelection => handle_error!(self.webview.widget().activate_selection()),
+            ActivateSelection => handle_error!(self.activate_selection()),
             Back => self.webview.widget().go_back(),
             BackwardSearch(ref input) => {
                 self.webview.widget_mut().set_search_backward(true);
@@ -267,21 +296,21 @@ impl App {
             DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.widget().finish_search(),
-            FocusInput => self.focus_input(),
+            FocusInput => handle_error!(self.focus_input()),
             Follow => {
-                self.webview.widget_mut().set_follow_mode(FollowMode::Click);
+                self.model.follow_mode = FollowMode::Click;
                 self.webview.widget_mut().set_open_in_new_window(false);
                 self.mg.widget_mut().set_mode("follow");
-                handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
+                handle_error!(self.follow_link(&self.hint_chars()))
             },
             Forward => self.webview.widget().go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
-                self.webview.widget_mut().set_follow_mode(FollowMode::Hover);
+                self.model.follow_mode = FollowMode::Hover;
                 self.mg.widget_mut().set_mode("follow");
-                handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
+                handle_error!(self.follow_link(&self.hint_chars()))
             },
-            Insert => self.mg.widget_mut().set_mode("insert"),
+            Insert => self.go_in_insert_mode(),
             Inspector => self.webview.widget().show_inspector(),
             Normal => self.mg.widget_mut().set_mode("normal"),
             Open(ref url) => self.open(url),
@@ -295,16 +324,16 @@ impl App {
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
             Screenshot(ref path) => self.webview.widget().screenshot(path),
-            ScrollBottom => handle_error!(self.webview.widget().scroll_bottom()),
-            ScrollDown => handle_error!(self.webview.widget().scroll_down_page()),
-            ScrollDownHalf => handle_error!(self.webview.widget().scroll_down_half_page()),
-            ScrollDownLine => handle_error!(self.webview.widget().scroll_down_line()),
-            ScrollLeft => handle_error!(self.webview.widget().scroll_left()),
-            ScrollRight => handle_error!(self.webview.widget().scroll_right()),
-            ScrollTop => handle_error!(self.webview.widget().scroll_top()),
-            ScrollUp => handle_error!(self.webview.widget().scroll_up_page()),
-            ScrollUpHalf => handle_error!(self.webview.widget().scroll_up_half_page()),
-            ScrollUpLine => handle_error!(self.webview.widget().scroll_up_line()),
+            ScrollBottom => handle_error!(self.scroll_bottom()),
+            ScrollDown => handle_error!(self.scroll_down_page()),
+            ScrollDownHalf => handle_error!(self.scroll_down_half_page()),
+            ScrollDownLine => handle_error!(self.scroll_down_line()),
+            ScrollLeft => handle_error!(self.scroll_left()),
+            ScrollRight => handle_error!(self.scroll_right()),
+            ScrollTop => handle_error!(self.scroll_top()),
+            ScrollUp => handle_error!(self.scroll_up_page()),
+            ScrollUpHalf => handle_error!(self.scroll_up_half_page()),
+            ScrollUpLine => handle_error!(self.scroll_up_line()),
             Search(ref input) => {
                 self.webview.widget_mut().set_search_backward(false);
                 self.webview.widget().search(input);
@@ -314,10 +343,10 @@ impl App {
             SearchPrevious => self.webview.widget().search_previous(),
             Stop => self.webview.widget().stop_loading(),
             WinFollow => {
-                self.webview.widget_mut().set_follow_mode(FollowMode::Click);
+                self.model.follow_mode = FollowMode::Click;
                 self.webview.widget_mut().set_open_in_new_window(true);
                 self.mg.widget_mut().set_mode("follow");
-                handle_error!(self.webview.widget().follow_link(&self.hint_chars()))
+                handle_error!(self.follow_link(&self.hint_chars()))
             },
             WinOpen(ref url) => self.open_in_new_window_handling_error(url),
             WinPasteUrl => self.win_paste_url(),
@@ -325,6 +354,10 @@ impl App {
             ZoomNormal => self.zoom_normal(),
             ZoomOut => self.zoom_out(),
         }
+    }
+
+    fn go_in_insert_mode(&mut self) {
+        self.mg.widget_mut().set_mode("insert")
     }
 
     /// Handle create window.

@@ -20,6 +20,7 @@
  */
 
 /*
+ * TODO: add documentation for every method.
  * TODO: handle errors from uds communication.
  * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
  * callback.

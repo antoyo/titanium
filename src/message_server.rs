@@ -26,7 +26,7 @@ use std::fs::remove_file;
 use std::io;
 
 use bincode;
-use futures::{AsyncSink, Future, Sink};
+use futures::{AsyncSink, Sink};
 use fg_uds::{UnixListener, UnixStream};
 use futures_glib::MainContext;
 use relm::{Component, Relm, Update, execute};
@@ -103,11 +103,8 @@ impl Update for MessageServer {
             },
             IncomingError(error) => println!("{}", error), // TODO
             MsgError(error) => println!("Error: {}", error), // TODO,
-            MsgRecv(client_id, message) => match message {
-                // To be listened by the app.
-                ScrollPercentage(percentage) => (),
-                _ => (), // TODO: log unexpected messages?
-            },
+            // To be listened by the app.
+            MsgRecv(_, _) => (),
         }
     }
 }

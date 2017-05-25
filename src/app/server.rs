@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,20 +20,71 @@
  */
 
 use gtk::{Inhibit, WidgetExt};
+use relm::Widget;
+use titanium_common::Message;
+use titanium_common::Message::*;
 
-use titanium_common::Message::{GetScrollPercentage, ScrollBottom, ScrollBy, ScrollByX, ScrollTop};
-
-use app::AppResult;
-use super::WebView;
+use message_server::Msg::*;
+use super::{App, AppResult};
+use super::Msg::{Action, ClickElement, GoToInsertMode, Scroll};
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
-impl WebView {
+impl App {
+    /// Activate the selected hint.
+    pub fn activate_hint(&self) -> AppResult<()> {
+        self.focus_webview();
+        self.server_send(ActivateHint(self.model.follow_mode.to_string()))
+    }
+
+    /// Activate the link in the selection
+    pub fn activate_selection(&self) -> AppResult<()> {
+        self.server_send(ActivateSelection())
+    }
+
     /// Emit the scrolled event.
     pub fn emit_scrolled_event(&self) -> Inhibit {
         let result = self.server_send(GetScrollPercentage());
         Inhibit(false)
+    }
+
+    /// Send a key to the web process to process with the current hints.
+    pub fn enter_hint_key(&self, key_char: char) -> AppResult<()> {
+        self.server_send(EnterHintKey(key_char))
+    }
+
+    /// Focus the first input element.
+    pub fn focus_input(&self) -> AppResult<()> {
+        self.focus_webview();
+        self.server_send(FocusInput())
+    }
+
+    /// Follow a link.
+    pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
+        self.server_send(ShowHints(hint_chars.to_string()))
+    }
+
+    /// Hide the hints and return to normal mode.
+    pub fn hide_hints(&mut self) {
+        handle_error!(self.server_send(HideHints()));
+        self.go_in_insert_mode();
+    }
+
+    pub fn listen_messages(&self) {
+        let message_server = &self.model.message_server;
+        // TODO: use client_id (first param of MsgRecv).
+        connect!(message_server@MsgRecv(_, ref msg), self.model.relm, match *msg {
+            ActivateAction(action) => Some(Action(action)),
+            ClickHintElement() => Some(ClickElement),
+            Credentials(_, _) => None, // TODO
+            EnterInsertMode() => Some(GoToInsertMode),
+            ScrollPercentage(percentage) => Some(Scroll(percentage)),
+            _ => {
+                warn!("Unexpected message received: {:?}", msg);
+                None
+            },
+        });
     }
 
     /// Scroll by the specified number of pixels.
@@ -53,13 +104,13 @@ impl WebView {
 
     /// Scroll down by one half of page.
     pub fn scroll_down_half_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
+        let allocation = self.get_webview_allocation();
         self.scroll(allocation.height / 2)
     }
 
     /// Scroll down by one page.
     pub fn scroll_down_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
+        let allocation = self.get_webview_allocation();
         self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
     }
 
@@ -85,13 +136,24 @@ impl WebView {
 
     /// Scroll up by one half of page.
     pub fn scroll_up_half_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
+        let allocation = self.get_webview_allocation();
         self.scroll(-allocation.height / 2)
     }
 
     /// Scroll up by one page.
     pub fn scroll_up_page(&self) -> AppResult<()> {
-        let allocation = self.view.get_allocation();
+        let allocation = self.get_webview_allocation();
         self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
+    }
+
+    /// Set the value of an input[type="file"].
+    pub fn select_file(&self, file: String) -> AppResult<()> {
+        self.server_send(SelectFile(file))
+    }
+
+    fn server_send(&self, message: Message) -> AppResult<()> {
+        // TODO: rename widget_mut().
+        self.model.message_server.widget_mut().send(self.model.client, message)
+            .map_err(From::from)
     }
 }

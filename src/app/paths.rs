@@ -19,6 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::io;
 use std::path::PathBuf;
 
 use app::App;
@@ -32,11 +33,9 @@ impl App {
     }
 
     /// Get the whitelist and blacklist path.
-    pub fn popup_path(config_dir: &ConfigDir) -> (PathBuf, PathBuf) {
-        ( config_dir.config_file("popups/whitelist")
-            .expect("cannot create configuration directory")
-        , config_dir.config_file("popups/blacklist")
-            .expect("cannot create configuration directory")
+    pub fn popup_path(config_dir: &ConfigDir) -> (io::Result<PathBuf>, io::Result<PathBuf>) {
+        ( config_dir.config_file("popups/whitelist"),
+          config_dir.config_file("popups/blacklist")
         )
     }
 }

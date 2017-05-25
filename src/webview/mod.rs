@@ -20,10 +20,8 @@
  */
 
 mod password;
-mod scroll;
 mod settings;
 
-use std::error::Error;
 use std::fs::{File, read_dir};
 use std::io::Read;
 use std::ops::Deref;
@@ -32,13 +30,11 @@ use std::mem;
 use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{WidgetExt, Window};
-use libc::getpid;
-use relm::{Component, Relm, Widget};
+use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     self,
     CookiePersistentStorage,
-    Download,
     FindController,
     FindOptions,
     NavigationPolicyDecision,
@@ -50,7 +46,6 @@ use webkit2gtk::{
     UserScript,
     UserStyleSheet,
     WebContext,
-    WebViewExt,
     FIND_OPTIONS_BACKWARDS,
     FIND_OPTIONS_CASE_INSENSITIVE,
     FIND_OPTIONS_WRAP_AROUND,
@@ -62,80 +57,46 @@ use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
 // TODO: remove coupling between webview and app modules.
-use app::{AppResult, FollowMode};
+use app::AppResult;
 use config_dir::ConfigDir;
-use message_server::{MessageServer, PATH};
-use message_server::Msg::MsgRecv;
+use message_server::PATH;
 use pass_manager::PasswordManager;
 use self::Msg::*;
 use stylesheet::get_stylesheet_and_whitelist;
-use titanium_common::Message;
-use titanium_common::Message::*;
 
 pub struct Model {
-    client: usize,
     config_dir: ConfigDir,
     find_controller: FindController,
-    follow_mode: FollowMode,
-    message_server: Component<MessageServer>,
     open_in_new_window: bool,
     pub password_manager: PasswordManager,
     relm: Relm<WebView>,
-    scrolled_callback: Option<Box<Fn(i64)>>,
     search_backwards: bool,
 }
 
 #[derive(Msg)]
 pub enum Msg {
-    Action(i32),
-    ClickElement,
     Close,
-    GoToInsertMode,
     NewWindow(String),
-    Scroll(i64),
 }
 
 #[widget]
 impl Widget for WebView {
     fn init_view(&mut self) {
         self.model.find_controller = self.view.get_find_controller().unwrap();
-        let message_server = &self.model.message_server;
-        connect!(message_server@MsgRecv(_, ref msg), self.model.relm, match *msg {
-            ActivateAction(action) => Some(Action(action)),
-            ClickHintElement() => Some(ClickElement),
-            Credentials(_, _) => None, // TODO
-            EnterInsertMode() => Some(GoToInsertMode),
-            ScrollPercentage(percentage) => Some(Scroll(percentage)),
-            _ => {
-                warn!("Unexpected message received: {:?}", msg);
-                None
-            },
-        });
     }
 
     fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
         Model {
-            client: 0, // TODO: real client ID.
             config_dir,
             find_controller: unsafe { mem::uninitialized() }, // TODO: remove uninitialized().
-            follow_mode: FollowMode::Click,
-            message_server: MessageServer::new().unwrap(), // TODO: handle error elsewhere.
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
             relm: relm.clone(),
-            scrolled_callback: None,
             search_backwards: false,
         }
     }
 
-    fn update(&mut self, event: Msg) {
-        match event {
-            ClickElement => {
-                let result = self.activate_hint();
-                self.hide_hints();
-            },
-            _ => ()
-        }
+    fn update(&mut self, _event: Msg) {
     }
 
     view! {
@@ -146,8 +107,6 @@ impl Widget for WebView {
         }) {
             close => Close,
             vexpand: true,
-            // Emit the scroll event whenever the view is drawn.
-            draw(_, _) => return self.emit_scrolled_event(),
             decide_policy(_, policy_decision, policy_decision_type) =>
                 return self.decide_policy(policy_decision, policy_decision_type),
         }
@@ -155,17 +114,6 @@ impl Widget for WebView {
 }
 
 impl WebView {
-    /// Activate the selected hint.
-    pub fn activate_hint(&self) -> AppResult<()> {
-        self.view.grab_focus();
-        self.server_send(ActivateHint(self.model.follow_mode.to_string()))
-    }
-
-    /// Activate the link in the selection
-    pub fn activate_selection(&self) -> AppResult<()> {
-        self.server_send(ActivateSelection())
-    }
-
     /// Add the user scripts.
     pub fn add_scripts(&self, config_dir: &ConfigDir) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
@@ -201,13 +149,6 @@ impl WebView {
         Ok(())
     }
 
-    /// Add a callback for the download started event.
-    pub fn connect_download_started<F: Fn(&WebContext, &Download) + 'static>(&self, callback: F) {
-        if let Some(context) = self.view.get_context() {
-            context.connect_download_started(callback);
-        }
-    }
-
     /// Handle the decide policy event.
     fn decide_policy(&mut self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
         if policy_decision_type == NavigationAction {
@@ -226,26 +167,10 @@ impl WebView {
         self.model.relm.stream().emit(NewWindow(url.to_string()));
     }
 
-    /// Send a key to the web process to process with the current hints.
-    pub fn enter_hint_key(&self, key_char: char) -> AppResult<()> {
-        self.server_send(EnterHintKey(key_char))
-    }
-
     /// Clear the current search.
     pub fn finish_search(&self) {
         self.search("");
         self.model.find_controller.search_finish();
-    }
-
-    /// Focus the first input element.
-    pub fn focus_input(&self) -> AppResult<()> {
-        self.view.grab_focus();
-        self.server_send(FocusInput())
-    }
-
-    /// Follow a link.
-    pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
-        self.server_send(ShowHints(hint_chars.to_string()))
     }
 
     /// Get the web context.
@@ -283,11 +208,6 @@ impl WebView {
         false
     }
 
-    /// Hide the hints.
-    pub fn hide_hints(&self) -> AppResult<()> {
-        self.server_send(HideHints())
-    }
-
     /// Create the context and initialize the web extension.
     fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
         let context = WebContext::get_default().unwrap();
@@ -299,9 +219,7 @@ impl WebView {
             context.set_web_extensions_directory(install_path);
         }
 
-        //let pid = unsafe { getpid() };
-        //let server_name = format!("com.titanium.process{}", pid);
-
+        // TODO: send a sequential number, i.e. the identifier for the current window.
         context.set_web_extensions_initialization_user_data(&PATH.to_variant());
 
         let cookie_path = config_dir.data_file("cookies")
@@ -368,21 +286,6 @@ impl WebView {
         else {
             self.model.find_controller.search_previous();
         }
-    }
-
-    /// Set the value of an input[type="file"].
-    pub fn select_file(&self, file: String) -> AppResult<()> {
-        self.server_send(SelectFile(file))
-    }
-
-    pub fn set_follow_mode(&mut self, follow_mode: FollowMode) {
-        self.model.follow_mode = follow_mode;
-    }
-
-    fn server_send(&self, message: Message) -> AppResult<()> {
-        // TODO: rename widget_mut().
-        self.model.message_server.widget_mut().send(self.model.client, message)
-            .map_err(From::from)
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a

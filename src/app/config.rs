@@ -25,12 +25,11 @@ use std::fs::OpenOptions;
 use std::io;
 use std::path::Path;
 
-use mg::parse_config;
 use mg::DefaultConfig::{self, Dir, File};
 use relm::Widget;
 
 use config_dir::ConfigDir;
-use super::{App, AppResult};
+use super::App;
 
 impl App {
     /// Create the variables accessible from the config files.
@@ -59,21 +58,18 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
     let webkit_config_path = config_dir.config_file("webkit");
     let hints_css_path = config_dir.config_file("stylesheets/hints.css");
     let hosts_path = config_dir.data_file("hosts");
+    let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(config_dir);
 
-    vec![ Dir(stylesheets_path)
-        , Dir(scripts_path)
-        , Dir(popups_path)
-        , Dir(Ok(config_dir.data_home()))
-        , File(keys_path, include_str!("../../config/keys"))
-        , File(config_path, include_str!("../../config/config"))
-        , File(webkit_config_path, include_str!("../../config/webkit"))
-        , File(hints_css_path, include_str!("../../config/stylesheets/hints.css"))
-        , File(hosts_path, include_str!("../../config/hosts"))
+    vec![Dir(stylesheets_path),
+         Dir(scripts_path),
+         Dir(popups_path),
+         Dir(Ok(config_dir.data_home())),
+         File(keys_path, include_str!("../../config/keys")),
+         File(config_path, include_str!("../../config/config")),
+         File(webkit_config_path, include_str!("../../config/webkit")),
+         File(hints_css_path, include_str!("../../config/stylesheets/hints.css")),
+         File(hosts_path, include_str!("../../config/hosts")),
+         File(popup_whitelist_path, ""),
+         File(popup_blacklist_path, ""),
         ]
-
-    //self.model.bookmark_manager.create_tables()?;
-
-    /*let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(&self.config_dir);
-      create_file(&popup_whitelist_path)?;
-      create_file(&popup_blacklist_path)?;*/
 }
