@@ -29,13 +29,12 @@ use bincode;
 use futures::{AsyncSink, Sink};
 use fg_uds::{UnixListener, UnixStream};
 use futures_glib::MainContext;
-use relm::{Component, Relm, Update, execute};
+use relm::{Component, EventStream, Relm, Update, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
 
 use titanium_common::{ExtCodec, Result, Message};
-use titanium_common::Message::ScrollPercentage;
 
 use self::Msg::*;
 
@@ -62,6 +61,7 @@ pub enum Msg {
     IncomingError(String), // TODO: use a better type.
     MsgRecv(usize, Message),
     MsgError(Box<bincode::ErrorKind>),
+    Send(usize, Message),
 }
 
 impl Update for MessageServer {
@@ -105,12 +105,13 @@ impl Update for MessageServer {
             MsgError(error) => println!("Error: {}", error), // TODO,
             // To be listened by the app.
             MsgRecv(_, _) => (),
+            Send(client, msg) => self.send(client, msg),
         }
     }
 }
 
 impl MessageServer {
-    pub fn new() -> io::Result<Component<Self>> {
+    pub fn new() -> io::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
         // TODO: should be removed on Drop instead (or the connection close should remove it
         // automtically?).
@@ -119,16 +120,15 @@ impl MessageServer {
         Ok(execute::<MessageServer>(listener))
     }
 
-    pub fn send(&mut self, client: usize, msg: Message) -> Result<()> {
+    fn send(&mut self, client: usize, msg: Message) {
         if let Some(client) = self.model.clients.get_mut(&client) {
             if let Ok(AsyncSink::Ready) = client.writer.start_send(msg) {
-                client.writer.poll_complete()?;
+                client.writer.poll_complete().ok(); // TODO: handle error.
             }
         }
         else {
             // TODO: return Err
         }
-        Ok(())
     }
 }
 

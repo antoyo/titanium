@@ -24,12 +24,11 @@ mod settings;
 
 use std::fs::{File, read_dir};
 use std::io::Read;
-use std::ops::Deref;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::{Cast, ToVariant};
 use gtk::{WidgetExt, Window};
-use relm::{Relm, Widget};
+use relm::{Relm, Resolver, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     self,
@@ -61,6 +60,7 @@ use config_dir::ConfigDir;
 use message_server::PATH;
 use pass_manager::PasswordManager;
 use self::Msg::*;
+use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
 
 pub struct Model {
@@ -73,8 +73,31 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
+    AddScripts,
+    AddStylesheets,
     Close,
+    DecidePolicy(PolicyDecision, PolicyDecisionType, Resolver<bool>),
+    DeletePassword,
+    EndSearch,
+    LoadUsernamePassword,
     NewWindow(String),
+    PageFinishSearch,
+    PageOpen(String),
+    PagePrint,
+    PageScreenshot(String),
+    PageSearch(String),
+    PageSearchNext,
+    PageSearchPrevious,
+    PageZoomIn,
+    PageZoomNormal,
+    PageZoomOut,
+    SavePassword,
+    SearchBackward(bool),
+    SetOpenInNewWindow(bool),
+    ShowInspector,
+    SubmitLoginForm,
+    WebViewSettingChanged(AppSettingsVariant),
+    ZoomChange(i32),
 }
 
 #[widget]
@@ -89,7 +112,38 @@ impl Widget for WebView {
         }
     }
 
-    fn update(&mut self, _event: Msg) {
+    fn update(&mut self, event: Msg) {
+        match event {
+            AddScripts => { let _ = self.add_scripts(); }, // TODO: handle error.
+            AddStylesheets => { let _ = self.add_stylesheets(); }, // TODO: handle error.
+            // To be listened by the user.
+            Close => (),
+            DecidePolicy(policy_decision, policy_decision_type, resolver) =>
+                self.decide_policy(policy_decision, policy_decision_type, resolver),
+            DeletePassword => self.delete_password(),
+            EndSearch => { let _ = self.finish_search(); }, // TODO: handle error.
+            LoadUsernamePassword => self.load_username_password(),
+            // To be listened by the user.
+            NewWindow(_) => (),
+            PageFinishSearch => { let _ = self.finish_search(); }, // TODO: handle error.
+            PageOpen(url) => self.open(url),
+            PagePrint => self.print(),
+            PageScreenshot(path) => self.screenshot(path),
+            PageSearch(input) => { let _ = self.search(input); }, // TODO: handle error.
+            PageSearchNext => { let _ = self.search_next(); }, // TODO: handle error.
+            PageSearchPrevious => { let _ = self.search_previous(); }, // TODO: handle error.
+            PageZoomIn => self.show_zoom(self.zoom_in()),
+            PageZoomNormal => self.show_zoom(self.zoom_normal()),
+            PageZoomOut => self.show_zoom(self.zoom_out()),
+            SavePassword => self.save_password(),
+            SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
+            SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
+            ShowInspector => self.show_inspector(),
+            SubmitLoginForm => { let _ = self.submit_login_form(); }, // TODO: handle error.
+            WebViewSettingChanged(setting) => self.setting_changed(setting),
+            // To be listened by the user.
+            ZoomChange(_) => (),
+        }
     }
 
     view! {
@@ -101,17 +155,17 @@ impl Widget for WebView {
             close => Close,
             vexpand: true,
             decide_policy(_, policy_decision, policy_decision_type) =>
-                return self.decide_policy(policy_decision, policy_decision_type),
+                async DecidePolicy(policy_decision.clone(), policy_decision_type),
         }
     }
 }
 
 impl WebView {
     /// Add the user scripts.
-    pub fn add_scripts(&self, config_dir: &ConfigDir) -> AppResult<()> {
+    fn add_scripts(&self) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_scripts();
-            let script_path = config_dir.config_file("scripts")?;
+            let script_path = self.model.config_dir.config_file("scripts")?;
             for filename in read_dir(script_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
@@ -125,10 +179,10 @@ impl WebView {
     }
 
     /// Add the user stylesheets.
-    pub fn add_stylesheets(&self, config_dir: &ConfigDir) -> AppResult<()> {
+    pub fn add_stylesheets(&self) -> AppResult<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_style_sheets();
-            let stylesheets_path = config_dir.config_file("stylesheets")?;
+            let stylesheets_path = self.model.config_dir.config_file("stylesheets")?;
             for filename in read_dir(stylesheets_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
@@ -143,16 +197,17 @@ impl WebView {
     }
 
     /// Handle the decide policy event.
-    fn decide_policy(&mut self, policy_decision: &PolicyDecision, policy_decision_type: PolicyDecisionType) -> bool {
+    fn decide_policy(&mut self, policy_decision: PolicyDecision, policy_decision_type: PolicyDecisionType,
+        mut resolver: Resolver<bool>)
+    {
         if policy_decision_type == NavigationAction {
             if self.handle_navigation_action(policy_decision.clone()) {
-                return true;
+                resolver.resolve(true);
             }
         }
         else if policy_decision_type == Response && self.handle_response(policy_decision.clone()) {
-            return true;
+            resolver.resolve(true);
         }
-        false
     }
 
     /// Emit the new window event.
@@ -168,15 +223,10 @@ impl WebView {
     }
 
     /// Clear the current search.
-    pub fn finish_search(&self) -> AppResult<()> {
-        self.search("")?;
+    fn finish_search(&self) -> AppResult<()> {
+        self.search(String::new())?;
         self.find_controller()?.search_finish();
         Ok(())
-    }
-
-    /// Get the web context.
-    pub fn get_context(&self) -> WebContext {
-        self.view.get_context().expect("No web context")
     }
 
     /// Handle follow link in new window.
@@ -232,12 +282,12 @@ impl WebView {
     }
 
     /// Open the specified URL.
-    pub fn open(&self, url: &str) {
+    fn open(&self, url: String) {
         self.view.load_uri(&url);
     }
 
     /// Print the current page.
-    pub fn print(&self) {
+    fn print(&self) {
         let print_operation = PrintOperation::new(&self.view);
         let window = self.view.get_toplevel()
             .and_then(|toplevel| toplevel.downcast::<Window>().ok());
@@ -245,7 +295,7 @@ impl WebView {
     }
 
     /// Save a screenshot of the web view.
-    pub fn screenshot(&self, path: &str) {
+    fn screenshot(&self, path: String) {
         let allocation = self.view.get_allocation();
         let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height);
         let context = Context::new(&surface);
@@ -255,7 +305,7 @@ impl WebView {
     }
 
     /// Search some text.
-    pub fn search(&self, input: &str) -> AppResult<()> {
+    fn search(&self, input: String) -> AppResult<()> {
         let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
         let other_options =
             if self.model.search_backwards {
@@ -266,12 +316,12 @@ impl WebView {
             };
         let options = default_options | other_options;
         self.find_controller()?.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.find_controller()?.search(input, options.bits(), ::std::u32::MAX);
+        self.find_controller()?.search(&input, options.bits(), ::std::u32::MAX);
         Ok(())
     }
 
     /// Search the next occurence of the search text.
-    pub fn search_next(&self) -> AppResult<()> {
+    fn search_next(&self) -> AppResult<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_previous();
         }
@@ -282,7 +332,7 @@ impl WebView {
     }
 
     /// Search the previous occurence of the search text.
-    pub fn search_previous(&self) -> AppResult<()> {
+    fn search_previous(&self) -> AppResult<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_next();
         }
@@ -294,17 +344,12 @@ impl WebView {
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
-    pub fn set_open_in_new_window(&mut self, in_new_window: bool) {
+    fn set_open_in_new_window(&mut self, in_new_window: bool) {
         self.model.open_in_new_window = in_new_window;
     }
 
-    /// Set whether the search is backward or not.
-    pub fn set_search_backward(&mut self, backward: bool) {
-        self.model.search_backwards = backward;
-    }
-
     /// Show the web inspector.
-    pub fn show_inspector(&self) {
+    fn show_inspector(&self) {
         static mut SHOWN: bool = false;
         if let Some(inspector) = self.view.get_inspector() {
             inspector.connect_attach(|inspector| {
@@ -327,31 +372,27 @@ impl WebView {
         }
     }
 
+    fn show_zoom(&self, level: i32) {
+        self.model.relm.stream().emit(ZoomChange(level));
+    }
+
     /// Zoom in.
-    pub fn zoom_in(&self) -> i32 {
+    fn zoom_in(&self) -> i32 {
         let level = self.view.get_zoom_level();
         self.view.set_zoom_level(level + 0.1);
         (self.view.get_zoom_level() * 100.0) as i32
     }
 
     /// Zoom back to 100%.
-    pub fn zoom_normal(&self) -> i32 {
+    fn zoom_normal(&self) -> i32 {
         self.view.set_zoom_level(1.0);
         100
     }
 
     /// Zoom out.
-    pub fn zoom_out(&self) -> i32 {
+    fn zoom_out(&self) -> i32 {
         let level = self.view.get_zoom_level();
         self.view.set_zoom_level(level - 0.1);
         (self.view.get_zoom_level() * 100.0) as i32
-    }
-}
-
-impl Deref for WebView {
-    type Target = webkit2gtk::WebView;
-
-    fn deref(&self) -> &webkit2gtk::WebView {
-        &self.view
     }
 }

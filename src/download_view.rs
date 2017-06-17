@@ -19,119 +19,132 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/*
+ * TODO: show errors.
+ * TODO: add a command to download the current page.
+ * TODO: add commands to cancel, delete (on disk), open, retry, remove from list, clear all
+ * the list
+ */
+
 use std::ops::Deref;
 use std::time::SystemTime;
 
-use gtk::ProgressBar;
+use gtk;
+use gtk::WidgetExt;
 use number_prefix::{Prefixed, Standalone, binary_prefix};
+use relm::{Relm, Widget};
+use relm_attributes::widget;
 use webkit2gtk::Download;
 
-use urls::get_filename;
+use urls;
 
-/// Download view.
-pub struct DownloadView {
-    pub id: u32,
+use self::Msg::*;
+
+pub struct Model {
+    download: Download,
+    id: u32,
     last_update: SystemTime,
-    view: ProgressBar,
+    progress: f64,
+    relm: Relm<DownloadView>,
+    text: String,
     was_shown: bool,
 }
 
-impl DownloadView {
-    /// Create a download view.
-    pub fn new(download: &Download, id: u32) -> Box<Self> {
-        let progress_bar = ProgressBar::new();
-        progress_bar.set_show_text(true);
+#[derive(Msg)]
+pub enum Msg {
+    Finish,
+    Update,
+}
 
-        let mut download_view =
-            Box::new(DownloadView {
-                id: id,
-                last_update: SystemTime::now(),
-                view: progress_bar,
-                was_shown: false,
-            });
-
-        download_view.add_events(download);
-
-        download_view
-    }
-
-    /// Add the events.
-    fn add_events(&mut self, download: &Download) {
-        // TODO: show errors.
-        // TODO: add a command to download the current page.
-        // TODO: add commands to cancel, delete (on disk), open, retry, remove from list, clear all
-        // the list
-        self.update_progress_bar(download);
-
-        //connect!(download, connect_received_data(download, _), self, update_progress_bar(download));
-        //connect!(download, connect_finished(download), self, handle_finished(download));
-    }
-
-    /// Get the destination filename of the download.
-    /// Return the suggested filename if it does not exist.
-    fn get_filename(&self, download: &Download) -> String {
-        let suggested_filename =
-            download.get_request()
-                .and_then(|request| request.get_uri())
-                .and_then(|url| get_filename(&url));
-        download.get_destination()
-            .and_then(|url| get_filename(&url))
-            .unwrap_or(suggested_filename.clone().unwrap_or_default())
-    }
-
+#[widget]
+impl Widget for DownloadView {
     /// Show the data of a finished download.
-    fn handle_finished(&self, download: &Download) {
-        let filename = self.get_filename(download);
+    fn handle_finished(&mut self) {
+        let filename = get_filename(&self.model.download);
         let percent = 100;
-        self.view.set_fraction(1.0);
-        let (_, total_size) = get_data_sizes(download);
+        self.model.progress = 1.0;
+        let (_, total_size) = get_data_sizes(&self.model.download);
         let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-        // TODO: switch back to &format!() when it compiles on stable.
-        let text = format!("{} {}%{}", filename, percent, total_size);
-        self.view.set_text(Some(text.as_ref()));
+        self.model.text = format!("{} {}%{}", filename, percent, total_size);
+    }
+
+    fn init_view(&mut self) {
+        self.model.relm.stream().emit(Update);
+        connect!(self.model.download, connect_received_data(download, _), self.model.relm, Update);
+        connect!(self.model.download, connect_finished(download), self.model.relm, Finish);
+    }
+
+    fn model(relm: &Relm<DownloadView>, (id, download): (u32, Download)) -> Model {
+        Model {
+            download,
+            id,
+            last_update: SystemTime::now(),
+            progress: 1.0,
+            relm: relm.clone(),
+            text: String::new(),
+            was_shown: false,
+        }
+    }
+
+    fn update(&mut self, msg: Msg) {
+        match msg {
+            Finish => self.handle_finished(),
+            Update => self.update_progress_bar(),
+        }
     }
 
     /// Update the progress and the text of the progress bar.
-    fn update_progress_bar(&mut self, download: &Download) {
-        let filename = self.get_filename(download);
-        let progress = download.get_estimated_progress();
-        self.view.set_fraction(progress);
-        let percent = (progress * 100.0) as i32;
-        let (downloaded_size, total_size) = get_data_sizes(download);
+    fn update_progress_bar(&mut self) {
+        let filename = get_filename(&self.model.download);
+        self.model.progress = self.model.download.get_estimated_progress();
+        let percent = (self.model.progress * 100.0) as i32;
+        let (downloaded_size, total_size) = get_data_sizes(&self.model.download);
         // TODO: show the speed (downloaded data over the last 5 seconds).
         let mut updated = false;
         if percent == 100 {
             let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-            // TODO: switch back to &format!() when it compiles on stable.
-            let text = format!("{} {}%{}", filename, percent, total_size);
-            self.view.set_text(Some(text.as_ref()));
+            self.model.text = format!("{} {}%{}", filename, percent, total_size);
         }
-        else if let Ok(duration) = self.last_update.elapsed() {
+        else if let Ok(duration) = self.model.last_update.elapsed() {
             // Update the text once per second.
-            if duration.as_secs() >= 1 || !self.was_shown {
+            if duration.as_secs() >= 1 || !self.model.was_shown {
                 updated = true;
-                let time_remaining = get_remaining_time(download)
+                let time_remaining = get_remaining_time(&self.model.download)
                     .map(|time| format!(", {}", time))
                     .unwrap_or_default();
                 let total_size = total_size.map(|size| format!("/{}", size)).unwrap_or_default();
-                // TODO: switch back to &format!() when it compiles on stable.
-                let text = format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size, total_size);
-                self.view.set_text(Some(text.as_ref()));
-                self.was_shown = true;
+                self.model.text = format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size,
+                    total_size);
+                self.model.was_shown = true;
             }
         }
         if updated {
-            self.last_update = SystemTime::now();
+            self.model.last_update = SystemTime::now();
+        }
+    }
+
+    view! {
+        gtk::ProgressBar {
+            fraction: self.model.progress,
+            show_text: true,
+            text: self.model.text.as_ref(),
         }
     }
 }
 
-impl Deref for DownloadView {
-    type Target = ProgressBar;
+impl DownloadView {
+}
 
-    fn deref(&self) -> &ProgressBar {
-        &self.view
-    }
+/// Get the destination filename of the download.
+/// Return the suggested filename if it does not exist.
+fn get_filename(download: &Download) -> String {
+    let suggested_filename =
+        download.get_request()
+            .and_then(|request| request.get_uri())
+            .and_then(|url| urls::get_filename(&url));
+    download.get_destination()
+        .and_then(|url| urls::get_filename(&url))
+        .unwrap_or(suggested_filename.clone().unwrap_or_default())
 }
 
 /// Add the byte suffix with the right prefix.

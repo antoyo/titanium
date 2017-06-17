@@ -21,6 +21,8 @@
 
 //! Bookmark management in the application.
 
+use mg::{DeleteCompletionItem, Info};
+
 use super::App;
 
 impl App {
@@ -30,8 +32,8 @@ impl App {
             let title = self.webview.widget().get_title();
             let message = format!("Added bookmark: {}", url);
             match self.model.bookmark_manager.add(url, title) {
-                Ok(true) => self.mg.widget_mut().info(&message),
-                Ok(false) => self.mg.widget_mut().info("The current page is already in the bookmarks"),
+                Ok(true) => self.mg.emit(Info(message)),
+                Ok(false) => self.mg.emit(Info("The current page is already in the bookmarks".to_string())),
                 Err(err) => self.show_error(err),
             }
         }
@@ -41,7 +43,7 @@ impl App {
     pub fn delete_bookmark(&self) {
         if let Some(url) = self.webview.widget().get_uri() {
             match self.model.bookmark_manager.delete(&url) {
-                Ok(true) => self.mg.widget_mut().info(&format!("Deleted bookmark: {}", url)),
+                Ok(true) => self.mg.emit(Info(format!("Deleted bookmark: {}", url))),
                 Ok(false) => self.info_page_not_in_bookmarks(),
                 Err(err) => self.show_error(err),
             }
@@ -50,14 +52,13 @@ impl App {
 
     /// Delete the bookmark selected in completion.
     pub fn delete_selected_bookmark(&self) {
-        let command = self.mg.widget().get_command().unwrap_or_default();
-        let mut command = command.split_whitespace();
+        let mut command = self.model.command_text.split_whitespace();
         match command.next() {
             Some("open") | Some("win-open") =>
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
                     self.model.bookmark_manager.delete(url).ok();
-                    self.mg.widget().delete_current_completion_item();
+                    self.mg.emit(DeleteCompletionItem);
                 },
             _ => (),
         }
@@ -90,6 +91,6 @@ impl App {
 
     /// Show an information message to tell that the current page is not in the bookmarks.
     fn info_page_not_in_bookmarks(&self) {
-        self.mg.widget_mut().info("The current page is not in the bookmarks");
+        self.mg.emit(Info("The current page is not in the bookmarks".to_string()));
     }
 }

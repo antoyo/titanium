@@ -28,12 +28,14 @@ use mg::DialogResult::{Answer, Shortcut};
 use webkit2gtk::Download;
 
 use download::download_dir;
+use download_list_view::Msg::AddFileToOpen;
 use file::gen_unique_filename;
 use super::App;
 
 impl App {
     /// Handle the download decide destination event.
     pub fn handle_decide_destination(&mut self, download: &Download, suggested_filename: &str) -> bool {
+        println!("handle_decide_destination");
         let default_path = download_dir();
         let destination = self.blocking_download_input("Save file to: (<C-x> to open)", &default_path);
         match destination {
@@ -65,8 +67,8 @@ impl App {
                     let temp_dir = temp_dir();
                     let download_destination = gen_unique_filename(suggested_filename);
                     let destination = format!("file://{}/{}", temp_dir.to_str().unwrap(), download_destination);
-                    self.download_list_view.widget_mut().add_file_to_open(&destination);
                     download.set_destination(&destination);
+                    self.download_list_view.emit(AddFileToOpen(destination));
                 }
             },
             _ => download.cancel(),

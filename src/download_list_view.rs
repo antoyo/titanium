@@ -19,12 +19,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::collections::HashMap;
 use std::time::Duration;
 
 use futures_glib::Timeout;
 use glib::Cast;
-use gtk::{self, Container, ContainerExt, FlowBox, IsA, SelectionMode, WidgetExt};
-use relm::{Relm, Resolver, Widget};
+use gtk::{self, Container, ContainerExt, IsA, SelectionMode, WidgetExt};
+use relm::{Component, ContainerWidget, Relm, Resolver, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{Download, Error};
 use webkit2gtk::DownloadError::CancelledByUser;
@@ -33,14 +34,12 @@ use download_view::DownloadView;
 use file::open;
 use self::Msg::*;
 
-const DOWNLOAD_TIME_BEFORE_HIDE: u64 = 2000;
-
-type DecideDestinationCallback = Fn(Download, String) -> bool;
+const DOWNLOAD_TIME_BEFORE_HIDE: u64 = 2;
 
 pub struct Model {
     current_id: u32,
     download_count: u32,
-    download_views: Vec<Box<DownloadView>>,
+    download_views: HashMap<u32, Component<DownloadView>>,
     downloads_to_open: Vec<String>,
     relm: Relm<DownloadListView>,
 }
@@ -48,6 +47,7 @@ pub struct Model {
 #[derive(Msg)]
 pub enum Msg {
     Add(Download),
+    AddFileToOpen(String),
     DecideDestination(Resolver<bool>, Download, String),
     DownloadFailed(Error, u32),
     DownloadFinished(Download, u32),
@@ -60,7 +60,7 @@ impl Widget for DownloadListView {
         Model {
             current_id: 0,
             download_count: 0,
-            download_views: vec![],
+            download_views: HashMap::new(),
             downloads_to_open: vec![],
             relm: relm.clone(),
         }
@@ -69,7 +69,8 @@ impl Widget for DownloadListView {
     fn update(&mut self, event: Msg) {
         match event {
             Add(download) => self.add(download),
-            DecideDestination(_, _, _) => (), // To be listened by the user.
+            AddFileToOpen(file) => self.add_file_to_open(&file),
+            DecideDestination(_, _, _) => println!("Decide"), // To be listened by the user.
             DownloadFailed(error, id) => self.handle_failed(&error, id),
             DownloadFinished(download, id) => self.handle_finished(&download, id),
             Remove(id) => self.delete(id),
@@ -90,24 +91,42 @@ impl DownloadListView {
         self.model.current_id += 1;
         self.model.download_count += 1;
 
-        let download_view = DownloadView::new(&download, self.model.current_id);
-
-        connect!(self.model.relm, download, connect_decide_destination(download, suggested_filename),
-            async |resolver| DecideDestination(resolver, download.clone(), suggested_filename.to_string()));
+        println!("Connect");
+        /*download.connect_decide_destination(|_, _| {
+            println!("Handled");
+            true
+        });*/
+        let stream = self.model.relm.stream().clone();
+        // TODO: choose an arbitrary location (Downloads, home or tmp folder) and then move to the
+        // user selected location (this will allow to start the download earlier and avoid dealing
+        // with async/sync issues).
+        download.connect_decide_destination(move |download, suggested_filename| {
+            println!("Signal");
+            let cx = ::futures_glib::MainContext::default(|cx| cx.clone());
+            let lp = ::relm::MainLoop::new(Some(&cx));
+            let (resolver, rx) = ::relm::Resolver::channel(lp.clone());
+            let msg = |resolver| DecideDestination(resolver, download.clone(), suggested_filename.to_string());
+            let msg: Option<_> = ::relm::IntoOption::into_option(msg(resolver));
+            if let Some(msg) = msg {
+                stream.emit(msg);
+            }
+            lp.run();
+            // TODO: remove unwrap().
+            ::futures::Stream::wait(rx).next().unwrap().unwrap()
+        });
 
         let id = self.model.current_id;
         connect!(self.model.relm, download, connect_failed(_, error), DownloadFailed(error.clone(), id));
         connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone(), id));
 
-        // TODO: call add_widget() instead.
-        self.view.add(&**download_view);
+        let download_view = self.view.add_widget::<DownloadView, _>(&self.model.relm,
+            (self.model.current_id, download.clone()));
         if let Some(flow_child) = self.view.get_children().last() {
             flow_child.set_can_focus(false);
         }
-        download_view.show();
 
         // It is necessary to keep the download views because they are connected to events.
-        self.model.download_views.push(download_view);
+        self.model.download_views.insert(id, download_view);
     }
 
     /// Add a file to be opened when its download finish.
@@ -117,17 +136,15 @@ impl DownloadListView {
 
     /// Delete a view and remove it from its parent.
     fn delete(&mut self, id: u32) {
-        let index = self.model.download_views.iter()
-            .position(|download_view| download_view.id == id);
-        if let Some(index) = index {
-            let download_view = self.model.download_views.remove(index);
-            remove_from_flow_box(&**download_view);
+        if let Some(download_view) = self.model.download_views.remove(&id) {
+            remove_from_flow_box(download_view.widget());
         }
     }
 
     /// Handle the download failed event.
     /// Delete the view if the download was cancelled by the user.
     fn handle_failed(&mut self, error: &Error, id: u32) {
+        warn!("Download failed: {}", error);
         if let Some(error) = error.kind::<::webkit2gtk::DownloadError>() {
             if error == CancelledByUser {
                 self.delete(id);

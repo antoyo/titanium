@@ -21,6 +21,8 @@
 
 //! Popup management in the application.
 
+use mg::{Warning, question};
+
 use urls::get_base_url;
 use app::App;
 use app::Msg::PopupDecision;
@@ -28,13 +30,9 @@ use app::Msg::PopupDecision;
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
     pub fn ask_open_popup(&mut self, url: String, base_url: String) {
-        self.mg.widget_mut().question(&self.model.relm,
-            &format!("A popup from {} was blocked. Do you want to open it?", base_url),
-            &['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone())
-        );
-        /*connect!(self.app, question[
-             ,
-        ](answer), self, handle_answer(answer, &url));*/
+        // TODO
+        /*question(&self.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
+                char_slice!['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone()));*/
     }
 
     /// Save the specified url in the popup blacklist.
@@ -68,7 +66,7 @@ impl App {
         if let Some(base_url) = get_base_url(&url) {
             if !self.model.popup_manager.is_whitelisted(&url) {
                 if self.model.popup_manager.is_blacklisted(&url) {
-                    self.mg.widget_mut().warning(&format!("Not opening popup from {} since it is blacklisted.", base_url));
+                    self.mg.emit(Warning(format!("Not opening popup from {} since it is blacklisted.", base_url)));
                 }
                 else {
                     self.ask_open_popup(url, base_url);

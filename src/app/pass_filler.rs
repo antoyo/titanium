@@ -22,6 +22,12 @@
 use glib::error;
 
 use super::{App, AppResult};
+use webview::Msg::{
+    DeletePassword,
+    LoadUsernamePassword,
+    SavePassword,
+    SubmitLoginForm,
+};
 
 impl App {
     /// Create the password collection in gnome keyring.
@@ -31,7 +37,7 @@ impl App {
 
     /// Delete the password for the current URL.
     pub fn delete_password(&self) {
-        self.webview.widget_mut().delete_password();
+        self.webview.emit(DeletePassword);
         /*Ok(true) => self.app.info("Password deleted"),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
@@ -48,7 +54,7 @@ impl App {
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
     pub fn load_password(&self) {
-        self.webview.widget_mut().load_username_password();
+        self.webview.emit(LoadUsernamePassword);
         /*Ok(true) => return Ok(true),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
@@ -56,7 +62,7 @@ impl App {
 
     /// Save the password from the currently focused login form into the store.
     pub fn save_password(&self) {
-        self.webview.widget_mut().save_password();
+        self.webview.emit(SavePassword);
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
           Err(err) => self.show_error(err),*/
@@ -66,7 +72,7 @@ impl App {
     pub fn submit_login_form(&self) {
         self.load_password();
         // TODO: put the next line in a callback.
-        handle_error!(self.webview.widget().submit_login_form());
+        self.webview.emit(SubmitLoginForm);
     }
 }
 

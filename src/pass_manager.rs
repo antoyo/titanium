@@ -28,8 +28,6 @@ use glib::error;
 use app::AppResult;
 use urls::base_url;
 
-const KEYRING_NAME: &'static str = "Titanium Passwords";
-
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
     //collection: Option<Collection>,

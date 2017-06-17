@@ -27,7 +27,7 @@ use fg_uds::UnixStream;
 use futures::{AsyncSink, Sink};
 use futures_glib::MainContext;
 use glib::Cast;
-use relm_state::{Component, Relm, Update, execute};
+use relm_state::{EventStream, Relm, Update, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
@@ -174,7 +174,7 @@ impl Update for MessageClient {
 }
 
 impl MessageClient {
-    pub fn new(path: &str, extension: WebExtension) -> io::Result<Component<Self>> {
+    pub fn new(path: &str, extension: WebExtension) -> io::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
         let stream = UnixStream::connect(path, &cx)?;
         Ok(execute::<MessageClient>((stream, extension)))

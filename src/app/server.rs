@@ -19,8 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use gtk::{Inhibit, WidgetExt};
-use relm::Widget;
+use gtk::Inhibit;
 use titanium_common::Message;
 use titanium_common::Message::*;
 
@@ -44,9 +43,8 @@ impl App {
     }
 
     /// Emit the scrolled event.
-    pub fn emit_scrolled_event(&self) -> Inhibit {
-        let result = self.server_send(GetScrollPercentage());
-        Inhibit(false)
+    pub fn emit_scrolled_event(&self) {
+        handle_error!(self.server_send(GetScrollPercentage()));
     }
 
     /// Send a key to the web process to process with the current hints.
@@ -61,8 +59,8 @@ impl App {
     }
 
     /// Follow a link.
-    pub fn follow_link(&self, hint_chars: &str) -> AppResult<()> {
-        self.server_send(ShowHints(hint_chars.to_string()))
+    pub fn follow_link(&self) -> AppResult<()> {
+        self.server_send(ShowHints(self.model.hint_chars.clone()))
     }
 
     /// Hide the hints and return to normal mode.
@@ -74,7 +72,7 @@ impl App {
     pub fn listen_messages(&self) {
         let message_server = &self.model.message_server;
         // TODO: use client_id (first param of MsgRecv).
-        connect!(message_server@MsgRecv(_, ref msg), self.model.relm, match *msg {
+        connect_stream!(message_server@MsgRecv(_, ref msg), self.model.relm.stream(), match *msg {
             ActivateAction(action) => Some(Action(action)),
             ClickHintElement() => Some(ClickElement),
             Credentials(_, _) => None, // TODO
@@ -152,8 +150,8 @@ impl App {
     }
 
     fn server_send(&self, message: Message) -> AppResult<()> {
-        // TODO: rename widget_mut().
-        self.model.message_server.widget_mut().send(self.model.client, message)
-            .map_err(From::from)
+        self.model.message_server.emit(Send(self.model.client, message));
+        // TODO: manage error.
+        Ok(())
     }
 }

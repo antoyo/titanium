@@ -72,14 +72,15 @@ pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
         target: None,
         location: None,
     };
-    TermLogger::init(LogLevelFilter::max(), config).ok();
+    // TODO: decomment.
+    //TermLogger::init(LogLevelFilter::max(), config).ok();
 
     let server_name = user_data.get_str();
     if let Some(server_name) = server_name {
         let client = MessageClient::new(server_name, extension.clone());
 
         if let Ok(ref client) = client {
-            connect!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
+            connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
         }
 
         // Don't drop the client to keep receiving the messages on the stream.

@@ -21,10 +21,7 @@
 
 //! Manage the configuration of the application.
 
-use std::fs::OpenOptions;
-use std::io;
-use std::path::Path;
-
+use mg::Variables;
 use mg::DefaultConfig::{self, Dir, File};
 use relm::Widget;
 
@@ -34,17 +31,11 @@ use super::App;
 impl App {
     /// Create the variables accessible from the config files.
     pub fn create_variables(&mut self) {
-        let webview = self.webview.widget().root().clone();
-        self.mg.widget_mut().set_variables(vec![("url", Box::new(move || {
+        let webview = self.webview.widget().clone();
+        self.mg.emit(Variables(vec![("url", Box::new(move || {
             webview.get_uri().unwrap_or_default()
-        }))]);
+        }))]));
     }
-}
-
-/// Create a file.
-fn create_file(path: &Path) -> io::Result<()> {
-    OpenOptions::new().create(true).write(true).open(path)?;
-    Ok(())
 }
 
 /// Get the default configuration files and directories.

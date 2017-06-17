@@ -20,6 +20,9 @@
  */
 
 /*
+ * FIXME: after hint mode (escape or selection), it goes in insert mode instead of normal.
+ * TODO: check if JS dialogs are supposed to freeze the UI.
+ * TODO: method called by message should take ownership of values instead of reference?
  * TODO: add documentation for every method.
  * TODO: handle errors from uds communication.
  * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
@@ -57,7 +60,7 @@
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
  * FIXME: I can set tags on URLs that are not bookmarked.
- * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/
+ * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
  * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
  * TODO: allow to remove tags from bookmarks.

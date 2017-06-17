@@ -33,7 +33,7 @@ impl App {
         if let Some(clipboard) = clipboard {
             if let Some(url) = self.webview.widget().get_uri() {
                 clipboard.set_text(&url);
-                self.info(&format!("Copied URL to clipboard: {}", url));
+                self.info(format!("Copied URL to clipboard: {}", url));
             }
             else {
                 self.error("No URL to copy");

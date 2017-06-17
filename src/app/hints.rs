@@ -51,19 +51,13 @@ impl App {
     }
 
     /// In follow mode, send the key to the web process.
-    pub fn handle_follow_key_press(&mut self, event_key: &EventKey) -> Inhibit {
+    pub fn handle_follow_key_press(&mut self, event_key: EventKey) {
         if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
             if key_char.is_alphanumeric() {
                 if let Some(key_char) = key_char.to_lowercase().next() {
-                    self.enter_hint_key(key_char);
+                    handle_error!(self.enter_hint_key(key_char));
                 }
             }
         }
-        Inhibit(true)
-    }
-
-    /// Get the hint characters from the settings.
-    pub fn hint_chars(&self) -> String {
-        self.mg.widget().settings().hint_chars.clone()
     }
 }

@@ -19,32 +19,41 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use mg::Info;
+
 use super::App;
 
 impl App {
     /// Clear the browser cache.
     pub fn clear_cache(&self) {
-        self.webview.widget().get_context().clear_cache();
-        self.mg.widget_mut().info("Cache cleared");
+        if let Some(context) = self.webview.widget().get_context() {
+            context.clear_cache();
+            self.mg.emit(Info("Cache cleared".to_string()));
+        }
+        // TODO: show warning?
     }
 
     /// Delete all the cookies.
     pub fn delete_all_cookies(&self) {
         let cookie_manager =
-            self.webview.widget().get_context().get_cookie_manager();
+            self.webview.widget().get_context()
+                .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_all_cookies();
-            self.mg.widget_mut().info("All cookies deleted");
+            self.mg.emit(Info("All cookies deleted".to_string()));
         }
+        // TODO: show warning?
     }
 
     /// Delete the cookies for the specified domain.
     pub fn delete_cookies(&self, domain: &str) {
         let cookie_manager =
-            self.webview.widget().get_context().get_cookie_manager();
+            self.webview.widget().get_context()
+                .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_cookies_for_domain(domain);
-            self.mg.widget_mut().info(&format!("Cookies deleted for domain {}", domain));
+            self.mg.emit(Info(format!("Cookies deleted for domain {}", domain)));
         }
+        // TODO: show warning?
     }
 }
