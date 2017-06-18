@@ -64,6 +64,7 @@ use mg::{
     SetMode,
     SettingChanged,
     StatusBarItem,
+    Text,
     Title,
 };
 use mg_settings::errors::ErrorKind;
@@ -156,6 +157,7 @@ pub struct Model {
     client: usize,
     command_text: String,
     config_dir: ConfigDir,
+    current_url: String,
     default_search_engine: Option<String>,
     follow_mode: FollowMode,
     has_active_downloads: bool,
@@ -167,6 +169,7 @@ pub struct Model {
     mode: String,
     relm: Relm<App>,
     popup_manager: PopupManager,
+    scroll_text: String,
     search_engines: HashMap<String, String>,
     title: String,
 }
@@ -193,6 +196,7 @@ pub enum Msg {
     ShowZoom(i32),
     TitleChanged,
     TryClose,
+    UriChanged,
     WebProcessCrashed,
     WebViewClose,
 }
@@ -233,6 +237,7 @@ impl Widget for App {
             client: 0, // TODO: real client ID.
             command_text: String::new(),
             config_dir,
+            current_url: String::new(),
             default_search_engine: None,
             follow_mode: FollowMode::Click,
             has_active_downloads: false,
@@ -244,6 +249,7 @@ impl Widget for App {
             mode: "normal".to_string(),
             relm: relm.clone(),
             popup_manager,
+            scroll_text: "[top]".to_string(),
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
         }
@@ -265,6 +271,17 @@ impl Widget for App {
     fn set_title_without_progress(&mut self) {
         let title = self.get_title();
         self.model.title = format!("{}{}", title, APP_NAME);
+    }
+
+    /// Show the scroll percentage.
+    fn show_scroll(&mut self, scroll_percentage: i64) {
+        self.model.scroll_text =
+            match scroll_percentage {
+                -1 => "[all]".to_string(),
+                0 => "[top]".to_string(),
+                100 => "[bot]".to_string(),
+                _ => format!("[{}%]", scroll_percentage),
+            };
     }
 
     fn update(&mut self, mut event: Msg) {
@@ -292,8 +309,16 @@ impl Widget for App {
             ShowZoom(level) => self.show_zoom(level),
             TitleChanged => self.set_title(),
             TryClose => self.quit(),
+            UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
             WebViewClose => gtk::main_quit(),
+        }
+    }
+
+    /// Handle the URI changed event.
+    fn uri_changed(&mut self) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            self.model.current_url = url;
         }
     }
 
@@ -330,16 +355,16 @@ impl Widget for App {
                     resource_load_started(_, _, _) => TitleChanged,
                     run_file_chooser(_, file_chooser_request) => async FileChooser(file_chooser_request.clone()),
                     title_changed() => TitleChanged,
-                    //uri_changed() => self.uri_changed(),
+                    uri_changed() => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
                 },
             },
             #[name="scroll_label"]
             StatusBarItem {
-                text: "[top]",
+                Text: self.model.scroll_text.clone(),
             },
-            #[name="url_label"]
             StatusBarItem {
+                Text: self.model.current_url.clone(),
             },
             AppClose => TryClose,
             CompletionViewChange(ref completion) => CommandText(completion.clone()),
@@ -598,29 +623,9 @@ impl App {
         self.error(&error.to_string());
     }
 
-    /// Show the scroll percentage.
-    fn show_scroll(&self, scroll_percentage: i64) {
-        let text =
-            match scroll_percentage {
-                -1 => "[all]".to_string(),
-                0 => "[top]".to_string(),
-                100 => "[bot]".to_string(),
-                _ => format!("[{}%]", scroll_percentage),
-            };
-        self.scroll_label.widget().set_text(&text);
-    }
-
     /// Show the zoom level in the status bar.
     fn show_zoom(&self, level: i32) {
         self.info(format!("Zoom level: {}%", level));
-    }
-
-    /// Handle the URI changed event.
-    fn uri_changed(&self) {
-        if let Some(url) = self.webview.widget().get_uri() {
-            // TODO: use a model attribute.
-            self.url_label.widget().set_text(&url);
-        }
     }
 
     /// Handle the web process crashed event.
