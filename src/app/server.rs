@@ -19,7 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use gtk::Inhibit;
 use titanium_common::Message;
 use titanium_common::Message::*;
 
@@ -66,7 +65,7 @@ impl App {
     /// Hide the hints and return to normal mode.
     pub fn hide_hints(&mut self) {
         handle_error!(self.server_send(HideHints()));
-        self.go_in_insert_mode();
+        self.go_in_normal_mode();
     }
 
     pub fn listen_messages(&self) {

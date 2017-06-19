@@ -44,6 +44,7 @@ use webkit2gtk::{
     UserScript,
     UserStyleSheet,
     WebContext,
+    WebInspector,
     FIND_OPTIONS_BACKWARDS,
     FIND_OPTIONS_CASE_INSENSITIVE,
     FIND_OPTIONS_WRAP_AROUND,
@@ -65,6 +66,7 @@ use stylesheet::get_stylesheet_and_whitelist;
 
 pub struct Model {
     config_dir: ConfigDir,
+    inspector_shown: bool,
     open_in_new_window: bool,
     pub password_manager: PasswordManager,
     relm: Relm<WebView>,
@@ -79,6 +81,8 @@ pub enum Msg {
     DecidePolicy(PolicyDecision, PolicyDecisionType, Resolver<bool>),
     DeletePassword,
     EndSearch,
+    InspectorAttach(WebInspector, Resolver<bool>),
+    InspectorClose,
     LoadUsernamePassword,
     NewWindow(String),
     PageFinishSearch,
@@ -105,6 +109,7 @@ impl Widget for WebView {
     fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
         Model {
             config_dir,
+            inspector_shown: false,
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
             relm: relm.clone(),
@@ -122,6 +127,8 @@ impl Widget for WebView {
                 self.decide_policy(policy_decision, policy_decision_type, resolver),
             DeletePassword => self.delete_password(),
             EndSearch => { let _ = self.finish_search(); }, // TODO: handle error.
+            InspectorAttach(inspector, resolver) => self.inspector_attach(inspector, resolver),
+            InspectorClose => self.model.inspector_shown = false,
             LoadUsernamePassword => self.load_username_password(),
             // To be listened by the user.
             NewWindow(_) => (),
@@ -281,6 +288,14 @@ impl WebView {
         context
     }
 
+    fn inspector_attach(&mut self, inspector: WebInspector, mut resolver: Resolver<bool>) {
+        if !self.model.inspector_shown {
+            inspector.detach();
+            resolver.resolve(true);
+        }
+        self.model.inspector_shown = true;
+    }
+
     /// Open the specified URL.
     fn open(&self, url: String) {
         self.view.load_uri(&url);
@@ -350,24 +365,9 @@ impl WebView {
 
     /// Show the web inspector.
     fn show_inspector(&self) {
-        static mut SHOWN: bool = false;
         if let Some(inspector) = self.view.get_inspector() {
-            inspector.connect_attach(|inspector| {
-                unsafe {
-                    if !SHOWN {
-                        inspector.detach();
-                        SHOWN = true;
-                        return true;
-                    }
-                    SHOWN = true;
-                }
-                false
-            });
-            inspector.connect_closed(|_| {
-                unsafe {
-                    SHOWN = false;
-                }
-            });
+            connect!(self.model.relm, inspector, connect_attach(inspector), async InspectorAttach(inspector.clone()));
+            connect!(inspector, connect_closed(_), self.model.relm, InspectorClose);
             inspector.show();
         }
     }

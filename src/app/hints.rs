@@ -24,7 +24,6 @@
 use std::char;
 
 use gdk::EventKey;
-use gtk::Inhibit;
 
 use super::App;
 
@@ -35,9 +34,10 @@ impl App {
         if let Some(result) = Action::from_i32(action) {
             match result {
                 FileInput => {
-                    if let Ok(file) = self.file_input(vec![]) {
+                    // TODO
+                    /*if let Ok(file) = self.show_file_input(vec![]) {
                         handle_error!(self.select_file(file));
-                    }
+                    }*/
                 },
                 GoInInsertMode => self.go_in_insert_mode(),
                 NoAction => (),

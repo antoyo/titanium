@@ -26,9 +26,11 @@ use std::path::Path;
 
 use mg::{
     self,
+    CustomDialog,
     DialogBuilder,
     DialogResult,
     Mg,
+    Responder,
     blocking_input,
     blocking_yes_no_question,
 };
@@ -36,17 +38,45 @@ use mg_settings::{
     self,
     EnumFromStr,
     EnumMetaData,
-    Parser,
     SettingCompletion,
     SpecialCommand,
 };
 use mg_settings::key::Key::{Char, Control};
-use relm::{EventStream, Resolver, Update};
-use webkit2gtk::{FileChooserRequest, ScriptDialog};
+use relm::{EventStream, Relm, Resolver, Update, Widget};
+use webkit2gtk::{Download, FileChooserRequest, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
+use app::Msg::DownloadDestination;
+use download::download_dir;
 use self::FileInputError::*;
 use super::App;
+
+/// Input dialog responder for file selection for download.
+pub struct DownloadInputDialog<WIDGET: Widget> {
+    callback: fn(DialogResult, Download, String) -> WIDGET::Msg,
+    download: Download,
+    stream: EventStream<WIDGET::Msg>,
+    suggested_filename: String,
+}
+
+impl<WIDGET: Widget> DownloadInputDialog<WIDGET> {
+    fn new(relm: &Relm<WIDGET>, callback: fn(DialogResult, Download, String) -> WIDGET::Msg, download: Download,
+        suggested_filename: String) -> Self
+    {
+        DownloadInputDialog {
+            callback,
+            download,
+            stream: relm.stream().clone(),
+            suggested_filename,
+        }
+    }
+}
+
+impl<WIDGET: Widget> Responder for DownloadInputDialog<WIDGET> {
+    fn respond(&self, answer: DialogResult) {
+        self.stream.emit((self.callback)(answer, self.download.clone(), self.suggested_filename.clone()));
+    }
+}
 
 pub enum FileInputError {
     Cancelled,
@@ -55,8 +85,83 @@ pub enum FileInputError {
 }
 
 impl App {
-    /// Show a file input dialog.
-    pub fn file_input(&self, selected_files: Vec<String>) -> Result<String, FileInputError> {
+    /// Show a non-modal file chooser dialog when the user activates a file input.
+    pub fn handle_file_chooser(&self, file_chooser_request: FileChooserRequest, mut resolver: Resolver<bool>) {
+        /*
+        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
+        if file_chooser_request.get_select_multiple() {
+            // TODO: support multiple files (use a boolean column that is converted to a pixmap).
+            false
+        }
+        else {
+            let selected_files = file_chooser_request.get_selected_files();
+            match self.blocking_file_input(selected_files) {
+                Ok(file) => file_chooser_request.select_files(&[&file]),
+                Err(Cancelled) => file_chooser_request.cancel(),
+                Err(FileDoesNotExist) => {
+                    self.error("Please select an existing file");
+                    file_chooser_request.cancel();
+                },
+                Err(SelectedDirectory) => {
+                    self.error("Please select a file, not a directory");
+                    file_chooser_request.cancel();
+                },
+            }
+            true
+        }*/
+    }
+
+    /// Show a blocking input dialog with file completion.
+    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
+        // TODO
+        /*let builder = DialogBuilder::new()
+            .blocking(true)
+            .completer("file")
+            .default_answer(default_answer)
+            .message(message);
+        self.mg.widget_mut().show_dialog_without_shortcuts(&self.model.relm, builder)*/
+        None
+    }
+
+    pub fn blocking_input(&self, message: &str, default_answer: &str) -> Option<String> {
+        // TODO
+        //self.mg.widget_mut().blocking_input(&self.model.relm, message, default_answer)
+        None
+    }
+
+    pub fn blocking_yes_no_question(&self, message: &str) -> bool {
+        // TODO
+        //self.mg.widget_mut().blocking_yes_no_question(&self.model.relm, message)
+        false
+    }
+
+    /// Show a blocking iniput dialog with file completion for download destination selection.
+    /// It contains the C-x shortcut to open the file instead of downloading it.
+    pub fn download_input(&self, download: Download, suggested_filename: String) {
+        let default_path = download_dir();
+        let responder = Box::new(DownloadInputDialog::new(&self.model.relm, DownloadDestination, download,
+            suggested_filename));
+        let builder = DialogBuilder::new()
+            .completer("file")
+            .default_answer(default_path)
+            .message("Save file to: (<C-x> to open)".to_string())
+            .responder(responder)
+            .shortcut(Control(Box::new(Char('x'))), "download");
+        self.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
+    }
+
+    /// Show a input dialog with file completion.
+    fn file_input(&self, responder: Box<Responder>, message: String, default_answer: String) {
+        let builder = DialogBuilder::new()
+            .completer("file")
+            .default_answer(default_answer)
+            .message(message)
+            .responder(responder);
+        self.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
+    }
+
+    /// Show a blocking file input dialog.
+    pub fn show_blocking_file_input(&self, selected_files: Vec<String>) -> Result<String, FileInputError> {
         let file =
             if selected_files.is_empty() {
                 let dir = home_dir()
@@ -85,70 +190,11 @@ impl App {
         }
     }
 
-    /// Show a non-modal file chooser dialog when the user activates a file input.
-    pub fn handle_file_chooser(&self, file_chooser_request: FileChooserRequest, mut resolver: Resolver<bool>) {
-        /*
-        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
-        if file_chooser_request.get_select_multiple() {
-            // TODO: support multiple files (use a boolean column that is converted to a pixmap).
-            false
-        }
-        else {
-            let selected_files = file_chooser_request.get_selected_files();
-            match self.file_input(selected_files) {
-                Ok(file) => file_chooser_request.select_files(&[&file]),
-                Err(Cancelled) => file_chooser_request.cancel(),
-                Err(FileDoesNotExist) => {
-                    self.error("Please select an existing file");
-                    file_chooser_request.cancel();
-                },
-                Err(SelectedDirectory) => {
-                    self.error("Please select a file, not a directory");
-                    file_chooser_request.cancel();
-                },
-            }
-            true
-        }*/
-    }
-
-    /// Show a blocking iniput dialog with file completion for download destination selection.
-    /// It contains the C-x shortcut to open the file instead of downloading it.
-    pub fn blocking_download_input(&self, message: &str, default_answer: &str) -> DialogResult {
-        // TODO
-        /*let builder = DialogBuilder::new()
-            .blocking(true)
-            .completer("file")
-            .default_answer(default_answer)
-            .message(message)
-            .shortcut(Control(Box::new(Char('x'))), "download");
-        let res = self.mg.widget_mut().show_dialog(&self.model.relm, builder);
-        res*/
-        DialogResult::Answer(None)
-    }
-
-    /// Show a blocking input dialog with file completion.
-    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
-        // TODO
-        /*let builder = DialogBuilder::new()
-            .blocking(true)
-            .completer("file")
-            .default_answer(default_answer)
-            .message(message);
-        self.mg.widget_mut().show_dialog_without_shortcuts(&self.model.relm, builder)*/
-        None
-    }
-
-    pub fn blocking_input(&self, message: &str, default_answer: &str) -> Option<String> {
-        // TODO
-        //self.mg.widget_mut().blocking_input(&self.model.relm, message, default_answer)
-        None
-    }
-
-    pub fn blocking_yes_no_question(&self, message: &str) -> bool {
-        // TODO
-        //self.mg.widget_mut().blocking_yes_no_question(&self.model.relm, message)
-        false
-    }
+    /*
+    /// Show a file input dialog.
+    pub fn show_file_input(&self, ) {
+        self.file_input(responder, 
+    }*/
 }
 
 /// Handle the script dialog event.

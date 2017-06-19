@@ -565,7 +565,7 @@ dependencies = [
 [[package]]
 name = "mg"
 version = "0.0.5-pre"
-source = "git+https://github.com/antoyo/mg#abcc1dba98569b7333647d0d1babc80ff45ed6be"
+source = "git+https://github.com/antoyo/mg#70c0941d255be68261595a612994be6e0ae11c65"
 dependencies = [
  "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",

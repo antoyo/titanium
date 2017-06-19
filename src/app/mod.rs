@@ -55,6 +55,7 @@ use mg::{
     CompletionViewChange,
     CustomCommand,
     DarkTheme,
+    DialogResult,
     Error,
     Info,
     Message,
@@ -68,14 +69,14 @@ use mg::{
     Title,
 };
 use mg_settings::errors::ErrorKind;
-use relm::{Component, EventStream, Relm, Resolver, Update, Widget};
+use relm::{EventStream, Relm, Resolver, Update, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
-    self,
     Download,
     FileChooserRequest,
     HitTestResult,
     NavigationAction,
+    WebContext,
     WebViewExt,
 };
 use webkit2gtk::LoadEvent::{self, Finished, Started};
@@ -87,12 +88,13 @@ use commands::AppCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
-use download_list_view::Msg::{Add, DecideDestination};
+use download_list_view::Msg::{Add, DownloadOriginalDestination};
 use message_server::MessageServer;
 use pass_manager::PasswordManager;
 use popup_manager::PopupManager;
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
+use self::download::find_download_destination;
 use self::Msg::*;
 use settings::AppSettings;
 use settings::AppSettingsVariant::{
@@ -184,7 +186,8 @@ pub enum Msg {
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
-    DecideDownloadDestination(Resolver<bool>, Download, String),
+    DecideDownloadDestination(Download, String),
+    DownloadDestination(DialogResult, Download, String),
     EmitScrolledEvent,
     FileChooser(FileChooserRequest, Resolver<bool>),
     GoToInsertMode,
@@ -209,14 +212,30 @@ impl Widget for App {
         handle_error!(self.model.bookmark_manager.connect(App::bookmark_path(&self.model.config_dir)));
         handle_error!(self.model.popup_manager.load());
 
+        if let Some(ref url) = self.model.init_url {
+            self.webview.emit(PageOpen(url.clone()));
+        }
+
         let mg = self.mg.stream().clone();
         connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
             return handle_script_dialog(script_dialog, &mg));
 
-        if let Some(context) = self.webview.widget().get_context() {
-            connect!(context, connect_download_started(_, download), self.download_list_view, Add(download.clone()));
+        if let Some(context) = self.get_webview_context() {
+            let stream = self.model.relm.stream().clone();
+            let list_stream = self.download_list_view.stream().clone();
+            connect!(context, connect_download_started(_, download), self.download_list_view, {
+                let stream = stream.clone();
+                let list_stream = list_stream.clone();
+                download.connect_decide_destination(move |download, suggested_filename| {
+                    let destination = find_download_destination(suggested_filename);
+                    download.set_destination(&format!("file://{}", destination));
+                    stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
+                    list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                    true
+                });
+                Add(download.clone())
+            });
         }
-        // TODO: warning?
 
         // TODO
         //app.create_password_keyring();
@@ -284,7 +303,7 @@ impl Widget for App {
             };
     }
 
-    fn update(&mut self, mut event: Msg) {
+    fn update(&mut self, event: Msg) {
         match event {
             Action(action) => self.activate_action(action),
             AppSetMode(mode) => self.model.mode = mode,
@@ -294,10 +313,10 @@ impl Widget for App {
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
-            DecideDownloadDestination(ref mut resolver, ref download, ref suggested_filename) => {
-                println!("Decide destination");
-                resolver.resolve(self.handle_decide_destination(download, suggested_filename));
-            },
+            DecideDownloadDestination(download, suggested_filename) =>
+                self.download_input(download, suggested_filename),
+            DownloadDestination(destination, download, suggested_filename) =>
+                self.download_destination_chosen(destination, download, suggested_filename),
             EmitScrolledEvent => self.emit_scrolled_event(),
             FileChooser(file_chooser_request, resolver) => self.handle_file_chooser(file_chooser_request, resolver),
             GoToInsertMode => self.go_in_insert_mode(),
@@ -338,8 +357,6 @@ impl Widget for App {
                 orientation: Vertical,
                 #[name="download_list_view"]
                 DownloadListView {
-                    DecideDestination(ref resolver, ref download, ref suggested_filename) =>
-                        DecideDownloadDestination(resolver.dup(), download.clone(), suggested_filename.clone()),
                 },
                 #[name="webview"]
                 WebView(self.model.config_dir.clone()) {
@@ -405,6 +422,14 @@ impl App {
         }
     }
 
+    fn get_webview_context(&self) -> Option<WebContext> {
+        let context = self.webview.widget().get_context();
+        if context.is_none() {
+            self.error("Cannot retrieve web view context");
+        }
+        context
+    }
+
     /// Handle the button release event to open in new window when using Ctrl-click.
     fn handle_button_release(&mut self, event: EventButton, mut resolver: Resolver<Inhibit>) {
         if event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) {
@@ -449,7 +474,7 @@ impl App {
             },
             Insert => self.go_in_insert_mode(),
             Inspector => self.webview.emit(ShowInspector),
-            Normal => self.mg.emit(SetMode("normal")),
+            Normal => self.go_in_normal_mode(),
             Open(ref url) => self.open(url),
             PasswordDelete => self.delete_password(),
             PasswordLoad => self.load_password(),
@@ -497,6 +522,10 @@ impl App {
         self.mg.emit(SetMode("insert"));
     }
 
+    fn go_in_normal_mode(&mut self) {
+        self.mg.emit(SetMode("normal"));
+    }
+
     /// Handle create window.
     fn handle_create(&mut self, action: NavigationAction) {
         if let Some(request) = action.get_request() {
@@ -538,7 +567,7 @@ impl App {
 
             // Check to mode to avoid going back to normal mode if the user is in command mode.
             if self.model.mode == "insert" || self.model.mode == "follow" {
-                self.mg.emit(SetMode("normal"));
+                self.go_in_normal_mode();
             }
         }
 
@@ -609,7 +638,7 @@ impl App {
         match setting {
             HintChars(chars) => self.model.hint_chars = chars,
             HomePage(url) => {
-                if self.model.home_page.is_none() {
+                if  self.model.init_url.is_none() {
                     self.webview.emit(PageOpen(url.clone()));
                 }
                 self.model.home_page = Some(url);
@@ -642,16 +671,16 @@ impl App {
 
     /// Zoom in.
     fn zoom_in(&self) {
-        let zoom = self.webview.emit(PageZoomIn);
+        self.webview.emit(PageZoomIn);
     }
 
     /// Zoom back to 100%.
     fn zoom_normal(&self) {
-        let zoom = self.webview.emit(PageZoomNormal);
+        self.webview.emit(PageZoomNormal);
     }
 
     /// Zoom out.
     fn zoom_out(&self) {
-        let zoom = self.webview.emit(PageZoomOut);
+        self.webview.emit(PageZoomOut);
     }
 }

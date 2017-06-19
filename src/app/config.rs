@@ -23,7 +23,6 @@
 
 use mg::Variables;
 use mg::DefaultConfig::{self, Dir, File};
-use relm::Widget;
 
 use config_dir::ConfigDir;
 use super::App;

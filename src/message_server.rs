@@ -29,12 +29,12 @@ use bincode;
 use futures::{AsyncSink, Sink};
 use fg_uds::{UnixListener, UnixStream};
 use futures_glib::MainContext;
-use relm::{Component, EventStream, Relm, Update, execute};
+use relm::{EventStream, Relm, Update, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
 
-use titanium_common::{ExtCodec, Result, Message};
+use titanium_common::{ExtCodec, Message};
 
 use self::Msg::*;
 

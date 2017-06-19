@@ -24,8 +24,10 @@
  * TODO: add a command to download the current page.
  * TODO: add commands to cancel, delete (on disk), open, retry, remove from list, clear all
  * the list
+ * TODO: color in green (the progress bar?) finished download, in red failed download.
  */
 
+use std::fs::{remove_file, rename};
 use std::ops::Deref;
 use std::time::SystemTime;
 
@@ -38,57 +40,110 @@ use webkit2gtk::Download;
 
 use urls;
 
+use file::open;
 use self::Msg::*;
 
 pub struct Model {
     download: Download,
-    id: u32,
+    finished: bool,
     last_update: SystemTime,
+    new_destination: Option<String>,
+    original_destination: Option<String>,
     progress: f64,
     relm: Relm<DownloadView>,
     text: String,
+    to_open: bool,
     was_shown: bool,
 }
 
 #[derive(Msg)]
 pub enum Msg {
+    Cancel,
+    Destination(String),
     Finish,
+    OriginalDestination(String),
+    Remove,
+    SetToOpen,
     Update,
 }
 
 #[widget]
 impl Widget for DownloadView {
+    fn cancel(&mut self) {
+        if self.model.finished {
+            if let Some(ref destination) = self.model.original_destination {
+                remove_file(destination);
+            }
+        }
+        else {
+            self.model.download.cancel();
+        }
+        self.model.relm.stream().emit(Remove);
+    }
+
+    fn destination(&mut self, destination: String) {
+        self.model.new_destination = Some(destination);
+        if self.model.finished {
+            self.move_or_open();
+        }
+    }
+
     /// Show the data of a finished download.
     fn handle_finished(&mut self) {
+        self.model.finished = true;
         let filename = get_filename(&self.model.download);
         let percent = 100;
         self.model.progress = 1.0;
         let (_, total_size) = get_data_sizes(&self.model.download);
         let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
         self.model.text = format!("{} {}%{}", filename, percent, total_size);
+        self.move_or_open();
     }
 
     fn init_view(&mut self) {
         self.model.relm.stream().emit(Update);
-        connect!(self.model.download, connect_received_data(download, _), self.model.relm, Update);
-        connect!(self.model.download, connect_finished(download), self.model.relm, Finish);
+        connect!(self.model.download, connect_received_data(_, _), self.model.relm, Update);
+        connect!(self.model.download, connect_finished(_), self.model.relm, Finish);
     }
 
-    fn model(relm: &Relm<DownloadView>, (id, download): (u32, Download)) -> Model {
+    fn model(relm: &Relm<DownloadView>, download: Download) -> Model {
         Model {
             download,
-            id,
+            finished: false,
             last_update: SystemTime::now(),
+            new_destination: None,
+            original_destination: None,
             progress: 1.0,
             relm: relm.clone(),
             text: String::new(),
+            to_open: false,
             was_shown: false,
+        }
+    }
+
+    /// Open the file if the user chose to or move it to its new destination if needed.
+    fn move_or_open(&mut self) {
+        if let Some(ref destination) = self.model.new_destination {
+            if let Some(ref original_destination) = self.model.original_destination {
+                rename(original_destination, &destination[7..]).unwrap(); // TODO: handle error.
+            }
+            // TODO: warning?
+            // Open the file if the user chose to.
+            if self.model.to_open {
+                open(destination.clone());
+            }
+            self.model.relm.stream().emit(Remove);
         }
     }
 
     fn update(&mut self, msg: Msg) {
         match msg {
+            Cancel => self.cancel(),
+            Destination(destination) => self.destination(destination),
             Finish => self.handle_finished(),
+            OriginalDestination(destination) => self.model.original_destination = Some(destination),
+            Remove => (), // To be listened by the user.
+            SetToOpen => self.model.to_open = true,
             Update => self.update_progress_bar(),
         }
     }
@@ -130,9 +185,6 @@ impl Widget for DownloadView {
             text: self.model.text.as_ref(),
         }
     }
-}
-
-impl DownloadView {
 }
 
 /// Get the destination filename of the download.

@@ -30,9 +30,8 @@ use app::Msg::PopupDecision;
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
     pub fn ask_open_popup(&mut self, url: String, base_url: String) {
-        // TODO
-        /*question(&self.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
-                char_slice!['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone()));*/
+        question(&self.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
+                char_slice!['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone()));
     }
 
     /// Save the specified url in the popup blacklist.

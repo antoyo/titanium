@@ -20,9 +20,10 @@
  */
 
 /*
- * FIXME: after hint mode (escape or selection), it goes in insert mode instead of normal.
- * TODO: check if JS dialogs are supposed to freeze the UI.
- * TODO: method called by message should take ownership of values instead of reference?
+ * FIXME: file download should not navigate to a new page.
+ * TODO: ask before override download.
+ * TODO: clean-up the temp download folder (when?).
+ * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for every method.
  * TODO: handle errors from uds communication.
  * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
@@ -40,7 +41,6 @@
  * FIXME: error Unacceptable TLS certificate
  * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
  * https://zinascii.com/2014/a-posix-queue-implementation.html
- * FIXME: this page freeze: https://medium.com/@eeue56/top-6-ways-to-make-your-elm-app-crash-at-runtime-562b2fa92d70#.cfg55os82
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.
  * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
@@ -177,8 +177,6 @@
  *
  * TODO: add tests.
  *
- * FIXME: some dbus calls timeout (seems to be caused by the click method since it triggers an
- * action in the application which is waiting for the answer of the call).
  * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
  * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
  */
