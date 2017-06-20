@@ -21,6 +21,7 @@
 
 //! Manage downloads withing the application.
 
+use std::fs::{read_dir, remove_file};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -31,9 +32,17 @@ use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view::Msg::{AddFileToOpen, DownloadCancel, DownloadDestination};
 use file::gen_unique_filename;
-use super::App;
+use super::{App, AppResult};
 
 impl App {
+    pub fn clean_download_folder(&self) -> AppResult<()> {
+        let download_dir = self.model.config_dir.data_file("downloads")?;
+        for file in read_dir(download_dir)? {
+            remove_file(file?.path())?;
+        }
+        Ok(())
+    }
+
     /// Handle the download decide destination event.
     pub fn download_destination_chosen(&mut self, destination: DialogResult, download: Download,
         suggested_filename: String)

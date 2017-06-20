@@ -211,6 +211,7 @@ impl Widget for App {
 
         handle_error!(self.model.bookmark_manager.connect(App::bookmark_path(&self.model.config_dir)));
         handle_error!(self.model.popup_manager.load());
+        handle_error!(self.clean_download_folder());
 
         if let Some(ref url) = self.model.init_url {
             self.webview.emit(PageOpen(url.clone()));

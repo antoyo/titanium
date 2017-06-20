@@ -22,7 +22,6 @@
 /*
  * FIXME: file download should not navigate to a new page.
  * TODO: ask before override download.
- * TODO: clean-up the temp download folder (when?).
  * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for every method.
  * TODO: handle errors from uds communication.
