@@ -50,6 +50,7 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
+    ActiveDownloads(bool),
     Add(Download),
     AddFileToOpen(Download),
     DelayedRemove(Download),
@@ -73,6 +74,8 @@ impl Widget for DownloadListView {
 
     fn update(&mut self, event: Msg) {
         match event {
+            // To be listened by the user.
+            ActiveDownloads(_) => (),
             Add(download) => self.add(download),
             AddFileToOpen(download) => self.add_file_to_open(download),
             DelayedRemove(download) => self.delayed_remove(download),
@@ -98,6 +101,7 @@ impl DownloadListView {
     /// Add a new download.
     pub fn add(&mut self, download: Download) {
         self.model.download_count += 1;
+        self.model.relm.stream().emit(ActiveDownloads(true));
 
         connect!(self.model.relm, download, connect_failed(download, error),
             DownloadFailed(error.clone(), download.clone()));
@@ -169,11 +173,10 @@ impl DownloadListView {
     /// Handle the download fisished event.
     fn handle_finished(&mut self) {
         self.model.download_count -= 1;
-    }
 
-    /// Check if there are active downloads.
-    pub fn has_active_downloads(&self) -> bool {
-        self.model.download_count > 0
+        if self.model.download_count == 0 {
+            self.model.relm.stream().emit(ActiveDownloads(false));
+        }
     }
 }
 

@@ -67,6 +67,7 @@ use mg::{
     StatusBarItem,
     Text,
     Title,
+    yes_no_question,
 };
 use mg_settings::errors::ErrorKind;
 use relm::{EventStream, Relm, Resolver, Update, Widget};
@@ -88,7 +89,7 @@ use commands::AppCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
-use download_list_view::Msg::{Add, DownloadOriginalDestination};
+use download_list_view::Msg::{ActiveDownloads, Add, DownloadOriginalDestination};
 use message_server::MessageServer;
 use pass_manager::PasswordManager;
 use popup_manager::PopupManager;
@@ -189,11 +190,14 @@ pub enum Msg {
     DecideDownloadDestination(Download, String),
     DownloadDestination(DialogResult, Download, String),
     EmitScrolledEvent,
+    Exit(bool),
     FileChooser(FileChooserRequest, Resolver<bool>),
     GoToInsertMode,
+    HasActiveDownloads(bool),
     KeyPress(EventKey, Resolver<Inhibit>),
     LoadChanged(LoadEvent),
     MouseTargetChanged(HitTestResult),
+    OverwriteDownload(Download, String, bool),
     PopupDecision(Option<String>, String),
     Scroll(i64),
     ShowZoom(i32),
@@ -319,16 +323,20 @@ impl Widget for App {
             DownloadDestination(destination, download, suggested_filename) =>
                 self.download_destination_chosen(destination, download, suggested_filename),
             EmitScrolledEvent => self.emit_scrolled_event(),
+            Exit(can_quit) => self.quit(can_quit),
             FileChooser(file_chooser_request, resolver) => self.handle_file_chooser(file_chooser_request, resolver),
             GoToInsertMode => self.go_in_insert_mode(),
+            HasActiveDownloads(active) => self.model.has_active_downloads = active,
             KeyPress(event_key, resolver) => self.handle_key_press(event_key, resolver),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
+            OverwriteDownload(download, download_destination, overwrite) =>
+                self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
             Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
             ShowZoom(level) => self.show_zoom(level),
             TitleChanged => self.set_title(),
-            TryClose => self.quit(),
+            TryClose => self.try_quit(),
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
             WebViewClose => gtk::main_quit(),
@@ -358,6 +366,7 @@ impl Widget for App {
                 orientation: Vertical,
                 #[name="download_list_view"]
                 DownloadListView {
+                    ActiveDownloads(active) => HasActiveDownloads(active),
                 },
                 #[name="webview"]
                 WebView(self.model.config_dir.clone()) {
@@ -483,7 +492,7 @@ impl App {
             PasswordSubmit => self.submit_login_form(),
             PasteUrl => self.paste_url(),
             Print => self.webview.emit(PagePrint),
-            Quit => self.quit(),
+            Quit => self.try_quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
             Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
@@ -618,18 +627,21 @@ impl App {
     }
 
     /// Try to close the web view and quit the application.
-    fn quit(&self) {
+    fn try_quit(&self) {
         // Ask for a confirmation before quitting the application when there are active
         // downloads.
-        let can_quit =
-            // TODO: set this variable on download list view events.
-            if self.model.has_active_downloads {
-                self.blocking_yes_no_question("There are active downloads. Do you want to quit?")
-            }
-            else {
-                true
-            };
+        if self.model.has_active_downloads {
+            let msg = "There are active downloads. Do you want to quit?".to_string();
+            yes_no_question(&self.mg, &self.model.relm, msg, Exit)
+        }
+        else {
+            self.quit(true);
+        }
+    }
 
+    /// Close the web view and quit the application if there's no download or the user chose to
+    /// cancel them.
+    fn quit(&self, can_quit: bool) {
         if can_quit {
             self.webview.widget().try_close();
         }

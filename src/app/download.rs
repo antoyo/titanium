@@ -25,9 +25,11 @@ use std::fs::{read_dir, remove_file};
 use std::io;
 use std::path::{Path, PathBuf};
 
+use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
 use webkit2gtk::Download;
 
+use app::Msg::OverwriteDownload;
 use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view::Msg::{AddFileToOpen, DownloadCancel, DownloadDestination};
@@ -35,8 +37,35 @@ use file::gen_unique_filename;
 use super::{App, AppResult};
 
 impl App {
+    fn ask_download_confirm_if_needed(&self, destination: &str, download: Download, suggested_filename: &str) {
+        let path = Path::new(&destination);
+        let download_path =
+            if path.is_dir() {
+                path.join(suggested_filename)
+            }
+            else {
+                path.to_path_buf()
+            };
+        let download_destination = download_path.to_str().unwrap(); // TODO: remove unwrap().
+        let exists = download_path.exists() &&
+            // Check that it is not the path chosen before (because the download is already started
+            // at this point).
+            Some(format!("file://{}", download_destination)) != download.get_destination();
+        if exists {
+            let message = format!("Do you want to overwrite {}?", download_destination);
+            let download_destination = download_destination.to_string();
+            yes_no_question(&self.mg, &self.model.relm, message,
+                move |answer| OverwriteDownload(download.clone(), download_destination.clone(), answer));
+        }
+        else {
+            self.set_download_destination(download, download_destination);
+        }
+    }
+
     pub fn clean_download_folder(&self) -> AppResult<()> {
         let download_dir = self.model.config_dir.data_file("downloads")?;
+        // TODO: remove the file when the processus dies
+        // What to do if the process dies after?
         for file in read_dir(download_dir)? {
             remove_file(file?.path())?;
         }
@@ -49,29 +78,7 @@ impl App {
     {
         match destination {
             Answer(Some(destination)) => {
-                let path = Path::new(&destination);
-                let download_destination =
-                    if path.is_dir() {
-                        path.join(suggested_filename)
-                    }
-                    else {
-                        path.to_path_buf()
-                    };
-                let exists = download_destination.exists();
-                let download_destination = download_destination.to_str().unwrap();
-                // TODO: this is at the wrong place.
-                if exists {
-                    let message = &format!("Do you want to overwrite {}?", download_destination);
-                    let answer = self.blocking_yes_no_question(message);
-                    if answer {
-                        download.set_allow_overwrite(true);
-                    }
-                    else {
-                        download.cancel();
-                    }
-                }
-                let destination = format!("file://{}", download_destination);
-                self.download_list_view.emit(DownloadDestination(download, destination));
+                self.ask_download_confirm_if_needed(&destination, download, &suggested_filename);
             },
             Shortcut(shortcut) => {
                 if shortcut == "download" {
@@ -90,6 +97,20 @@ impl App {
                 self.download_list_view.emit(DownloadCancel(download));
             },
         }
+    }
+
+    pub fn overwrite_download(&self, download: Download, download_destination: String, overwrite: bool) {
+        if overwrite {
+            self.set_download_destination(download, &download_destination);
+        }
+        else {
+            self.download_list_view.emit(DownloadCancel(download));
+        }
+    }
+
+    fn set_download_destination(&self, download: Download, download_destination: &str) {
+        let destination = format!("file://{}", download_destination);
+        self.download_list_view.emit(DownloadDestination(download, destination));
     }
 }
 
@@ -115,7 +136,6 @@ pub fn find_download_destination(suggested_filename: &str) -> String {
     while path.exists() {
         counter += 1;
         path = next_path(counter, &dir, &default_path);
-        println!("{}", counter);
     }
     // TODO: remove call to expect().
     path.to_str().expect("valid utf-8 string")

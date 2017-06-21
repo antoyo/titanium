@@ -20,8 +20,14 @@
  */
 
 /*
+ * FIXME: download not deleted on cancel when chosen another destination.
+ * FIXME: download file input does not show completion.
+ * TODO: add underscore before the number suffix in the download name?
+ * TODO: rename the download view after choosing its location.
+ * FIXME: the hints can stop working sometimes (cannot input letters).
  * FIXME: file download should not navigate to a new page.
- * TODO: ask before override download.
+ * FIXME: download does not start automatically in ubuntu website.
+ *
  * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for every method.
  * TODO: handle errors from uds communication.
