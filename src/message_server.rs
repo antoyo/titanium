@@ -25,16 +25,16 @@ use std::collections::HashMap;
 use std::fs::remove_file;
 use std::io;
 
-use bincode;
 use futures::{AsyncSink, Sink};
 use fg_uds::{UnixListener, UnixStream};
 use futures_glib::MainContext;
 use relm::{EventStream, Relm, Update, execute};
 use tokio_io::AsyncRead;
-use tokio_io::codec::{FramedRead, FramedWrite};
+use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
+use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
 
-use titanium_common::{ExtCodec, Message};
+use titanium_common::Message;
 
 use self::Msg::*;
 
@@ -42,7 +42,7 @@ use self::Msg::*;
 pub const PATH: &str = "/tmp/titanium";
 
 struct Client {
-    writer: FramedWrite<WriteHalf<UnixStream>, ExtCodec>,
+    writer: WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>,
 }
 
 pub struct MessageServer {
@@ -60,7 +60,7 @@ pub enum Msg {
     ClientConnect(UnixStream),
     IncomingError(String), // TODO: use a better type.
     MsgRecv(usize, Message),
-    MsgError(Box<bincode::ErrorKind>),
+    MsgError(Error),
     Send(usize, Message),
 }
 
@@ -94,15 +94,15 @@ impl Update for MessageServer {
             ClientConnect(stream) => {
                 let client_id = 0;
                 let (reader, writer) = stream.split();
-                let reader = FramedRead::new(reader, ExtCodec);
-                let writer = FramedWrite::new(writer, ExtCodec);
+                let reader = ReadBincode::new(FramedRead::new(reader));
+                let writer = WriteBincode::new(FramedWrite::new(writer));
                 self.model.clients.insert(client_id, Client {
                     writer,
                 });
                 self.model.relm.connect_exec(reader, move |msg| MsgRecv(client_id, msg), MsgError);
             },
             IncomingError(error) => println!("{}", error), // TODO
-            MsgError(error) => println!("Error: {}", error), // TODO,
+            MsgError(error) => println!("Error: {:?}", error), // TODO,
             // To be listened by the app.
             MsgRecv(_, _) => (),
             Send(client, msg) => self.send(client, msg),

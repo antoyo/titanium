@@ -19,7 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-extern crate bincode;
 extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;
@@ -34,6 +33,7 @@ extern crate relm_state;
 extern crate relm_derive_state;
 extern crate titanium_common;
 extern crate tokio_io;
+extern crate tokio_serde_bincode;
 extern crate url;
 extern crate xdg;
 #[macro_use]

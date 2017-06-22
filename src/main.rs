@@ -24,7 +24,6 @@
  * FIXME: download file input does not show completion.
  * TODO: add underscore before the number suffix in the download name?
  * TODO: rename the download view after choosing its location.
- * FIXME: the hints can stop working sometimes (cannot input letters).
  * FIXME: file download should not navigate to a new page.
  * FIXME: download does not start automatically in ubuntu website.
  *
@@ -191,7 +190,6 @@
 #![feature(proc_macro)]
 #![warn(missing_docs)]
 
-extern crate bincode;
 extern crate cairo;
 extern crate fg_uds;
 extern crate futures;
@@ -230,6 +228,7 @@ extern crate tempdir;
 extern crate tempfile;
 extern crate titanium_common;
 extern crate tokio_io;
+extern crate tokio_serde_bincode;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;

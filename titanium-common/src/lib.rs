@@ -19,21 +19,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-extern crate bincode;
 extern crate bytes;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate tokio_io;
-
-use std::io::ErrorKind::UnexpectedEof;
-
-use bincode::{Infinite, deserialize_from, serialize_into};
-use bincode::ErrorKind::IoError;
-use bytes::{Buf, BufMut, BytesMut, IntoBuf};
-use tokio_io::codec::{Decoder, Encoder};
-
-pub type Result<T> = bincode::Result<T>;
 
 /// Action that should be executed from the UI process.
 pub enum Action {
@@ -50,39 +40,6 @@ impl Action {
             _ if value == Action::NoAction as i32 => Some(Action::NoAction),
             _ => None,
         }
-    }
-}
-
-pub struct ExtCodec;
-
-impl Decoder for ExtCodec {
-    type Item = Message;
-    type Error = bincode::Error;
-
-    fn decode(&mut self, bytes: &mut BytesMut) -> Result<Option<Message>> {
-        let buf = bytes.take().into_buf();
-        let result = deserialize_from(&mut buf.bytes(), Infinite);
-        match result {
-            Ok(msg) => Ok(Some(msg)),
-            Err(error) => {
-                if let IoError(ref error) = *error {
-                    if error.kind() == UnexpectedEof {
-                        return Ok(None);
-                    }
-                }
-                Err(error)
-            },
-        }
-    }
-}
-
-impl Encoder for ExtCodec {
-    type Item = Message;
-    type Error = bincode::Error;
-
-    fn encode(&mut self, msg: Message, buf: &mut BytesMut) -> Result<()> {
-        serialize_into(&mut buf.writer(), &msg, Infinite)?;
-        Ok(())
     }
 }
 

@@ -68,7 +68,7 @@ pub struct Model {
     config_dir: ConfigDir,
     inspector_shown: bool,
     open_in_new_window: bool,
-    pub password_manager: PasswordManager,
+    pub password_manager: PasswordManager, // FIXME: make this private.
     relm: Relm<WebView>,
     search_backwards: bool,
 }

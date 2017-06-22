@@ -22,15 +22,15 @@
 use std::collections::HashMap;
 use std::io;
 
-use bincode;
 use fg_uds::UnixStream;
 use futures::{AsyncSink, Sink};
 use futures_glib::MainContext;
 use glib::Cast;
 use relm_state::{EventStream, Relm, Update, execute};
 use tokio_io::AsyncRead;
-use tokio_io::codec::{FramedRead, FramedWrite};
+use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
+use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
 use webkit2gtk_webextension::{
     DOMDOMWindowExtManual,
     DOMDocumentExt,
@@ -47,7 +47,7 @@ use webkit2gtk_webextension::{
     WebPage,
 };
 
-use titanium_common::{ExtCodec, Message};
+use titanium_common::Message;
 use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
 use titanium_common::Message::*;
 
@@ -103,13 +103,13 @@ pub struct Model {
     last_hovered_element: Option<DOMElement>,
     page_id: Option<u64>,
     relm: Relm<MessageClient>,
-    writer: FramedWrite<WriteHalf<UnixStream>, ExtCodec>,
+    writer: WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>,
 }
 
 #[derive(Msg)]
 pub enum Msg {
     MsgRecv(Message),
-    MsgError(Box<bincode::ErrorKind>),
+    MsgError(Error),
     PageCreated(WebPage),
 }
 
@@ -120,8 +120,8 @@ impl Update for MessageClient {
 
     fn model(relm: &Relm<Self>, (stream, extension): Self::ModelParam) -> Model {
         let (reader, writer) = stream.split();
-        let writer = FramedWrite::new(writer, ExtCodec);
-        let reader = FramedRead::new(reader, ExtCodec);
+        let writer = WriteBincode::new(FramedWrite::new(writer));
+        let reader = ReadBincode::new(FramedRead::new(reader));
         relm.connect_exec(reader, MsgRecv, MsgError);
         Model {
             activated_file_input: None,
@@ -143,7 +143,7 @@ impl Update for MessageClient {
 
     fn update(&mut self, event: Msg) {
         match event {
-            MsgError(error) => println!("Error: {}", error),
+            MsgError(error) => println!("Error: {:?}", error),
             MsgRecv(msg) => match msg {
                 ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
                 ActivateSelection() => self.activate_selection(),
@@ -375,10 +375,13 @@ impl MessageClient {
 
     // Send a message to the server.
     fn send(&mut self, msg: Message) {
-        if let Ok(AsyncSink::Ready) = self.model.writer.start_send(msg) {
-            if let Err(error) = self.model.writer.poll_complete() {
-                error!("Cannot send message to UI process: {}", error);
+        match self.model.writer.start_send(msg) {
+            Ok(AsyncSink::Ready) => {
+                if let Err(error) = self.model.writer.poll_complete() {
+                    error!("Cannot send message to UI process: {}", error);
+                }
             }
+            res => error!("Cannot send: {:?}", res),
         }
     }
 
