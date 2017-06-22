@@ -20,8 +20,6 @@
  */
 
 /*
- * TODO: rename the download view after choosing its location.
- *
  * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
  * redirection, this was working fine before).
  *

@@ -45,6 +45,7 @@ use self::Msg::*;
 
 pub struct Model {
     download: Download,
+    filename: String,
     finished: bool,
     last_update: SystemTime,
     new_destination: Option<String>,
@@ -82,6 +83,9 @@ impl Widget for DownloadView {
     }
 
     fn destination(&mut self, destination: String) {
+        if let Some(filename) = urls::get_filename(&destination) {
+            self.model.filename = filename;
+        }
         self.model.new_destination = Some(destination);
         if self.model.finished {
             self.move_or_open();
@@ -91,12 +95,11 @@ impl Widget for DownloadView {
     /// Show the data of a finished download.
     fn handle_finished(&mut self) {
         self.model.finished = true;
-        let filename = get_filename(&self.model.download);
         let percent = 100;
         self.model.progress = 1.0;
         let (_, total_size) = get_data_sizes(&self.model.download);
         let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-        self.model.text = format!("{} {}%{}", filename, percent, total_size);
+        self.model.text = format!("{} {}%{}", self.model.filename, percent, total_size);
         self.move_or_open();
     }
 
@@ -107,8 +110,10 @@ impl Widget for DownloadView {
     }
 
     fn model(relm: &Relm<DownloadView>, download: Download) -> Model {
+        let filename = get_filename(&download);
         Model {
             download,
+            filename,
             finished: false,
             last_update: SystemTime::now(),
             new_destination: None,
@@ -150,7 +155,6 @@ impl Widget for DownloadView {
 
     /// Update the progress and the text of the progress bar.
     fn update_progress_bar(&mut self) {
-        let filename = get_filename(&self.model.download);
         self.model.progress = self.model.download.get_estimated_progress();
         let percent = (self.model.progress * 100.0) as i32;
         let (downloaded_size, total_size) = get_data_sizes(&self.model.download);
@@ -158,7 +162,7 @@ impl Widget for DownloadView {
         let mut updated = false;
         if percent == 100 {
             let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
-            self.model.text = format!("{} {}%{}", filename, percent, total_size);
+            self.model.text = format!("{} {}%{}", self.model.filename, percent, total_size);
         }
         else if let Ok(duration) = self.model.last_update.elapsed() {
             // Update the text once per second.
@@ -168,8 +172,8 @@ impl Widget for DownloadView {
                     .map(|time| format!(", {}", time))
                     .unwrap_or_default();
                 let total_size = total_size.map(|size| format!("/{}", size)).unwrap_or_default();
-                self.model.text = format!("{} {}%{} [{}{}]", filename, percent, time_remaining, downloaded_size,
-                    total_size);
+                self.model.text = format!("{} {}%{} [{}{}]", self.model.filename, percent, time_remaining,
+                    downloaded_size, total_size);
                 self.model.was_shown = true;
             }
         }
