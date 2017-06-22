@@ -120,7 +120,7 @@ pub fn find_download_destination(suggested_filename: &str) -> String {
             .expect("valid utf-8 string"); // TODO: remove expect().
         let extension = path.extension().unwrap_or_default().to_str()
             .expect("valid utf-8 string"); // TODO: remove expect().
-        Path::new(&format!("{}{}{}.{}", dir, filename, counter, extension))
+        Path::new(&format!("{}{}_{}.{}", dir, filename, counter, extension))
             .to_path_buf()
     }
 

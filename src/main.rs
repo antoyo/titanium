@@ -20,12 +20,12 @@
  */
 
 /*
- * FIXME: download not deleted on cancel when chosen another destination.
- * FIXME: download file input does not show completion.
- * TODO: add underscore before the number suffix in the download name?
  * TODO: rename the download view after choosing its location.
- * FIXME: file download should not navigate to a new page.
- * FIXME: download does not start automatically in ubuntu website.
+ *
+ * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
+ * redirection, this was working fine before).
+ *
+ * FIXME Error on exit: Io(Error { repr: Custom(Custom { kind: Other, error: Error { domain: 1537, code: 8, message: "Connexion ré-initialisée par le correspondant" } }) })
  *
  * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for every method.
