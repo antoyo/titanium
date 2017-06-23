@@ -149,7 +149,7 @@ impl App {
         self.server_send(SelectFile(file))
     }
 
-    fn server_send(&self, message: Message) -> Result<()> {
+    pub fn server_send(&self, message: Message) -> Result<()> {
         self.model.message_server.emit(Send(self.model.client, message));
         // TODO: manage error.
         Ok(())

@@ -21,18 +21,14 @@
 
 //! Password management.
 
-use std::collections::HashMap;
-
-use glib::error;
 use password_store::PasswordStore;
 
+use app::APP_NAME;
 use errors::Result;
 use urls::base_url;
 
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
-    //collection: Option<Collection>,
-    //schema: Schema,
 }
 
 impl PasswordManager {
@@ -44,79 +40,33 @@ impl PasswordManager {
 
     /// Add a credential.
     /// Returns true if the credential was added.
-    pub fn add(&mut self, url: &str, username: &str, password: &str, check: bool) {
+    pub fn add(&self, url: &str, username: &str, password: &str, check: bool) -> Result<()> {
         if let Some(url) = base_url(url) {
             let check = false; // TODO
-            /*let attributes =
-                if check {
-                    str_hash! {
-                        check => check,
-                        url => url,
-                        username => username,
-                    }
-                }
-                else {
-                    str_hash! {
-                        url => url,
-                        username => username,
-                    }
-                };*/
-            // TODO: handle errors.
-            /*if let Some(ref collection) = self.collection {
-                /*collection.item_create(&self.schema,
-                    &format!("Password for {} on {}", username, url), password, &attributes, |_|
-                {
-                    // TODO: show an error if any.
-                });*/
-            }*/
+            PasswordStore::insert(&path_username(&url, username), password)?;
         }
         else {
-            warn!("Not adding the credentials for {}", url);
+            bail!("Not adding the credentials for {}", url);
         }
+        Ok(())
     }
-
-    /*fn assign_collection(&mut self, collection: Result<Collection, error::Error>) {
-        // TODO: handle error.
-        self.collection = Some(collection.unwrap());
-    }*/
 
     /// Delete a password.
     /// Returns true if a credential was deleted.
-    pub fn delete(&mut self, url: &str, username: &str) {
+    pub fn delete(&self, url: &str, username: &str) -> Result<()> {
         if let Some(url) = base_url(url) {
-            // TODO: handle error.
-            /*self.get_one(str_hash! {
-                url => url,
-                username => username,
-            }, |item| {
-                item.delete(|_| {});
-                // TODO: show an info.
-                // TODO: show an error if any.
-            });*/
+            PasswordStore::remove(&path_username(&url, username))?;
         }
         else {
-            warn!("Not deleting the password for {}", url);
+            bail!("Not deleting the password for {}", url);
         }
+        Ok(())
     }
-
-    /*
-    /// Search for items in the keyring, returning the first one.
-    fn get_one<F: Fn(Item) + 'static>(&self, attributes: HashMap<String, String>, callback: F) {
-        if let Some(ref collection) = self.collection {
-            collection.search(&self.schema, &attributes, move |items| {
-                if let Ok(mut items) = items {
-                    if !items.is_empty() {
-                        callback(items.remove(0));
-                    }
-                }
-            });
-        }
-    }*/
 
     /// Get the usernames for a `url`.
     pub fn get_usernames(&self, url: &str) -> Result<Vec<String>> {
         if let Some(url) = base_url(url) {
-            Ok(PasswordStore::get_usernames(&format!("titanium/{}", url))?)
+            Ok(PasswordStore::get_usernames(&path(&url))?)
         }
         else {
             bail!("Cannot get the usernames for {}", url);
@@ -126,10 +76,18 @@ impl PasswordManager {
     /// Get the password for a `url` and username.
     pub fn get_password(&self, url: &str, username: &str) -> Result<String> {
         if let Some(url) = base_url(url) {
-            Ok(PasswordStore::get(&format!("titanium/{}/{}", url, username))?)
+            Ok(PasswordStore::get(&path_username(&url, username))?)
         }
         else {
             bail!("Cannot get the password for {}", url);
         }
     }
+}
+
+fn path(url: &str) -> String {
+    format!("{}/{}", APP_NAME, url)
+}
+
+fn path_username(url: &str, username: &str) -> String {
+    format!("{}/{}/{}", APP_NAME, url, username)
 }

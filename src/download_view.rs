@@ -28,7 +28,6 @@
  */
 
 use std::fs::{remove_file, rename};
-use std::ops::Deref;
 use std::time::SystemTime;
 
 use gtk;

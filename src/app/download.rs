@@ -22,7 +22,6 @@
 //! Manage downloads withing the application.
 
 use std::fs::{read_dir, remove_file};
-use std::io;
 use std::path::{Path, PathBuf};
 
 use mg::yes_no_question;

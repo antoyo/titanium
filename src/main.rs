@@ -200,8 +200,6 @@ extern crate gdk;
 extern crate glib;
 extern crate glib_sys;
 extern crate gtk;
-#[macro_use]
-extern crate lazy_static;
 extern crate libc;
 #[cfg(test)]
 extern crate libxdo;

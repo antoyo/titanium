@@ -152,8 +152,7 @@ impl Update for MessageClient {
                 GetCredentials() => self.send_credentials(),
                 GetScrollPercentage() => self.send_scroll_percentage(),
                 HideHints() => self.hide_hints(),
-                LoadPassword(password) => self.load_password(&password),
-                LoadUsername(username) => self.load_username(&username),
+                LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
                 ScrollBottom() => self.scroll_bottom(),
                 ScrollBy(pixels) => self.scroll_by(pixels),
                 ScrollByX(pixels) => self.scroll_by_x(pixels),
@@ -323,18 +322,11 @@ impl MessageClient {
         NoAction as i32
     }
 
-    // FIXME: use one method with two parameters to load the username and the password at the same
-    // time.
-    // Load the password in the login form.
-    fn load_password(&self, password: &str) {
-        let document = get_document!(self);
-        load_password(&document, password);
-    }
-
-    // Load the username in the login form.
-    fn load_username(&self, username: &str) {
+    // Load the username and the password in the login form.
+    fn load_username_pass(&self, username: &str, password: &str) {
         let document = get_document!(self);
         load_username(&document, username);
+        load_password(&document, password);
     }
 
     // Scroll to the bottom of the page.

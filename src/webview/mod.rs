@@ -19,7 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-mod password;
 mod settings;
 
 use std::fs::{File, read_dir};
@@ -55,11 +54,9 @@ use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
-// TODO: remove coupling between webview and app modules.
 use config_dir::ConfigDir;
 use errors::Result;
 use message_server::PATH;
-use pass_manager::PasswordManager;
 use self::Msg::*;
 use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
@@ -68,7 +65,6 @@ pub struct Model {
     config_dir: ConfigDir,
     inspector_shown: bool,
     open_in_new_window: bool,
-    pub password_manager: PasswordManager, // FIXME: make this private.
     relm: Relm<WebView>,
     search_backwards: bool,
 }
@@ -79,11 +75,9 @@ pub enum Msg {
     AddStylesheets,
     Close,
     DecidePolicy(PolicyDecision, PolicyDecisionType, Resolver<bool>),
-    DeletePassword,
     EndSearch,
     InspectorAttach(WebInspector, Resolver<bool>),
     InspectorClose,
-    LoadUsernamePassword,
     NewWindow(String),
     PageFinishSearch,
     PageOpen(String),
@@ -95,11 +89,9 @@ pub enum Msg {
     PageZoomIn,
     PageZoomNormal,
     PageZoomOut,
-    SavePassword,
     SearchBackward(bool),
     SetOpenInNewWindow(bool),
     ShowInspector,
-    SubmitLoginForm,
     WebViewSettingChanged(AppSettingsVariant),
     ZoomChange(i32),
 }
@@ -111,7 +103,6 @@ impl Widget for WebView {
             config_dir,
             inspector_shown: false,
             open_in_new_window: false,
-            password_manager: PasswordManager::new(),
             relm: relm.clone(),
             search_backwards: false,
         }
@@ -125,11 +116,9 @@ impl Widget for WebView {
             Close => (),
             DecidePolicy(policy_decision, policy_decision_type, resolver) =>
                 self.decide_policy(policy_decision, policy_decision_type, resolver),
-            DeletePassword => self.delete_password(),
             EndSearch => { let _ = self.finish_search(); }, // TODO: handle error.
             InspectorAttach(inspector, resolver) => self.inspector_attach(inspector, resolver),
             InspectorClose => self.model.inspector_shown = false,
-            LoadUsernamePassword => self.load_username_password(),
             // To be listened by the user.
             NewWindow(_) => (),
             PageFinishSearch => { let _ = self.finish_search(); }, // TODO: handle error.
@@ -142,11 +131,9 @@ impl Widget for WebView {
             PageZoomIn => self.show_zoom(self.zoom_in()),
             PageZoomNormal => self.show_zoom(self.zoom_normal()),
             PageZoomOut => self.show_zoom(self.zoom_out()),
-            SavePassword => self.save_password(),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
             SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
             ShowInspector => self.show_inspector(),
-            SubmitLoginForm => { let _ = self.submit_login_form(); }, // TODO: handle error.
             WebViewSettingChanged(setting) => self.setting_changed(setting),
             // To be listened by the user.
             ZoomChange(_) => (),

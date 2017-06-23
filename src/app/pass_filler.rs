@@ -19,60 +19,65 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use glib::error;
-
-use super::App;
-use webview::Msg::{
-    DeletePassword,
-    LoadUsernamePassword,
-    SavePassword,
+use titanium_common::Message::{
+    LoadUsernamePass,
     SubmitLoginForm,
 };
 
-impl App {
-    /// Create the password collection in gnome keyring.
-    pub fn create_password_keyring(&mut self) {
-        //connect_static!(Service, get(service), self, init_service(service));
-    }
+use super::App;
 
+use errors::Result;
+
+impl App {
     /// Delete the password for the current URL.
-    pub fn delete_password(&self) {
-        self.webview.emit(DeletePassword);
+    pub fn delete_password(&self) -> Result<()> {
+        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        if !usernames.is_empty() {
+            // TODO: ask for which username to delete.
+            let username = &usernames[0];
+            self.model.password_manager.delete(&self.model.current_url, username)?;
+        }
         /*Ok(true) => self.app.info("Password deleted"),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
+        Ok(())
     }
-
-    /*fn init_service(&mut self, service: Result<Service, error::Error>) {
-        // TODO: handle errors.
-        if let Ok(service) = service {
-            self.webview.widget().password_manager.init(service);
-        }
-    }*/
 
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
-    pub fn load_password(&self) {
-        self.webview.emit(LoadUsernamePassword);
+    pub fn load_password(&self) -> Result<()> {
         /*Ok(true) => return Ok(true),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
+        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        if !usernames.is_empty() {
+            let username = &usernames[0];
+            let password = self.model.password_manager.get_password(&self.model.current_url, username)?;
+            self.server_send(LoadUsernamePass(username.clone(), password))?;
+        }
+        Ok(())
     }
 
     /// Save the password from the currently focused login form into the store.
     pub fn save_password(&self) {
-        self.webview.emit(SavePassword);
+        // TODO: ask to override existing password.
+        // TODO: handle errors.
+        /*if let Ok((username, password)) = self.message_server.get_credentials() {
+            if let Some(url) = self.view.get_uri() {
+                // TODO: handle the check parameter.
+                self.password_manager.add(&url, &username, &password, false);
+            }
+        }*/
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
           Err(err) => self.show_error(err),*/
     }
 
     /// Load the username and password in the login form and submit it.
-    pub fn submit_login_form(&self) {
-        self.load_password();
-        // TODO: put the next line in a callback.
-        self.webview.emit(SubmitLoginForm);
+    pub fn submit_login_form(&self) -> Result<()> {
+        self.load_password()?;
+        Ok(self.server_send(SubmitLoginForm())?)
     }
 }
 

@@ -20,7 +20,6 @@
  */
 
 use std::collections::HashSet;
-use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
