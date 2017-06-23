@@ -42,7 +42,6 @@ mod test_utils;
 
 use std::collections::HashMap;
 use std::env;
-use std::error;
 use std::fmt::{self, Display, Formatter};
 use std::process::Command;
 
@@ -90,6 +89,7 @@ use completers::{BookmarkCompleter, FileCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
 use download_list_view::Msg::{ActiveDownloads, Add, DownloadOriginalDestination};
+use errors::{self, Result};
 use message_server::MessageServer;
 use pass_manager::PasswordManager;
 use popup_manager::PopupManager;
@@ -134,9 +134,6 @@ static MODES: Modes = &[
     ("f", "follow"),
     ("i", "insert"),
 ];
-
-// TODO: create a custom error type instead of boxing an error.
-pub type AppResult<T> = Result<T, Box<error::Error>>;
 
 #[derive(Clone, Copy)]
 pub enum FollowMode {
@@ -551,7 +548,7 @@ impl App {
     }
 
     /// Show an error in the result is an error.
-    fn handle_error(&self, error: AppResult<()>) {
+    fn handle_error(&self, error: Result<()>) {
         if let Err(error) = error {
             self.show_error(error);
         }
@@ -612,7 +609,7 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    fn open_in_new_window(&self, url: &str) -> AppResult<()> {
+    fn open_in_new_window(&self, url: &str) -> Result<()> {
         let url = self.transform_url(url);
         let program = env::args().next().unwrap();
         Command::new(program)
@@ -661,7 +658,7 @@ impl App {
     }
 
     /// Show an error.
-    pub fn show_error(&self, error: Box<error::Error>) {
+    pub fn show_error(&self, error: errors::Error) {
         self.error(&error.to_string());
     }
 

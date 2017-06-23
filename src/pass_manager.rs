@@ -24,8 +24,9 @@
 use std::collections::HashMap;
 
 use glib::error;
+use password_store::PasswordStore;
 
-use app::AppResult;
+use errors::Result;
 use urls::base_url;
 
 /// A password manager is used to add, get and remove credentials.
@@ -113,46 +114,22 @@ impl PasswordManager {
     }*/
 
     /// Get the usernames for a `url`.
-    pub fn get_usernames<F: Fn(Vec<String>) + 'static>(&self, url: &str, callback: F) {
+    pub fn get_usernames(&self, url: &str) -> Result<Vec<String>> {
         if let Some(url) = base_url(url) {
-            /*if let Some(ref collection) = self.collection {
-                /*collection.search(&self.schema, &str_hash! {
-                    url => url,
-                }, move |items| {
-                    // TODO: handle error.
-                    if let Ok(items) = items {
-                        let mut usernames = vec![];
-                        for item in items {
-                            let attributes = item.get_attributes();
-                            if let Some(username) = attributes.get("username") {
-                                usernames.push(username.clone());
-                            }
-                        }
-                        callback(usernames);
-                    }
-                });*/
-            }*/
+            Ok(PasswordStore::get_usernames(&format!("titanium/{}", url))?)
         }
         else {
-            warn!("Cannot get the usernames for {}", url);
+            bail!("Cannot get the usernames for {}", url);
         }
     }
 
-    /*
     /// Get the password for a `url` and username.
-    pub fn get_password<F: Fn(Result<String, PasswordError>) + 'static>(&self, url: &str, username: &str, callback: F) {
+    pub fn get_password(&self, url: &str, username: &str) -> Result<String> {
         if let Some(url) = base_url(url) {
-            self.get_one(str_hash! {
-                url => url,
-                username => username,
-            }, move |item| {
-                if let Some(password) = item.get_secret().and_then(|secret| secret.get_text()) {
-                    callback(Ok(password))
-                }
-            });
+            Ok(PasswordStore::get(&format!("titanium/{}/{}", url, username))?)
         }
         else {
-            warn!("Cannot get the password for {}", url);
+            bail!("Cannot get the password for {}", url);
         }
-    }*/
+    }
 }

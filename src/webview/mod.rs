@@ -56,8 +56,8 @@ use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
 // TODO: remove coupling between webview and app modules.
-use app::AppResult;
 use config_dir::ConfigDir;
+use errors::Result;
 use message_server::PATH;
 use pass_manager::PasswordManager;
 use self::Msg::*;
@@ -169,7 +169,7 @@ impl Widget for WebView {
 
 impl WebView {
     /// Add the user scripts.
-    fn add_scripts(&self) -> AppResult<()> {
+    fn add_scripts(&self) -> Result<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_scripts();
             let script_path = self.model.config_dir.config_file("scripts")?;
@@ -186,7 +186,7 @@ impl WebView {
     }
 
     /// Add the user stylesheets.
-    pub fn add_stylesheets(&self) -> AppResult<()> {
+    pub fn add_stylesheets(&self) -> Result<()> {
         if let Some(content_manager) = self.view.get_user_content_manager() {
             content_manager.remove_all_style_sheets();
             let stylesheets_path = self.model.config_dir.config_file("stylesheets")?;
@@ -223,14 +223,14 @@ impl WebView {
     }
 
     /// Get the find controller.
-    fn find_controller(&self) -> AppResult<FindController> {
+    fn find_controller(&self) -> Result<FindController> {
         // TODO: handle error.
         Ok(self.view.get_find_controller().expect("find controller"))
             //.ok_or(Box::new("cannot get find controller".to_string()))
     }
 
     /// Clear the current search.
-    fn finish_search(&self) -> AppResult<()> {
+    fn finish_search(&self) -> Result<()> {
         self.search(String::new())?;
         self.find_controller()?.search_finish();
         Ok(())
@@ -320,7 +320,7 @@ impl WebView {
     }
 
     /// Search some text.
-    fn search(&self, input: String) -> AppResult<()> {
+    fn search(&self, input: String) -> Result<()> {
         let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
         let other_options =
             if self.model.search_backwards {
@@ -336,7 +336,7 @@ impl WebView {
     }
 
     /// Search the next occurence of the search text.
-    fn search_next(&self) -> AppResult<()> {
+    fn search_next(&self) -> Result<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_previous();
         }
@@ -347,7 +347,7 @@ impl WebView {
     }
 
     /// Search the previous occurence of the search text.
-    fn search_previous(&self) -> AppResult<()> {
+    fn search_previous(&self) -> Result<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_next();
         }

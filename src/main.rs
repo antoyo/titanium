@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: add a command to write a password into the focused text field.
+ *
  * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
  * redirection, this was working fine before).
  *
@@ -189,6 +191,8 @@
 #![warn(missing_docs)]
 
 extern crate cairo;
+#[macro_use]
+extern crate error_chain;
 extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;
@@ -210,6 +214,7 @@ extern crate mg_settings;
 extern crate mg_settings_macros;
 extern crate number_prefix;
 extern crate open;
+extern crate password_store;
 #[macro_use]
 extern crate relm;
 extern crate relm_attributes;
@@ -240,6 +245,7 @@ mod config_dir;
 mod download;
 mod download_view;
 mod download_list_view;
+mod errors;
 mod file;
 mod message_server;
 mod pass_manager;

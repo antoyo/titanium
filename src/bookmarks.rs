@@ -21,16 +21,17 @@
 
 //! Bookmark management.
 
+use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::result;
 
 use rusqlite::Connection;
 use rusqlite::types::ToSql;
 
-use app::AppResult;
+use errors::Result;
 
-lazy_static! {
-    static ref CONNECTION: Mutex<Option<Connection>> = Mutex::new(None);
+thread_local! {
+    static CONNECTION: RefCell<Option<Connection>> = RefCell::new(None);
 }
 
 /// A bookmark has a title and a URL and optionally some tags.
@@ -65,79 +66,87 @@ impl BookmarkManager {
 
     /// Add a bookmark.
     /// Returns true if the bookmark was added.
-    pub fn add(&self, url: String, title: Option<String>) -> AppResult<bool> {
-        if let Some(ref connection) = *CONNECTION.lock()? {
-            if let Ok(inserted_count) = connection.execute("
-                INSERT INTO bookmarks (title, url)
-                VALUES ($1, $2)
-                ", &[&title.unwrap_or_default(), &url])
-            {
-                return Ok(inserted_count > 0);
+    pub fn add(&self, url: String, title: Option<String>) -> Result<bool> {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
+                if let Ok(inserted_count) = connection.execute("
+                    INSERT INTO bookmarks (title, url)
+                    VALUES ($1, $2)
+                    ", &[&title.unwrap_or_default(), &url])
+                {
+                    return Ok(inserted_count > 0);
+                }
             }
-        }
-        Ok(false)
+            Ok(false)
+        })
     }
 
     /// Connect to the database if it is not already connected.
-    pub fn connect(&self, filename: PathBuf) -> AppResult<()> {
-        let mut connection = CONNECTION.lock()?;
-        if connection.is_none() {
-            let db = Connection::open(filename)?;
-            // Activate foreign key contraints in SQLite.
-            db.execute("PRAGMA foreign_keys = ON", &[])?;
-            *connection = Some(db);
-        }
-        Ok(())
+    pub fn connect(&self, filename: PathBuf) -> Result<()> {
+        CONNECTION.with(|connection| {
+            let mut connection = connection.borrow_mut();
+            if connection.is_none() {
+                let db = Connection::open(filename)?;
+                // Activate foreign key contraints in SQLite.
+                db.execute("PRAGMA foreign_keys = ON", &[])?;
+                *connection = Some(db);
+            }
+            Ok(())
+        })
     }
 
     /// Create the SQL tables for the bookmarks.
-    pub fn create_tables(&self) -> AppResult<()> {
-        if let Some(ref connection) = *CONNECTION.lock()? {
-            connection.execute("
-            CREATE TABLE IF NOT EXISTS bookmarks
-            ( id INTEGER PRIMARY KEY
-            , title TEXT NOT NULL
-            , url TEXT NOT NULL UNIQUE
-            , visit_count INTEGER NOT NULL DEFAULT 0
-            )", &[])?;
+    pub fn create_tables(&self) -> Result<()> {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
+                connection.execute("
+                CREATE TABLE IF NOT EXISTS bookmarks
+                ( id INTEGER PRIMARY KEY
+                , title TEXT NOT NULL
+                , url TEXT NOT NULL UNIQUE
+                , visit_count INTEGER NOT NULL DEFAULT 0
+                )", &[])?;
 
-            connection.execute("
-            CREATE TABLE IF NOT EXISTS tags
-            ( id INTEGER PRIMARY KEY
-            , name TEXT NOT NULL UNIQUE
-            )", &[])?;
+                connection.execute("
+                CREATE TABLE IF NOT EXISTS tags
+                ( id INTEGER PRIMARY KEY
+                , name TEXT NOT NULL UNIQUE
+                )", &[])?;
 
-            connection.execute("
-            CREATE TABLE IF NOT EXISTS bookmarks_tags
-            ( bookmark_id INTEGER NOT NULL
-            , tag_id INTEGER NOT NULL
-            , PRIMARY KEY (bookmark_id, tag_id)
-            , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
-            , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
-            )", &[])?;
-        }
-        Ok(())
+                connection.execute("
+                CREATE TABLE IF NOT EXISTS bookmarks_tags
+                ( bookmark_id INTEGER NOT NULL
+                , tag_id INTEGER NOT NULL
+                , PRIMARY KEY (bookmark_id, tag_id)
+                , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
+                , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+                )", &[])?;
+            }
+            Ok(())
+        })
     }
 
     /// Delete a bookmark.
     /// Returns true if a bookmark was deleted.
-    pub fn delete(&self, url: &str) -> AppResult<bool> {
-        if let Some(ref connection) = *CONNECTION.lock()? {
-            if let Ok(deleted_count) = connection.execute("
-                DELETE FROM bookmarks
-                WHERE url = $1
-                ", &[&url.to_string()])
-            {
-                return Ok(deleted_count > 0);
+    pub fn delete(&self, url: &str) -> Result<bool> {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
+                if let Ok(deleted_count) = connection.execute("
+                    DELETE FROM bookmarks
+                    WHERE url = $1
+                    ", &[&url.to_string()])
+                {
+                    return Ok(deleted_count > 0);
+                }
             }
-        }
-        Ok(false)
+            Ok(false)
+        })
     }
 
     /// Get the id of a bookmark.
     pub fn get_id(&self, url: &str) -> Option<i32> {
-        if let Ok(guard) = CONNECTION.lock() {
-            if let Some(ref connection) = *guard {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
                 if let Ok(mut statement) = connection.prepare("
                         SELECT id
                         FROM bookmarks
@@ -150,12 +159,12 @@ impl BookmarkManager {
                     }
                 }
             }
-        }
-        None
+            None
+        })
     }
 
     /// Get the tag ID of a bookmark.
-    pub fn get_tag_id(&self, connection: &Connection, tag: &str) -> AppResult<i32> {
+    pub fn get_tag_id(&self, connection: &Connection, tag: &str) -> Result<i32> {
         let mut statement = connection.prepare("
             SELECT id
             FROM tags
@@ -169,8 +178,8 @@ impl BookmarkManager {
 
     /// Get the tags of a bookmark.
     pub fn get_tags(&self, url: &str) -> Option<Vec<String>> {
-        if let Ok(guard) = CONNECTION.lock() {
-            if let Some(ref connection) = *guard {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
                 if let Ok(mut statement) = connection.prepare("
                         SELECT name
                         FROM tags
@@ -185,18 +194,18 @@ impl BookmarkManager {
                             row.get(0)
                         })
                     {
-                        return rows.collect::<Result<Vec<_>, _>>().ok();
+                        return rows.collect::<result::Result<Vec<_>, _>>().ok();
                     }
                 }
             }
-        }
-        None
+            None
+        })
     }
 
     /// Query the bookmarks.
     pub fn query(&self, input: BookmarkInput) -> Vec<Bookmark> {
-        if let Ok(guard) = CONNECTION.lock() {
-            if let Some(ref connection) = *guard {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
                 let mut params: Vec<&ToSql> = vec![];
 
                 let mut title_idents = vec![];
@@ -231,48 +240,51 @@ impl BookmarkManager {
                     };
 
                 if let Ok(mut statement) = connection.prepare(&format!("
-                        SELECT title, url, COALESCE(GROUP_CONCAT(tags.name, ' #'), '')
-                        FROM bookmarks
-                        LEFT OUTER JOIN bookmarks_tags
-                            ON bookmarks.id = bookmarks_tags.bookmark_id
-                        LEFT OUTER JOIN tags
-                            ON bookmarks_tags.tag_id = tags.id
-                        {}
-                        GROUP BY url
-                        {}
-                    ", where_clause, having_clause))
+                            SELECT title, url, COALESCE(GROUP_CONCAT(tags.name, ' #'), '')
+                            FROM bookmarks
+                            LEFT OUTER JOIN bookmarks_tags
+                                ON bookmarks.id = bookmarks_tags.bookmark_id
+                            LEFT OUTER JOIN tags
+                                ON bookmarks_tags.tag_id = tags.id
+                            {}
+                            GROUP BY url
+                            {}
+                        ", where_clause, having_clause))
                 {
                     if let Ok(rows) = statement.query_map(&params, |row| {
-                            Bookmark::new(row.get(1), row.get(0), row.get(2))
-                        })
+                        Bookmark::new(row.get(1), row.get(0), row.get(2))
+                    })
                     {
-                        return rows.collect::<Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
+                        return rows.collect::<result::Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
                     }
                 }
             }
-        }
-        vec![]
+            vec![]
+        })
     }
 
     /// Set the tags of a bookmark.
-    pub fn set_tags(&self, url: &str, tags: Vec<String>) -> AppResult<()> {
-        if let Some(bookmark_id) = self.get_id(url) {
-            for tag in &tags {
-                let tag = tag.to_lowercase();
-                if let Some(ref connection) = *CONNECTION.lock()? {
-                    connection.execute("
-                        INSERT OR IGNORE INTO tags (name)
-                        VALUES ($1)
-                    ", &[&tag])?;
-                    let tag_id = self.get_tag_id(connection, &tag)?;
-                    connection.execute("
-                        INSERT OR IGNORE INTO bookmarks_tags (bookmark_id, tag_id)
-                        VALUES ($1, $2)
-                    ", &[&bookmark_id, &tag_id])?;
+    pub fn set_tags(&self, url: &str, tags: Vec<String>) -> Result<()> {
+        CONNECTION.with(|connection| {
+            if let Some(bookmark_id) = self.get_id(url) {
+                for tag in &tags {
+                    let tag = tag.to_lowercase();
+                    if let Some(ref connection) = *connection.borrow() {
+                        connection.execute("
+                            INSERT OR IGNORE INTO tags (name)
+                            VALUES ($1)
+                        ", &[&tag])?;
+                        let tag_id = self.get_tag_id(connection, &tag)?;
+                        connection.execute("
+                            INSERT OR IGNORE INTO bookmarks_tags (bookmark_id, tag_id)
+                            VALUES ($1, $2)
+                        ", &[&bookmark_id, &tag_id])
+                            .map(|_| ())?
+                    }
                 }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 }
 

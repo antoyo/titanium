@@ -33,8 +33,9 @@ use app::Msg::OverwriteDownload;
 use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view::Msg::{AddFileToOpen, DownloadCancel, DownloadDestination};
+use errors::Result;
 use file::gen_unique_filename;
-use super::{App, AppResult};
+use super::App;
 
 impl App {
     fn ask_download_confirm_if_needed(&self, destination: &str, download: Download, suggested_filename: &str) {
@@ -62,7 +63,7 @@ impl App {
         }
     }
 
-    pub fn clean_download_folder(&self) -> AppResult<()> {
+    pub fn clean_download_folder(&self) -> Result<()> {
         let download_dir = self.model.config_dir.data_file("downloads")?;
         // TODO: remove the file when the processus dies
         // What to do if the process dies after?
@@ -142,6 +143,6 @@ pub fn find_download_destination(suggested_filename: &str) -> String {
         .to_string()
 }
 
-fn temp_dir(config_dir: &ConfigDir, filename: &str) -> Result<PathBuf, io::Error> {
-    config_dir.data_file(&format!("downloads/{}", filename))
+fn temp_dir(config_dir: &ConfigDir, filename: &str) -> Result<PathBuf> {
+    Ok(config_dir.data_file(&format!("downloads/{}", filename))?)
 }

@@ -25,7 +25,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use app::AppResult;
+use errors::Result;
 use urls::get_base_url;
 
 /// Manager to know whether a popup should be always or never opened.
@@ -49,7 +49,7 @@ impl PopupManager {
     }
 
     /// Blacklist the specified url.
-    pub fn blacklist(&mut self, url: &str) -> AppResult<()> {
+    pub fn blacklist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
             self.blacklisted_urls.insert(url.to_string());
             self.save_blacklist()
@@ -71,14 +71,14 @@ impl PopupManager {
     }
 
     /// Load the urls from the files.
-    pub fn load(&mut self) -> AppResult<()> {
+    pub fn load(&mut self) -> Result<()> {
         self.blacklisted_urls = self.read_as_set(&self.blacklist_path)?;
         self.whitelisted_urls = self.read_as_set(&self.whitelist_path)?;
         Ok(())
     }
 
     /// Read a file as a HashSet where all lines are one entry in the set.
-    fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>, Box<Error>> {
+    fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>> {
         let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
@@ -89,7 +89,7 @@ impl PopupManager {
     }
 
     /// Save the list in the file specified by `path`.
-    fn save(&self, path: &PathBuf, list: &HashSet<String>) -> AppResult<()> {
+    fn save(&self, path: &PathBuf, list: &HashSet<String>) -> Result<()> {
         let mut file = File::create(path)?;
         for url in list {
             writeln!(file, "{}", url)?;
@@ -98,17 +98,17 @@ impl PopupManager {
     }
 
     /// Save the popup blacklist.
-    fn save_blacklist(&self) -> AppResult<()> {
+    fn save_blacklist(&self) -> Result<()> {
         self.save(&self.blacklist_path, &self.blacklisted_urls)
     }
 
     /// Save the popup whitelist.
-    fn save_whitelist(&self) -> AppResult<()> {
+    fn save_whitelist(&self) -> Result<()> {
         self.save(&self.whitelist_path, &self.whitelisted_urls)
     }
 
     /// Whitelist the specified url.
-    pub fn whitelist(&mut self, url: &str) -> AppResult<()> {
+    pub fn whitelist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
             self.whitelisted_urls.insert(url.to_string());
             self.save_whitelist()

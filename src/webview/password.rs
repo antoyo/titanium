@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use app::AppResult;
+use errors::Result;
 use super::WebView;
 
 impl WebView {
@@ -77,7 +77,7 @@ impl WebView {
     }
 
     /// Submit the login form.
-    pub fn submit_login_form(&self) -> AppResult<()> {
+    pub fn submit_login_form(&self) -> Result<()> {
         //self.message_server.submit_login_form()?;
         Ok(())
     }

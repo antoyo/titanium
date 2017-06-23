@@ -21,7 +21,7 @@
 
 use glib::error;
 
-use super::{App, AppResult};
+use super::App;
 use webview::Msg::{
     DeletePassword,
     LoadUsernamePassword,

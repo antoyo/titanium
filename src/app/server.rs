@@ -22,8 +22,9 @@
 use titanium_common::Message;
 use titanium_common::Message::*;
 
+use errors::Result;
 use message_server::Msg::*;
-use super::{App, AppResult};
+use super::App;
 use super::Msg::{Action, ClickElement, GoToInsertMode, Scroll};
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
@@ -31,13 +32,13 @@ const SCROLL_LINE_VERTICAL: i32 = 40;
 
 impl App {
     /// Activate the selected hint.
-    pub fn activate_hint(&self) -> AppResult<()> {
+    pub fn activate_hint(&self) -> Result<()> {
         self.focus_webview();
         self.server_send(ActivateHint(self.model.follow_mode.to_string()))
     }
 
     /// Activate the link in the selection
-    pub fn activate_selection(&self) -> AppResult<()> {
+    pub fn activate_selection(&self) -> Result<()> {
         self.server_send(ActivateSelection())
     }
 
@@ -47,18 +48,18 @@ impl App {
     }
 
     /// Send a key to the web process to process with the current hints.
-    pub fn enter_hint_key(&self, key_char: char) -> AppResult<()> {
+    pub fn enter_hint_key(&self, key_char: char) -> Result<()> {
         self.server_send(EnterHintKey(key_char))
     }
 
     /// Focus the first input element.
-    pub fn focus_input(&self) -> AppResult<()> {
+    pub fn focus_input(&self) -> Result<()> {
         self.focus_webview();
         self.server_send(FocusInput())
     }
 
     /// Follow a link.
-    pub fn follow_link(&self) -> AppResult<()> {
+    pub fn follow_link(&self) -> Result<()> {
         self.server_send(ShowHints(self.model.hint_chars.clone()))
     }
 
@@ -85,70 +86,70 @@ impl App {
     }
 
     /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) -> AppResult<()> {
+    fn scroll(&self, pixels: i32) -> Result<()> {
         self.server_send(ScrollBy(pixels as i64))
     }
 
     /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) -> AppResult<()> {
+    pub fn scroll_bottom(&self) -> Result<()> {
         self.server_send(ScrollBottom())
     }
 
     /// Scroll down by one line.
-    pub fn scroll_down_line(&self) -> AppResult<()> {
+    pub fn scroll_down_line(&self) -> Result<()> {
         self.scroll(SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) -> AppResult<()> {
+    pub fn scroll_down_half_page(&self) -> Result<()> {
         let allocation = self.get_webview_allocation();
         self.scroll(allocation.height / 2)
     }
 
     /// Scroll down by one page.
-    pub fn scroll_down_page(&self) -> AppResult<()> {
+    pub fn scroll_down_page(&self) -> Result<()> {
         let allocation = self.get_webview_allocation();
         self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
     }
 
     /// Scroll towards the left of the page.
-    pub fn scroll_left(&self) -> AppResult<()> {
+    pub fn scroll_left(&self) -> Result<()> {
         self.server_send(ScrollByX(-SCROLL_LINE_HORIZONTAL))
     }
 
     /// Scroll towards the right of the page.
-    pub fn scroll_right(&self) -> AppResult<()> {
+    pub fn scroll_right(&self) -> Result<()> {
         self.server_send(ScrollByX(SCROLL_LINE_HORIZONTAL))
     }
 
     /// Scroll to the top of the page.
-    pub fn scroll_top(&self) -> AppResult<()> {
+    pub fn scroll_top(&self) -> Result<()> {
         self.server_send(ScrollTop())
     }
 
     /// Scroll up by one line.
-    pub fn scroll_up_line(&self) -> AppResult<()> {
+    pub fn scroll_up_line(&self) -> Result<()> {
         self.scroll(-SCROLL_LINE_VERTICAL)
     }
 
     /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) -> AppResult<()> {
+    pub fn scroll_up_half_page(&self) -> Result<()> {
         let allocation = self.get_webview_allocation();
         self.scroll(-allocation.height / 2)
     }
 
     /// Scroll up by one page.
-    pub fn scroll_up_page(&self) -> AppResult<()> {
+    pub fn scroll_up_page(&self) -> Result<()> {
         let allocation = self.get_webview_allocation();
         self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
     }
 
     /// Set the value of an input[type="file"].
-    pub fn select_file(&self, file: String) -> AppResult<()> {
+    pub fn select_file(&self, file: String) -> Result<()> {
         self.server_send(SelectFile(file))
     }
 
-    fn server_send(&self, message: Message) -> AppResult<()> {
+    fn server_send(&self, message: Message) -> Result<()> {
         self.model.message_server.emit(Send(self.model.client, message));
         // TODO: manage error.
         Ok(())
