@@ -351,8 +351,8 @@ impl Widget for App {
 
     view! {
         #[name="mg"]
-        Mg<AppCommand, AppSettings>((MODES, self.model.config_dir.config_file("config"),
-            Some(self.model.config_dir.config_home()), default_config(&self.model.config_dir)))
+        Mg<AppCommand, AppSettings>(MODES, self.model.config_dir.config_file("config"),
+            Some(self.model.config_dir.config_home()), default_config(&self.model.config_dir))
         {
             Completers: hash! {
                 "file" => Box::new(FileCompleter::new()),
@@ -421,7 +421,7 @@ impl App {
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
         let title = self.webview.widget().get_title()
-            .or(self.webview.widget().get_uri())
+            .or_else(|| self.webview.widget().get_uri())
             .unwrap_or_default();
         if title.is_empty() {
             String::new()

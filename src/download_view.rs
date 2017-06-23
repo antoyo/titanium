@@ -72,7 +72,7 @@ impl Widget for DownloadView {
     fn cancel(&mut self) {
         if self.model.finished {
             if let Some(ref destination) = self.model.original_destination {
-                remove_file(destination);
+                remove_file(destination).ok();
             }
         }
         else {
@@ -199,7 +199,7 @@ fn get_filename(download: &Download) -> String {
             .and_then(|url| urls::get_filename(&url));
     download.get_destination()
         .and_then(|url| urls::get_filename(&url))
-        .unwrap_or(suggested_filename.clone().unwrap_or_default())
+        .unwrap_or_else(|| suggested_filename.clone().unwrap_or_default())
 }
 
 /// Add the byte suffix with the right prefix.

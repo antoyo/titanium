@@ -27,8 +27,8 @@ use glib::utils::get_user_special_dir;
 /// Get the download directory if it can be retrieved, else returns the home directory.
 pub fn download_dir() -> String {
     let dir = get_user_special_dir(Downloads)
-        .map(|dir| From::from(dir))
-        .or_else(|| home_dir())
-        .unwrap_or_else(|| temp_dir());
+        .map(From::from)
+        .or_else(home_dir)
+        .unwrap_or_else(temp_dir);
     format!("{}/", dir.to_str().unwrap().to_string())
 }

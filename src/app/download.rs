@@ -132,10 +132,10 @@ pub fn find_download_destination(suggested_filename: &str) -> String {
 
     let mut counter = 1;
     let default_path = Path::new(suggested_filename);
-    let mut path = next_path(counter, &dir, &default_path);
+    let mut path = next_path(counter, &dir, default_path);
     while path.exists() {
         counter += 1;
-        path = next_path(counter, &dir, &default_path);
+        path = next_path(counter, &dir, default_path);
     }
     // TODO: remove call to expect().
     path.to_str().expect("valid utf-8 string")
