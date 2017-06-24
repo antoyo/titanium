@@ -19,44 +19,34 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+//! Message used to communicate between the UI and the web processes.
+
 #![warn(
     missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
-    unused_qualifications, unused_results,
+    unused_qualifications,
+    unused_results,
 )]
 
-extern crate bytes;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate tokio_io;
 
 /// Action that should be executed from the UI process.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum Action {
-    FileInput = 0,
+    FileInput,
     GoInInsertMode,
     NoAction,
-}
-
-impl Action {
-    pub fn from_i32(value: i32) -> Option<Self> {
-        match value {
-            _ if value == Action::FileInput as i32 => Some(Action::FileInput),
-            _ if value == Action::GoInInsertMode as i32 => Some(Action::GoInInsertMode),
-            _ if value == Action::NoAction as i32 => Some(Action::NoAction),
-            _ => None,
-        }
-    }
 }
 
 // Switch to SimpleMsg to avoid these empty ().
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Message {
     /// Response to ActivateHint.
-    ActivateAction(i32),
+    ActivateAction(Action),
     ActivateHint(String),
     ActivateSelection(),
     /// Response to EnterHintKey.
@@ -75,9 +65,15 @@ pub enum Message {
     ScrollBy(i64),
     ScrollByX(i64),
     /// Response of GetScrollPercentage.
-    ScrollPercentage(i64),
+    ScrollPercentage(Percentage),
     ScrollTop(),
     SelectFile(String),
     ShowHints(String),
     SubmitLoginForm(),
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum Percentage {
+    All,
+    Percent(i64),
 }

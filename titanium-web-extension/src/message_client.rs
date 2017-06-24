@@ -26,7 +26,7 @@ use fg_uds::UnixStream;
 use futures::{AsyncSink, Sink};
 use futures_glib::MainContext;
 use glib::Cast;
-use relm_state::{EventStream, Relm, Update, execute};
+use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
@@ -48,8 +48,14 @@ use webkit2gtk_webextension::{
 };
 
 use titanium_common::Message;
-use titanium_common::Action::{FileInput, GoInInsertMode, NoAction};
+use titanium_common::Action::{
+    self,
+    FileInput,
+    GoInInsertMode,
+    NoAction,
+};
 use titanium_common::Message::*;
+use titanium_common::Percentage::All;
 
 use adblocker::Adblocker;
 use dom::{
@@ -135,12 +141,6 @@ impl Update for MessageClient {
         }
     }
 
-    fn new(_relm: &Relm<Self>, model: Model) -> Option<Self> {
-        Some(MessageClient {
-            model,
-        })
-    }
-
     fn update(&mut self, event: Msg) {
         match event {
             MsgError(error) => println!("Error: {:?}", error),
@@ -172,6 +172,14 @@ impl Update for MessageClient {
     }
 }
 
+impl UpdateNew for MessageClient {
+    fn new(_relm: &Relm<Self>, model: Model) -> Self {
+        MessageClient {
+            model,
+        }
+    }
+}
+
 impl MessageClient {
     pub fn new(path: &str, extension: WebExtension) -> io::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
@@ -199,7 +207,7 @@ impl MessageClient {
                 let action = follow(self, element);
                 self.send(ActivateAction(action));
             },
-            None => self.send(ActivateAction(NoAction as i32)),
+            None => self.send(ActivateAction(NoAction)),
         }
     }
 
@@ -217,7 +225,7 @@ impl MessageClient {
         }
     }
 
-    fn click(&mut self, element: DOMHTMLElement) -> i32 {
+    fn click(&mut self, element: DOMHTMLElement) -> Action {
         if element.is::<DOMHTMLInputElement>() {
             if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
                 let input_type = input_element.get_input_type();
@@ -228,11 +236,11 @@ impl MessageClient {
                         "color" => (),
                         "file" => {
                             self.model.activated_file_input = Some(input_element);
-                            return FileInput as i32
+                            return FileInput;
                         },
                         _ => {
                             element.focus();
-                            return GoInInsertMode as i32;
+                            return GoInInsertMode;
                         },
                     }
                 }
@@ -240,12 +248,12 @@ impl MessageClient {
         }
         else if element.is::<DOMHTMLTextAreaElement>() {
             element.focus();
-            return GoInInsertMode as i32;
+            return GoInInsertMode;
         }
         else if element.is::<DOMHTMLSelectElement>() {
             if element.get_attribute("multiple").is_some() {
                 element.focus();
-                return GoInInsertMode as i32;
+                return GoInInsertMode;
             }
             else {
                 mouse_down(&element.upcast());
@@ -254,7 +262,7 @@ impl MessageClient {
         else {
             element.click();
         }
-        NoAction as i32
+        NoAction
     }
 
     // Handle the key press event for the hint mode.
@@ -309,17 +317,17 @@ impl MessageClient {
             .and_then(|document| document.get_element_by_id(HINTS_ID))
             .and_then(|hints| page.as_ref().and_then(|page| get_body(page).map(|body| (hints, body))));
         if let Some((hints, body)) = elements {
-            body.remove_child(&hints).ok();
+            check_err!(body.remove_child(&hints));
         }
     }
 
-    fn hover(&mut self, element: DOMHTMLElement) -> i32 {
+    fn hover(&mut self, element: DOMHTMLElement) -> Action {
         if let Some(ref element) = self.model.last_hovered_element {
             mouse_out(element);
         }
         self.model.last_hovered_element = Some(element.clone().upcast());
         mouse_over(&element.upcast());
-        NoAction as i32
+        NoAction
     }
 
     // Load the username and the password in the login form.
@@ -388,6 +396,7 @@ impl MessageClient {
             username = credential.username;
             password = credential.password;
         }
+        // TODO: Send None instead of empty strings.
         self.send(Credentials(username, password));
     }
 
@@ -398,10 +407,10 @@ impl MessageClient {
                 page.scroll_percentage()
             }
             else {
-                0
+                All
             };
         // TODO: only send the message if the percentage actually changed?
-        // TODO: even better: had an even handler for scrolling and only send a message when an
+        // TODO: even better: add an even handler for scrolling and only send a message when an
         // actual scroll happened.
         self.send(ScrollPercentage(percentage));
     }
@@ -410,14 +419,11 @@ impl MessageClient {
     fn show_hints(&mut self, hint_chars: &str) {
         self.model.hint_keys.clear();
         let page = get_page!(self);
-        let body = page.as_ref().and_then(|page| get_body(page));
-        let document = page.and_then(|page| page.get_dom_document());
-        if let (Some(document), Some(body)) = (document, body) {
-            if let Some((hints, hint_map)) = create_hints(&document, hint_chars) {
-                self.model.hint_map = hint_map;
-                body.append_child(&hints).ok();
-            }
-        }
+        let body = wtry_opt_no_ret!(page.as_ref().and_then(|page| get_body(page)));
+        let document = wtry_opt_no_ret!(page.and_then(|page| page.get_dom_document()));
+        let (hints, hint_map) = wtry_opt_no_ret!(create_hints(&document, hint_chars));
+        self.model.hint_map = hint_map;
+        check_err!(body.append_child(&hints));
     }
 
     // Submit the login form.

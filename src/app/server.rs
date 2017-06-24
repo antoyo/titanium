@@ -25,8 +25,8 @@ use titanium_common::Message::*;
 use message_server::Msg::*;
 use super::App;
 use super::Msg::{
-    Action,
     ClickElement,
+    DoAction,
     GoToInsertMode,
     SavePassword,
     Scroll,
@@ -78,7 +78,7 @@ impl App {
         let message_server = &self.model.message_server;
         // TODO: use client_id (first param of MsgRecv).
         connect_stream!(message_server@MsgRecv(_, ref msg), self.model.relm.stream(), match *msg {
-            ActivateAction(action) => Some(Action(action)),
+            ActivateAction(action) => Some(DoAction(action)),
             ClickHintElement() => Some(ClickElement),
             Credentials(ref username, ref password) => Some(SavePassword(username.clone(), password.clone())),
             EnterInsertMode() => Some(GoToInsertMode),

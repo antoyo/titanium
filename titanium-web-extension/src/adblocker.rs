@@ -64,8 +64,10 @@ impl Adblocker {
                             Ok(size) => {
                                 size_read = size;
                                 if size_read > 0 {
-                                    line.pop(); // Remove the leading newline.
-                                    blacklisted_urls.insert(mem::replace(&mut line, String::new()));
+                                    if line.pop().is_some() { // Remove the leading newline.
+                                        blacklisted_urls.insert(mem::replace(&mut line, String::new()));
+                                    }
+                                    // Do not insert empty url.
                                 }
                             }
                             Err(error) => {

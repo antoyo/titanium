@@ -19,13 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+//! Web extension for the titanium web browser.
+//! It provides an ad blocker, scrolling support, hints, navigation and login credentials load/save.
+
 #![warn(
     missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
-    unused_qualifications, unused_results,
+    unused_qualifications,
+    unused_results,
 )]
 
 extern crate fg_uds;
@@ -48,6 +52,93 @@ extern crate xdg;
 #[macro_use]
 extern crate webkit2gtk_webextension;
 
+macro_rules! check_err {
+    ($e:expr) => {
+        if let Err(error) = $e {
+            error!("{}", error);
+            return;
+        }
+    };
+}
+
+macro_rules! check_err_opt {
+    ($e:expr) => {
+        if let None = $e {
+            error!("{} is None", stringify!($e));
+            return None;
+        }
+    };
+}
+
+macro_rules! unwrap_opt_or_ret {
+    ($e:expr, $default:expr) => {
+        match $e {
+            Some(expr) => expr,
+            None => return $default,
+        }
+    };
+}
+
+macro_rules! unwrap_or_ret {
+    ($e:expr, $default:expr) => {
+        match $e {
+            Ok(expr) => expr,
+            Err(error) => {
+                error!("{}", error);
+                return $default;
+            },
+        }
+    };
+}
+
+macro_rules! wtry {
+    ($e:expr) => {
+        match $e {
+            Ok(expr) => expr,
+            Err(error) => {
+                error!("{}", error);
+                return;
+            },
+        }
+    };
+}
+
+macro_rules! wtry_no_show {
+    ($e:expr) => {
+        match $e {
+            Ok(expr) => expr,
+            Err(_) => {
+                error!("Error during this operation: {}", stringify!($e));
+                return;
+            },
+        }
+    };
+}
+
+macro_rules! wtry_opt {
+    ($e:expr) => {
+        match $e {
+            Some(expr) => expr,
+            None => {
+                error!("{} returned None", stringify!($e));
+                return None;
+            },
+        }
+    };
+}
+
+macro_rules! wtry_opt_no_ret {
+    ($e:expr) => {
+        match $e {
+            Some(expr) => expr,
+            None => {
+                error!("{} returned None", stringify!($e));
+                return;
+            },
+        }
+    };
+}
+
 mod adblocker;
 mod dom;
 mod hints;
@@ -69,30 +160,28 @@ use message_client::Msg::PageCreated;
 
 web_extension_init!();
 
+#[doc(hidden)]
 pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
+/// Initialize the the logger and the message server.
 pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
-    // TODO: Don't show trace.
-    // TODO: show in colors?
     let config = Config {
         time: Some(Error),
         level: Some(Error),
         target: None,
         location: None,
     };
-    // TODO: decomment.
-    //TermLogger::init(LogLevelFilter::max(), config).ok();
+    if let Err(error) = TermLogger::init(LogLevelFilter::Info, config) {
+        println!("Cannot initialize the logger: {}", error);
+    }
 
     let server_name = user_data.get_str();
-    if let Some(server_name) = server_name {
-        let client = MessageClient::new(server_name, extension.clone());
+    let server_name = wtry_opt_no_ret!(server_name);
+    let client = wtry!(MessageClient::new(server_name, extension.clone()));
 
-        if let Ok(ref client) = client {
-            connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
-        }
+    connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
 
-        // Don't drop the client to keep receiving the messages on the stream.
-        forget(client);
-    }
+    // Don't drop the client to keep receiving the messages on the stream.
+    forget(client);
 }

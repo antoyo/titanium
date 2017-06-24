@@ -68,8 +68,7 @@ fn find_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
 pub fn get_credentials(document: &DOMDocument) -> Option<Credential> {
     let mut password = String::new();
     let mut username = String::new();
-    let login_form = get_login_form(document);
-    if let Some(login_form) = login_form {
+    if let Some(login_form) = get_login_form(document) {
         let username_element = login_form.query_selector("input[type='text']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = username_element {
@@ -107,9 +106,7 @@ fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
                 element = el.get_parent_element();
             }
             if let Some(form) = form_element {
-                if let Ok(form) = form.downcast() {
-                    return Some(form);
-                }
+                return form.downcast().ok();
             }
             None
         })

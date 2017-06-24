@@ -30,13 +30,11 @@ use super::App;
 use titanium_common::Action::{self, FileInput, GoInInsertMode, NoAction};
 
 impl App {
-    pub fn activate_action(&mut self, action: i32) {
-        if let Some(result) = Action::from_i32(action) {
-            match result {
-                FileInput => self.show_file_input(),
-                GoInInsertMode => self.go_in_insert_mode(),
-                NoAction => (),
-            }
+    pub fn activate_action(&mut self, action: Action) {
+        match action {
+            FileInput => self.show_file_input(),
+            GoInInsertMode => self.go_in_insert_mode(),
+            NoAction => (),
         }
     }
 

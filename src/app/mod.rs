@@ -81,6 +81,9 @@ use webkit2gtk::{
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
 
+use titanium_common::Action;
+use titanium_common::Percentage::{self, All, Percent};
+
 use bookmarks::BookmarkManager;
 use commands::AppCommand;
 use commands::AppCommand::*;
@@ -183,7 +186,6 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    Action(i32),
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
     ButtonRelease(EventButton, Resolver<Inhibit>),
@@ -192,6 +194,7 @@ pub enum Msg {
     Command(AppCommand),
     CommandText(String),
     DecideDownloadDestination(Download, String),
+    DoAction(Action),
     DownloadDestination(DialogResult, Download, String),
     EmitScrolledEvent,
     Exit(bool),
@@ -204,7 +207,7 @@ pub enum Msg {
     OverwriteDownload(Download, String, bool),
     PopupDecision(Option<String>, String),
     SavePassword(String, String),
-    Scroll(i64),
+    Scroll(Percentage),
     ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
@@ -286,19 +289,18 @@ impl Widget for App {
     }
 
     /// Show the scroll percentage.
-    fn show_scroll(&mut self, scroll_percentage: i64) {
+    fn show_scroll(&mut self, scroll_percentage: Percentage) {
         self.model.scroll_text =
             match scroll_percentage {
-                -1 => "[all]".to_string(),
-                0 => "[top]".to_string(),
-                100 => "[bot]".to_string(),
-                _ => format!("[{}%]", scroll_percentage),
+                All => "[all]".to_string(),
+                Percent(0) => "[top]".to_string(),
+                Percent(100) => "[bot]".to_string(),
+                Percent(percent) => format!("[{}%]", percent),
             };
     }
 
     fn update(&mut self, event: Msg) {
         match event {
-            Action(action) => self.activate_action(action),
             AppSetMode(mode) => self.model.mode = mode,
             AppSettingChanged(setting) => self.setting_changed(setting),
             ButtonRelease(event, resolver) => self.handle_button_release(event, resolver),
@@ -308,6 +310,7 @@ impl Widget for App {
             CommandText(text) => self.model.command_text = text,
             DecideDownloadDestination(download, suggested_filename) =>
                 self.download_input(download, suggested_filename),
+            DoAction(action) => self.activate_action(action),
             DownloadDestination(destination, download, suggested_filename) =>
                 handle_error!(self.download_destination_chosen(destination, download, suggested_filename)),
             EmitScrolledEvent => self.emit_scrolled_event(),

@@ -97,8 +97,6 @@
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  * Vimperator simulates ctrl-click to work around this.
  *
- * TODO: Create a gdbus binding that works similar to elm subscriptions.
- *
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
@@ -199,7 +197,8 @@
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
-    unused_qualifications, unused_results,
+    unused_qualifications,
+    unused_results,
 )]
 
 extern crate cairo;

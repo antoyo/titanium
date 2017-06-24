@@ -169,40 +169,30 @@ fn get_position_from_iframe(document: &DOMDocument, element: &DOMElement) -> Pos
 
 /// Get the position of an element relative to the page root.
 pub fn get_position(element: &DOMElement) -> Option<Pos> {
-    if let Some(document) = element.get_owner_document() {
-        let mut pos = get_position_from_iframe(&document, element);
-        if let Some(window) = document.get_default_view() {
-            let mut frame = window.get_frame_element();
-            loop {
-                let parent_frame =
-                    match frame {
-                        Some(ref parent_frame) => parent_frame.clone(),
-                        None => break,
-                    };
-                let parent_document = parent_frame.get_owner_document();
-                if let Some(parent_document) = parent_document {
-                    let iframe_pos = get_position_from_iframe(&document, &parent_frame);
-                    pos.x += iframe_pos.x;
-                    pos.y += iframe_pos.y;
-                    let window = parent_document.get_default_view();
-                    if let Some(window) = window {
-                        frame = window.get_frame_element();
-                    }
-                }
-            }
-        }
-        Some(pos)
+    let document = wtry_opt!(element.get_owner_document());
+    let mut pos = get_position_from_iframe(&document, element);
+    let window = wtry_opt!(document.get_default_view());
+    let mut frame = window.get_frame_element();
+    loop {
+        let parent_frame =
+            match frame {
+                Some(ref parent_frame) => parent_frame.clone(),
+                None => break,
+            };
+        let parent_document = wtry_opt!(parent_frame.get_owner_document());
+        let iframe_pos = get_position_from_iframe(&document, &parent_frame);
+        pos.x += iframe_pos.x;
+        pos.y += iframe_pos.y;
+        let window = wtry_opt!(parent_document.get_default_view());
+        frame = window.get_frame_element();
     }
-    else {
-        None
-    }
+    Some(pos)
 }
 
 /// Hide an element.
 pub fn hide(element: &DOMElement) {
-    if let Some(style) = element.get_style() {
-        style.set_property("display", "none", "").ok();
-    }
+    let style = wtry_opt_no_ret!(element.get_style());
+    wtry!(style.set_property("display", "none", ""));
 }
 
 /// Check if an input element is enabled.
@@ -234,22 +224,20 @@ pub fn is_enabled(element: &DOMElement) -> bool {
 /// This is not exactly the opposite as `is_visible` since `is_hidden` returns false for elements that
 /// are visible, but outside the viewport.
 pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
-    if let Some(window) = document.get_default_view() {
-        let mut element = Some(element.clone());
-        while let Some(el) = element {
-            if el.get_tag_name() == Some("BODY".to_string()) {
-                return false;
-            }
-            if let Some(style) = window.get_computed_style(&el, None) {
-                if style.get_property_value("display") == Some("none".to_string()) ||
-                    style.get_property_value("visibility") == Some("hidden".to_string()) ||
-                    style.get_property_value("opacity") == Some("0".to_string())
-                {
-                    return true;
-                }
-            }
-            element = el.get_offset_parent();
+    let window = unwrap_opt_or_ret!(document.get_default_view(), true);
+    let mut element = Some(element.clone());
+    while let Some(el) = element {
+        if el.get_tag_name() == Some("BODY".to_string()) {
+            return false;
         }
+        let style = unwrap_opt_or_ret!(window.get_computed_style(&el, None), true);
+        if style.get_property_value("display") == Some("none".to_string()) ||
+            style.get_property_value("visibility") == Some("hidden".to_string()) ||
+            style.get_property_value("opacity") == Some("0".to_string())
+        {
+            return true;
+        }
+        element = el.get_offset_parent();
     }
     true
 }
@@ -268,31 +256,26 @@ pub fn is_text_input(element: &DOMElement) -> bool {
 
 /// Check if an element is visible and in the viewport.
 pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
-    if let Some(window) = document.get_default_view() {
-        let height = window.get_inner_height();
-        let width = window.get_inner_width();
-        let pos = get_offset(element);
-        // FIXME: use the absolute position (including between frames).
-        if pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height {
+    let window = unwrap_opt_or_ret!(document.get_default_view(), false);
+    let height = window.get_inner_height();
+    let width = window.get_inner_width();
+    let pos = get_offset(element);
+    // FIXME: use the absolute position (including between frames).
+    if pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height {
+        return false;
+    }
+    let mut element = Some(element.clone());
+    while let Some(el) = element {
+        let style = unwrap_opt_or_ret!(window.get_computed_style(&el, None), false);
+        if style.get_property_value("display") == Some("none".to_string()) ||
+            style.get_property_value("visibility") == Some("hidden".to_string()) ||
+            style.get_property_value("opacity") == Some("0".to_string())
+        {
             return false;
         }
-        let mut element = Some(element.clone());
-        while let Some(el) = element {
-            if let Some(style) = window.get_computed_style(&el, None) {
-                if style.get_property_value("display") == Some("none".to_string()) ||
-                    style.get_property_value("visibility") == Some("hidden".to_string()) ||
-                    style.get_property_value("opacity") == Some("0".to_string())
-                {
-                    return false;
-                }
-            }
-            element = el.get_parent_element();
-        }
-        true
+        element = el.get_parent_element();
     }
-    else {
-        false
-    }
+    true
 }
 
 /// Trigger a mouse down event on the element.
@@ -308,20 +291,15 @@ pub fn mouse_enter(element: &DOMElement) {
 
 /// Trigger a mouse event on the element.
 pub fn mouse_event(event_name: &str, element: &DOMElement) {
-    let event = element.get_owner_document()
-        .and_then(|document| document.create_event("MouseEvents").ok());
-    if let Some(event) = event {
-        let window = element.get_owner_document()
-            .and_then(|document| document.get_default_view());
-        if let Some(window) = window {
-            if let Ok(event) = event.downcast::<DOMMouseEvent>() {
-                // TODO: use the previously hovered element for the last parameter.
-                event.init_mouse_event(event_name, true, true, &window, 0, 0, 0, 0, 0, false, false, false, false, 0, element);
-                let element: DOMEventTarget = element.clone().upcast();
-                element.dispatch_event(&event).ok();
-            }
-        }
-    }
+    let event = wtry_opt_no_ret!(element.get_owner_document()
+        .and_then(|document| document.create_event("MouseEvents").ok()));
+    let window = wtry_opt_no_ret!(element.get_owner_document()
+        .and_then(|document| document.get_default_view()));
+    let event = wtry_no_show!(event.downcast::<DOMMouseEvent>());
+    // TODO: use the previously hovered element for the last parameter.
+    event.init_mouse_event(event_name, true, true, &window, 0, 0, 0, 0, 0, false, false, false, false, 0, element);
+    let element: DOMEventTarget = element.clone().upcast();
+    wtry!(element.dispatch_event(&event));
 }
 
 /// Trigger a mouse out event on the element.
@@ -336,7 +314,6 @@ pub fn mouse_over(element: &DOMElement) {
 
 /// Show an element.
 pub fn show(element: &DOMElement) {
-    if let Some(style) = element.get_style() {
-        style.remove_property("display").ok();
-    }
+    let style = wtry_opt_no_ret!(element.get_style());
+    let _ = wtry!(style.remove_property("display"));
 }

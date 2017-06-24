@@ -67,7 +67,7 @@ impl Hints {
     /// Returns the text of that hint.
     fn add(&mut self, element: &DOMElement) -> String {
         let hint = self.generate();
-        self.hints.insert(hint.clone(), element.clone());
+        let _ = self.hints.insert(hint.clone(), element.clone());
         hint
     }
 
@@ -104,43 +104,39 @@ impl Hints {
 }
 
 fn create_hint(document: &DOMDocument, pos: Pos, hint_text: &str) -> Option<DOMElement> {
-    document.create_element("div").ok().map(|hint| {
+    document.create_element("div").ok().and_then(|hint| {
         hint.set_class_name("__titanium_hint");
         hint.set_id(&format!("__titanium_hint_{}", hint_text));
-        if let Some(style) = hint.get_style() {
-            style.set_property("position", "absolute", "").ok();
-            style.set_property("left", &format!("{}px", pos.x), "").ok();
-            style.set_property("top", &format!("{}px", pos.y), "").ok();
-            style.set_property("z-index", &i32::MAX.to_string(), "").ok();
-        }
-        if let Some(text) = document.create_text_node(hint_text) {
-            hint.append_child(&text).ok();
-        }
-        hint
+        let style = wtry_opt!(hint.get_style());
+        check_err_opt!(style.set_property("position", "absolute", "").ok());
+        check_err_opt!(style.set_property("left", &format!("{}px", pos.x), "").ok());
+        check_err_opt!(style.set_property("top", &format!("{}px", pos.y), "").ok());
+        check_err_opt!(style.set_property("z-index", &i32::MAX.to_string(), "").ok());
+
+        let text = wtry_opt!(document.create_text_node(hint_text));
+        check_err_opt!(hint.append_child(&text).ok());
+        Some(hint)
     })
 }
 
 /// Create the hints over all the elements that can be activated by the user (links, form elements).
 pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElement, HashMap<String, DOMElement>)> {
-    document.create_element("div").ok().map(|hints| {
+    document.create_element("div").ok().and_then(|hints| {
         hints.set_id(HINTS_ID);
-        if let Some(style) = hints.get_style() {
-            style.set_property("position", "absolute", "").ok();
-            style.set_property("left", "0", "").ok();
-            style.set_property("top", "0", "").ok();
-        }
+        let style = wtry_opt!(hints.get_style());
+        check_err_opt!(style.set_property("position", "absolute", "").ok());
+        check_err_opt!(style.set_property("left", "0", "").ok());
+        check_err_opt!(style.set_property("top", "0", "").ok());
 
         let elements_to_hint = get_elements_to_hint(document);
 
         let mut hint_map = Hints::new(elements_to_hint.len(), hint_chars);
         for element in elements_to_hint {
-            if let Some(pos) = get_position(&element) {
-                if let Some(hint) = create_hint(document, pos, &hint_map.add(&element)) {
-                    hints.append_child(&hint).ok();
-                }
-            }
+            let pos = wtry_opt!(get_position(&element));
+            let hint = wtry_opt!(create_hint(document, pos, &hint_map.add(&element)));
+            check_err_opt!(hints.append_child(&hint).ok());
         }
-        (hints, hint_map.hints)
+        Some((hints, hint_map.hints))
     })
 }
 
@@ -171,15 +167,12 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
 /// Get the hintable elements from the iframes.
 fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
-    if let Some(iframes) = document.get_elements_by_tag_name("iframe") {
-        for i in 0 .. iframes.get_length() {
-            if let Some(iframe) = iframes.item(i) {
-                if let Ok(iframe) = iframe.downcast() {
-                    let iframe: DOMHTMLIFrameElement = iframe;
-                    if let Some(iframe_document) = iframe.get_content_document() {
-                        elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
-                    }
-                }
+    let iter = ElementIter::new(document.get_elements_by_tag_name("iframe"));
+    for iframe in iter {
+        if let Ok(iframe) = iframe.downcast() {
+            let iframe: DOMHTMLIFrameElement = iframe;
+            if let Some(iframe_document) = iframe.get_content_document() {
+                elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
             }
         }
     }
@@ -203,32 +196,23 @@ fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
 
 /// Hide the hints that does not start with `hint_keys`.
 pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) -> bool {
-    let all_hints = document.query_selector_all(".__titanium_hint");
-    let hints_to_hide = document.query_selector_all(&format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys));
-    if let Ok(hints) = hints_to_hide {
-        for i in 0 .. hints.get_length() {
-            let hint = hints.item(i).and_then(|hint| hint.downcast().ok());
-            if let Some(hint_element) = hint {
-                hide(&hint_element);
-            }
-        }
-        if let Ok(all_hints) = all_hints {
-            return all_hints.get_length() == hints.get_length()
-        }
+    let hints_to_hide = document.query_selector_all(
+        &format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys))
+        .ok();
+    let hints_len = hints_to_hide.as_ref().map(|hints| hints.get_length()).unwrap_or(0);
+    let hints = ElementIter::new(hints_to_hide);
+    for hint in hints {
+        hide(&hint);
     }
-    false
+    let all_hints = unwrap_or_ret!(document.query_selector_all(".__titanium_hint"), false);
+    all_hints.get_length() == hints_len
 }
 
 /// Show all hints.
 pub fn show_all_hints(document: &DOMDocument) {
-    let all_hints = document.query_selector_all(".__titanium_hint");
-    if let Ok(hints) = all_hints {
-        for i in 0 .. hints.get_length() {
-            let hint = hints.item(i).and_then(|hint| hint.downcast().ok());
-            if let Some(hint_element) = hint {
-                show(&hint_element);
-            }
-        }
+    let hints = ElementIter::new(document.query_selector_all(".__titanium_hint").ok());
+    for hint in hints {
+        show(&hint);
     }
 }
 
@@ -250,7 +234,8 @@ mod tests {
         assert_eq!(expected_hints, hint_texts);
 
         let expected_hints = vec![
-            "h", "j", "k", "l", "a", "s", "d", "f", "g", "y", "u", "i", "o", "p", "q", "w", "e", "r", "t", "n", "m", "z", "x", "c", "v", "b",
+            "h", "j", "k", "l", "a", "s", "d", "f", "g", "y", "u", "i", "o", "p", "q", "w", "e", "r", "t", "n", "m",
+            "z", "x", "c", "v", "b",
         ];
         let count = expected_hints.len();
         let mut hints = Hints::new(count, "hjklasdfgyuiopqwertnmzxcvb");

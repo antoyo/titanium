@@ -21,6 +21,8 @@
 
 use webkit2gtk_webextension::{DOMElementExt, WebPage};
 
+use titanium_common::Percentage::{self, All, Percent};
+
 use dom::{get_body, get_document};
 
 /// Trait for widget that can scroll.
@@ -28,7 +30,7 @@ pub trait Scrollable {
     fn scroll_by(&self, pixels: i64);
     fn scroll_by_x(&self, pixels: i64);
     fn scroll_bottom(&self);
-    fn scroll_percentage(&self) -> i64;
+    fn scroll_percentage(&self) -> Percentage;
     fn scroll_top(&self);
 }
 
@@ -36,48 +38,41 @@ impl Scrollable for WebPage {
     /// Scroll the web page vertically by the specified amount of pixels.
     /// A negative value scroll towards to top.
     fn scroll_by(&self, pixels: i64) {
-        if let Some(body) = get_body(self) {
-            body.set_scroll_top(body.get_scroll_top() + pixels);
-        }
+        let body = wtry_opt_no_ret!(get_body(self));
+        body.set_scroll_top(body.get_scroll_top() + pixels);
     }
 
     /// Scroll the web page horizontally by the specified amount of pixels.
     /// A negative value scroll towards left.
     fn scroll_by_x(&self, pixels: i64) {
-        if let Some(body) = get_body(self) {
-            body.set_scroll_left(body.get_scroll_left() + pixels);
-        }
+        let body = wtry_opt_no_ret!(get_body(self));
+        body.set_scroll_left(body.get_scroll_left() + pixels);
     }
 
     /// Scroll to the bottom of the web page.
     fn scroll_bottom(&self) {
-        if let Some(body) = get_body(self) {
-            body.set_scroll_top(body.get_scroll_height());
-        }
+        let body = wtry_opt_no_ret!(get_body(self));
+        body.set_scroll_top(body.get_scroll_height());
     }
 
     /// Get the current vertical scroll position of the web page as a percentage.
-    fn scroll_percentage(&self) -> i64 {
-        let default = -1;
-        if let (Some(body), Some(document)) = (get_body(self), get_document(self)) {
-            let height = document.get_client_height();
-            let scroll_height = body.get_scroll_height();
-            if scroll_height <= height as i64 {
-                default
-            }
-            else {
-                (body.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0) as i64
-            }
+    fn scroll_percentage(&self) -> Percentage {
+        let default = All;
+        let body = unwrap_opt_or_ret!(get_body(self), default);
+        let document = unwrap_opt_or_ret!(get_document(self), default);
+        let height = document.get_client_height();
+        let scroll_height = body.get_scroll_height();
+        if scroll_height <= height as i64 {
+            default
         }
         else {
-            default
+            Percent((body.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0) as i64)
         }
     }
 
     /// Scroll to the top of the web page.
     fn scroll_top(&self) {
-        if let Some(body) = get_body(self) {
-            body.set_scroll_top(0);
-        }
+        let body = wtry_opt_no_ret!(get_body(self));
+        body.set_scroll_top(0);
     }
 }
