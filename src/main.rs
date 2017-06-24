@@ -21,6 +21,7 @@
 
 /*
  * FIXME: running `cargo run -- fsf.org` opens about:blank.
+ * TODO: add test for the initial URL handling.
  * FIXME: error Unacceptable TLS certificate
  * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
  * https://zinascii.com/2014/a-posix-queue-implementation.html
@@ -208,6 +209,9 @@ extern crate futures_glib;
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
+extern crate gumdrop;
+#[macro_use]
+extern crate gumdrop_derive;
 #[cfg(test)]
 extern crate libxdo;
 #[macro_use]
@@ -227,9 +231,6 @@ extern crate relm_attributes;
 extern crate relm_derive;
 extern crate rusqlite;
 extern crate simplelog;
-extern crate structopt;
-#[macro_use]
-extern crate structopt_derive;
 #[cfg(test)]
 extern crate tempdir;
 extern crate tempfile;
@@ -259,40 +260,69 @@ mod stylesheet;
 mod urls;
 mod webview;
 
+use std::env::args;
+
+use gumdrop::Options;
 use log::LogLevel::Error;
 use relm::Widget;
 use simplelog::{Config, LogLevelFilter, TermLogger};
-use structopt::StructOpt;
 
-use app::App;
+use app::{App, APP_NAME};
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
-#[derive(Debug, StructOpt)]
-#[structopt(about="Titanium web browser.")]
+#[derive(Debug, Default, Options)]
 struct Args {
-    #[structopt(short="c", long="config", help="The configuration directory.")]
+    #[options(help="The configuration directory.")]
     config: Option<String>,
-    #[structopt(short="l", long="log", help="Show the log messages.")]
+    #[options(help="Print help message.")]
+    help: bool,
+    #[options(help="Show the log messages.")]
     log: bool,
-    #[structopt(help="Url to open on startup")]
-    url: Option<String>,
+    #[options(free)]
+    url: Vec<String>,
 }
 
 fn main() {
     gtk::init().unwrap();
 
-    let args = Args::from_args();
+    let args: Vec<_> = args().collect();
 
-    if args.log {
-        let config = Config {
-            time: Some(Error),
-            level: Some(Error),
-            target: None,
-            location: None,
-        };
-        TermLogger::init(LogLevelFilter::max(), config).unwrap();
+    let mut args = match Args::parse_args_default(&args[1..]) {
+        Ok(options) => options,
+        Err(error) => {
+            println!("{}: {}", APP_NAME, error);
+            println!();
+            println!("{}", Args::usage());
+            return;
+        },
+    };
+
+    if args.help {
+        println!("Usage: {} [OPTIONS] [ARGUMENTS]", APP_NAME);
+        println!();
+        println!("{}", Args::usage());
     }
+    else {
+        if args.log {
+            let config = Config {
+                time: Some(Error),
+                level: Some(Error),
+                target: None,
+                location: None,
+            };
+            TermLogger::init(LogLevelFilter::max(), config).unwrap();
+        }
 
-    App::run((args.url, args.config)).unwrap();
+        let url =
+            if !args.url.is_empty() {
+                // TODO: open the other URLs in new windows?
+                Some(args.url.remove(0))
+            }
+            else {
+                None
+            };
+
+        App::run((url, args.config)).unwrap();
+    }
 }
