@@ -40,9 +40,8 @@ impl PasswordManager {
 
     /// Add a credential.
     /// Returns true if the credential was added.
-    pub fn add(&self, url: &str, username: &str, password: &str, check: bool) -> Result<()> {
+    pub fn add(&self, url: &str, username: &str, password: &str) -> Result<()> {
         if let Some(url) = base_url(url) {
-            let check = false; // TODO
             PasswordStore::insert(&path_username(&url, username), password)?;
         }
         else {

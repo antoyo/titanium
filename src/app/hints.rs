@@ -33,12 +33,7 @@ impl App {
     pub fn activate_action(&mut self, action: i32) {
         if let Some(result) = Action::from_i32(action) {
             match result {
-                FileInput => {
-                    // TODO
-                    /*if let Ok(file) = self.show_file_input(vec![]) {
-                        handle_error!(self.select_file(file));
-                    }*/
-                },
+                FileInput => self.show_file_input(),
                 GoInInsertMode => self.go_in_insert_mode(),
                 NoAction => (),
             }

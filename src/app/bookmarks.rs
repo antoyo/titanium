@@ -21,9 +21,10 @@
 
 //! Bookmark management in the application.
 
-use mg::{DeleteCompletionItem, Info};
+use mg::{DeleteCompletionItem, Info, input};
 
-use super::App;
+use app::App;
+use app::Msg::TagEdit;
 
 impl App {
     /// Add the current page to the bookmarks.
@@ -64,28 +65,30 @@ impl App {
         }
     }
 
+    pub fn set_tags(&self, tags: Option<String>) {
+        // Do not edit tags when the user press Escape.
+        if let Some(tags) = tags {
+            let tags: Vec<_> = tags.split(',')
+                .map(|tag| tag.trim().to_lowercase())
+                .filter(|tag| !tag.is_empty())
+                .collect();
+            if let Err(err) = self.model.bookmark_manager.set_tags(&self.model.current_url, tags) {
+                self.show_error(err);
+            }
+        }
+    }
+
     /// Edit the tags of the current page from the bookmarks.
     pub fn edit_bookmark_tags(&self) {
-        if let Some(url) = self.webview.widget().get_uri() {
-            let tags = self.model.bookmark_manager.get_tags(&url);
-            if let Some(tags) = tags {
-                let default_answer = tags.join(", ");
-                // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
-                let input = self.blocking_input("Bookmark tags (separated by comma):", &default_answer);
-                // Do not edit tags when the user press Escape.
-                if let Some(input) = input {
-                    let tags: Vec<_> = input.split(',')
-                        .map(|tag| tag.trim().to_lowercase())
-                        .filter(|tag| !tag.is_empty())
-                        .collect();
-                    if let Err(err) = self.model.bookmark_manager.set_tags(&url, tags) {
-                        self.show_error(err);
-                    }
-                }
-            }
-            else {
-                self.info_page_not_in_bookmarks();
-            }
+        let tags = self.model.bookmark_manager.get_tags(&self.model.current_url);
+        if let Some(tags) = tags {
+            let default_answer = tags.join(", ");
+            // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
+            input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
+            default_answer, TagEdit);
+        }
+        else {
+            self.info_page_not_in_bookmarks();
         }
     }
 

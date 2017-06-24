@@ -29,8 +29,10 @@ use mg::{
     CustomDialog,
     DialogBuilder,
     DialogResult,
+    InputDialog,
     Mg,
     Responder,
+    blocking_dialog,
     blocking_input,
     blocking_yes_no_question,
 };
@@ -42,14 +44,16 @@ use mg_settings::{
     SpecialCommand,
 };
 use mg_settings::key::Key::{Char, Control};
-use relm::{EventStream, Relm, Resolver, Update, Widget};
-use webkit2gtk::{Download, FileChooserRequest, ScriptDialog};
+use relm::{EventStream, Relm, Update, Widget};
+use webkit2gtk::{Download, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
-use app::Msg::DownloadDestination;
+use app::Msg::{DownloadDestination, FileDialogSelection};
 use download::download_dir;
 use self::FileInputError::*;
 use super::App;
+
+const SELECT_FILE: &str = "Select file";
 
 /// Input dialog responder for file selection for download.
 pub struct DownloadInputDialog<WIDGET: Widget> {
@@ -85,56 +89,6 @@ pub enum FileInputError {
 }
 
 impl App {
-    /// Show a non-modal file chooser dialog when the user activates a file input.
-    pub fn handle_file_chooser(&self, file_chooser_request: FileChooserRequest, mut resolver: Resolver<bool>) {
-        /*
-        // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
-        if file_chooser_request.get_select_multiple() {
-            // TODO: support multiple files (use a boolean column that is converted to a pixmap).
-            false
-        }
-        else {
-            let selected_files = file_chooser_request.get_selected_files();
-            match self.blocking_file_input(selected_files) {
-                Ok(file) => file_chooser_request.select_files(&[&file]),
-                Err(Cancelled) => file_chooser_request.cancel(),
-                Err(FileDoesNotExist) => {
-                    self.error("Please select an existing file");
-                    file_chooser_request.cancel();
-                },
-                Err(SelectedDirectory) => {
-                    self.error("Please select a file, not a directory");
-                    file_chooser_request.cancel();
-                },
-            }
-            true
-        }*/
-    }
-
-    /// Show a blocking input dialog with file completion.
-    fn blocking_file_input(&self, message: &str, default_answer: &str) -> Option<String> {
-        // TODO
-        /*let builder = DialogBuilder::new()
-            .blocking(true)
-            .completer("file")
-            .default_answer(default_answer)
-            .message(message);
-        self.mg.widget_mut().show_dialog_without_shortcuts(&self.model.relm, builder)*/
-        None
-    }
-
-    pub fn blocking_input(&self, message: &str, default_answer: &str) -> Option<String> {
-        // TODO
-        //self.mg.widget_mut().blocking_input(&self.model.relm, message, default_answer)
-        None
-    }
-
-    pub fn blocking_yes_no_question(&self, message: &str) -> bool {
-        // TODO
-        //self.mg.widget_mut().blocking_yes_no_question(&self.model.relm, message)
-        false
-    }
-
     /// Show a blocking iniput dialog with file completion for download destination selection.
     /// It contains the C-x shortcut to open the file instead of downloading it.
     pub fn download_input(&self, download: Download, suggested_filename: String) {
@@ -160,41 +114,34 @@ impl App {
         self.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
     }
 
-    /// Show a blocking file input dialog.
-    pub fn show_blocking_file_input(&self, selected_files: Vec<String>) -> Result<String, FileInputError> {
-        let file =
-            if selected_files.is_empty() {
-                let dir = home_dir()
-                    .unwrap_or_else(temp_dir)
-                    .to_str().unwrap()
-                    .to_string();
-                format!("{}/", dir)
-            }
-            else {
-                selected_files[0].clone()
-            };
-        if let Some(file) = self.blocking_file_input("Select file", &file) {
-            {
-                let path = Path::new(&file);
-                if !path.exists() {
-                    return Err(FileDoesNotExist)
-                }
-                else if path.is_dir() {
-                    return Err(SelectedDirectory)
-                }
-            }
-            Ok(file)
-        }
-        else {
-            Err(Cancelled)
-        }
-    }
-
-    /*
     /// Show a file input dialog.
-    pub fn show_file_input(&self, ) {
-        self.file_input(responder, 
-    }*/
+    pub fn show_file_input(&self) {
+        // TODO: take another parameter for the default file name.
+        let responder = Box::new(InputDialog::new(&self.model.relm, FileDialogSelection));
+        self.file_input(responder, SELECT_FILE.to_string(), default_directory());
+    }
+}
+
+/// Show a blocking input dialog with file completion.
+fn blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>, message: String, default_answer: String)
+    -> Option<String>
+where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
+      SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
+{
+    let builder = DialogBuilder::new()
+        .completer("file")
+        .default_answer(default_answer)
+        .message(message);
+    blocking_dialog(stream, builder)
+}
+
+/// Get the default directory to show for a file input dialog.
+fn default_directory() -> String {
+    let dir = home_dir()
+        .unwrap_or_else(temp_dir)
+        .to_str().unwrap() // TODO: remove unwrap().
+        .to_string();
+    format!("{}/", dir)
 }
 
 /// Handle the script dialog event.
@@ -227,4 +174,34 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
         _ => (),
     }
     true
+}
+
+/// Show a blocking file input dialog.
+pub fn show_blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>, selected_files: Vec<String>)
+    -> Result<String, FileInputError>
+where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
+      SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
+{
+    let file =
+        if selected_files.is_empty() {
+            default_directory()
+        }
+        else {
+            selected_files[0].clone()
+        };
+    if let Some(file) = blocking_file_input(stream, SELECT_FILE.to_string(), file) {
+        {
+            let path = Path::new(&file);
+            if !path.exists() {
+                return Err(FileDoesNotExist)
+            }
+            else if path.is_dir() {
+                return Err(SelectedDirectory)
+            }
+        }
+        Ok(file)
+    }
+    else {
+        Err(Cancelled)
+    }
 }

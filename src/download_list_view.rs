@@ -82,7 +82,7 @@ impl Widget for DownloadListView {
             DownloadCancel(download) => self.download_cancel(download),
             DownloadDestination(download, destination) => self.download_destination(download, destination),
             DownloadFailed(error, download) => self.handle_failed(&error, download),
-            DownloadFinished(download) => self.handle_finished(),
+            DownloadFinished(_) => self.handle_finished(),
             DownloadOriginalDestination(download, destination) =>
                 self.download_original_destination(download, destination),
             DownloadRemove(download) => self.delete(download),

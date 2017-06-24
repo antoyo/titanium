@@ -32,6 +32,7 @@ mod config;
 mod copy_paste;
 mod dialog;
 mod download;
+mod file_chooser;
 mod hints;
 mod pass_filler;
 mod paths;
@@ -68,12 +69,10 @@ use mg::{
     Title,
     yes_no_question,
 };
-use mg_settings::errors::ErrorKind;
 use relm::{EventStream, Relm, Resolver, Update, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     Download,
-    FileChooserRequest,
     HitTestResult,
     NavigationAction,
     WebContext,
@@ -96,6 +95,7 @@ use popup_manager::PopupManager;
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
 use self::download::find_download_destination;
+use self::file_chooser::handle_file_chooser;
 use self::Msg::*;
 use settings::AppSettings;
 use settings::AppSettingsVariant::{
@@ -189,7 +189,7 @@ pub enum Msg {
     DownloadDestination(DialogResult, Download, String),
     EmitScrolledEvent,
     Exit(bool),
-    FileChooser(FileChooserRequest, Resolver<bool>),
+    FileDialogSelection(Option<String>),
     GoToInsertMode,
     HasActiveDownloads(bool),
     KeyPress(EventKey, Resolver<Inhibit>),
@@ -199,6 +199,7 @@ pub enum Msg {
     PopupDecision(Option<String>, String),
     Scroll(i64),
     ShowZoom(i32),
+    TagEdit(Option<String>),
     TitleChanged,
     TryClose,
     UriChanged,
@@ -222,6 +223,12 @@ impl Widget for App {
         let mg = self.mg.stream().clone();
         connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
             return handle_script_dialog(script_dialog, &mg));
+
+        // TODO: add a #[stream(mg)] attribute in relm to support connecting an event to a
+        // function while getting the stream (for use in view! {})?
+        let mg = self.mg.stream().clone();
+        connect!(self.model.relm, self.webview.widget(), connect_run_file_chooser(_, file_chooser_request),
+            return handle_file_chooser(&mg, file_chooser_request));
 
         if let Some(context) = self.get_webview_context() {
             let stream = self.model.relm.stream().clone();
@@ -323,7 +330,7 @@ impl Widget for App {
                 self.download_destination_chosen(destination, download, suggested_filename),
             EmitScrolledEvent => self.emit_scrolled_event(),
             Exit(can_quit) => self.quit(can_quit),
-            FileChooser(file_chooser_request, resolver) => self.handle_file_chooser(file_chooser_request, resolver),
+            FileDialogSelection(file) => self.file_dialog_selection(file),
             GoToInsertMode => self.go_in_insert_mode(),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
             KeyPress(event_key, resolver) => self.handle_key_press(event_key, resolver),
@@ -334,6 +341,7 @@ impl Widget for App {
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
             Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
             ShowZoom(level) => self.show_zoom(level),
+            TagEdit(tags) => self.set_tags(tags),
             TitleChanged => self.set_title(),
             TryClose => self.try_quit(),
             UriChanged => self.uri_changed(),
@@ -379,7 +387,6 @@ impl Widget for App {
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
                     resource_load_started(_, _, _) => TitleChanged,
-                    run_file_chooser(_, file_chooser_request) => async FileChooser(file_chooser_request.clone()),
                     title_changed() => TitleChanged,
                     uri_changed() => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
@@ -405,7 +412,7 @@ impl Widget for App {
 impl App {
     /// Show an error from a string.
     pub fn error(&self, error: &str) {
-        self.mg.emit(Error(ErrorKind::Msg(error.to_string()).into()));
+        self.mg.emit(Error(error.into()));
     }
 
     /// Give the focus to the webview.
