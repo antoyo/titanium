@@ -23,9 +23,11 @@ use std::io;
 
 use password_store;
 use rusqlite;
+use tokio_serde_bincode;
 
 error_chain! {
     foreign_links {
+        Bincode(tokio_serde_bincode::Error);
         Io(io::Error);
         Pass(password_store::Error);
         Sqlite(rusqlite::Error);

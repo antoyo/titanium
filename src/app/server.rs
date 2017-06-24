@@ -30,6 +30,7 @@ use super::Msg::{
     GoToInsertMode,
     SavePassword,
     Scroll,
+    ShowError,
 };
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
@@ -76,6 +77,7 @@ impl App {
 
     pub fn listen_messages(&self) {
         let message_server = &self.model.message_server;
+        connect_stream!(message_server@MsgError(ref error), self.model.relm.stream(), ShowError(error.to_string()));
         // TODO: use client_id (first param of MsgRecv).
         connect_stream!(message_server@MsgRecv(_, ref msg), self.model.relm.stream(), match *msg {
             ActivateAction(action) => Some(DoAction(action)),
@@ -84,6 +86,7 @@ impl App {
             EnterInsertMode() => Some(GoToInsertMode),
             ScrollPercentage(percentage) => Some(Scroll(percentage)),
             _ => {
+                // TODO: show the warning in the UI?
                 warn!("Unexpected message received: {:?}", msg);
                 None
             },

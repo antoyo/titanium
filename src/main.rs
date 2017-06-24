@@ -20,8 +20,8 @@
  */
 
 /*
+ * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
- * TODO: manager error in message server.
  * TODO: add a command to write a password into the focused text field.
  *
  * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
@@ -209,7 +209,6 @@ extern crate futures;
 extern crate futures_glib;
 extern crate gdk;
 extern crate glib;
-extern crate glib_sys;
 extern crate gtk;
 extern crate libc;
 #[cfg(test)]
@@ -230,7 +229,6 @@ extern crate relm_attributes;
 #[macro_use]
 extern crate relm_derive;
 extern crate rusqlite;
-extern crate rustc_serialize;
 extern crate simplelog;
 extern crate structopt;
 #[macro_use]

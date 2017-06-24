@@ -41,10 +41,11 @@ use relm::{EventStream, Relm, Update, UpdateNew, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
-use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
+use tokio_serde_bincode::{ReadBincode, WriteBincode};
 
 use titanium_common::Message;
 
+use errors::Error;
 use self::Msg::*;
 
 // TODO: put in the home directory.
@@ -67,7 +68,6 @@ pub struct Model {
 #[derive(Msg)]
 pub enum Msg {
     ClientConnect(UnixStream),
-    IncomingError(String), // TODO: use a better type.
     MsgRecv(usize, Message),
     MsgError(Error),
     Send(usize, Message),
@@ -91,8 +91,8 @@ impl Update for MessageServer {
             Some(listener) =>
                 relm.connect_exec(listener.incoming(),
                     |(stream, _addr)| ClientConnect(stream),
-                    |error| IncomingError(error.to_string())),
-            None => (), // TODO: warn or exit?
+                    |error| MsgError(error.into())),
+            None => dialog_and_exit("Message listener is not initialized"),
         }
     }
 
@@ -106,12 +106,11 @@ impl Update for MessageServer {
                 self.model.clients.insert(client_id, Client {
                     writer,
                 });
-                self.model.relm.connect_exec(reader, move |msg| MsgRecv(client_id, msg), MsgError);
+                self.model.relm.connect_exec(reader, move |msg| MsgRecv(client_id, msg),
+                    |error| MsgError(error.into()));
             },
-            IncomingError(error) => println!("{}", error), // TODO
-            MsgError(error) => println!("Error: {:?}", error), // TODO,
             // To be listened by the app.
-            MsgRecv(_, _) => (),
+            MsgError(_) | MsgRecv(_, _) => (),
             Send(client, msg) => self.send(client, msg),
         }
     }
@@ -137,14 +136,24 @@ impl MessageServer {
         Ok(execute::<MessageServer>(listener))
     }
 
+    fn error(&self, error: Error) {
+        self.model.relm.stream().emit(MsgError(error));
+    }
+
     fn send(&mut self, client: usize, msg: Message) {
+        let mut error = None;
         if let Some(client) = self.model.clients.get_mut(&client) {
             if let Ok(AsyncSink::Ready) = client.writer.start_send(msg) {
-                client.writer.poll_complete().ok(); // TODO: handle error.
+                if let Err(poll_error) = client.writer.poll_complete() {
+                    error = Some(poll_error.into());
+                }
             }
         }
         else {
-            // TODO: return Err
+            error = Some(format!("client {} does not exist", client).into());
+        }
+        if let Some(error) = error {
+            self.error(error);
         }
     }
 }
@@ -154,12 +163,15 @@ impl MessageServer {
 pub fn create_message_server() -> EventStream<<MessageServer as Update>::Msg> {
     match MessageServer::new() {
         Ok(message_server) => message_server,
-        Err(error) => {
-            let window: Option<&Window> = None;
-            let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close,
-                "Fatal error: cannot create the message server used to communicate with the web processes");
-            dialog.run();
-            process::exit(1);
-        },
+        Err(error) =>
+            dialog_and_exit("cannot create the message server used to communicate with the web processes"),
     }
+}
+
+fn dialog_and_exit(message: &str) -> ! {
+    let window: Option<&Window> = None;
+    let message = format!("Fatal error: {}", message);
+    let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close, &message);
+    dialog.run();
+    process::exit(1);
 }
