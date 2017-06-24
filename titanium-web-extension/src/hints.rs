@@ -103,7 +103,7 @@ impl Hints {
     }
 }
 
-fn create_hint(document: &DOMDocument, pos: Pos, hint_text: &str) -> Option<DOMElement> {
+fn create_hint(document: &DOMDocument, pos: &Pos, hint_text: &str) -> Option<DOMElement> {
     document.create_element("div").ok().and_then(|hint| {
         hint.set_class_name("__titanium_hint");
         hint.set_id(&format!("__titanium_hint_{}", hint_text));
@@ -133,7 +133,7 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
         let mut hint_map = Hints::new(elements_to_hint.len(), hint_chars);
         for element in elements_to_hint {
             let pos = wtry_opt!(get_position(&element));
-            let hint = wtry_opt!(create_hint(document, pos, &hint_map.add(&element)));
+            let hint = wtry_opt!(create_hint(document, &pos, &hint_map.add(&element)));
             check_err_opt!(hints.append_child(&hint).ok());
         }
         Some((hints, hint_map.hints))

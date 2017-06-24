@@ -88,7 +88,7 @@ impl BookmarkManager {
             if connection.is_none() {
                 let db = Connection::open(filename)?;
                 // Activate foreign key contraints in SQLite.
-                db.execute("PRAGMA foreign_keys = ON", &[])?;
+                let _ = db.execute("PRAGMA foreign_keys = ON", &[])?;
                 *connection = Some(db);
             }
             Ok(())
@@ -99,7 +99,7 @@ impl BookmarkManager {
     pub fn create_tables(&self) -> Result<()> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                connection.execute("
+                let _ = connection.execute("
                 CREATE TABLE IF NOT EXISTS bookmarks
                 ( id INTEGER PRIMARY KEY
                 , title TEXT NOT NULL
@@ -107,13 +107,13 @@ impl BookmarkManager {
                 , visit_count INTEGER NOT NULL DEFAULT 0
                 )", &[])?;
 
-                connection.execute("
+                let _ = connection.execute("
                 CREATE TABLE IF NOT EXISTS tags
                 ( id INTEGER PRIMARY KEY
                 , name TEXT NOT NULL UNIQUE
                 )", &[])?;
 
-                connection.execute("
+                let _ = connection.execute("
                 CREATE TABLE IF NOT EXISTS bookmarks_tags
                 ( bookmark_id INTEGER NOT NULL
                 , tag_id INTEGER NOT NULL
@@ -171,7 +171,7 @@ impl BookmarkManager {
             WHERE name = $1
         ")?;
         let mut rows = statement.query(&[&tag.to_string()])?;
-        let row = rows.next().ok_or(ErrorKind::Msg("tag not found".to_string()))?;
+        let row = rows.next().ok_or_else(|| ErrorKind::Msg("tag not found".to_string()))?;
         let id = row.map(|row| row.get(0))?;
         Ok(id)
     }
@@ -270,7 +270,7 @@ impl BookmarkManager {
                 for tag in &tags {
                     let tag = tag.to_lowercase();
                     if let Some(ref connection) = *connection.borrow() {
-                        connection.execute("
+                        let _ = connection.execute("
                             INSERT OR IGNORE INTO tags (name)
                             VALUES ($1)
                         ", &[&tag])?;

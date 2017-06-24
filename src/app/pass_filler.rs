@@ -69,7 +69,7 @@ impl App {
     pub fn save_username_password(&self, username: &str, password: &str) -> Result<()> {
         // TODO: ask to override existing password.
         // TODO: handle errors.
-        self.model.password_manager.add(&self.model.current_url, &username, &password)
+        self.model.password_manager.add(&self.model.current_url, username, password)
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
           Err(err) => self.show_error(err),*/

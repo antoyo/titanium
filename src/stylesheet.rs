@@ -40,7 +40,7 @@ pub fn get_stylesheet_and_whitelist(content: &str) -> (Cow<str>, Vec<String>) {
                 }
                 let stylesheet: String = content.chars().skip_while(|&c| c != '{').skip(1).collect();
                 let mut lines: Vec<_> = stylesheet.lines().collect();
-                lines.pop(); // Remove the last line which contains }.
+                let _ = lines.pop(); // Remove the last line which contains }.
                 lines.join("\n").into()
             }
             else {
@@ -64,7 +64,7 @@ fn get_urls_from_parameter(parameter: &str) -> Vec<String> {
         let function: String = parameter.chars().take_while(|&c| c != '(').collect();
         if function == "domain" {
             let mut domain: String = parameter.chars().skip_while(|&c| c != '(').skip(1).collect();
-            domain.pop(); // Remove the ) at the end.
+            let _ = domain.pop(); // Remove the ) at the end.
             let domain = domain.trim_matches('"'); //Remove the surrounding quotes.
             whitelist.push(format!("http://*.{}/*", domain));
             whitelist.push(format!("https://*.{}/*", domain));

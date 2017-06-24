@@ -43,16 +43,16 @@ pub fn gen_unique_filename(filename: &str) -> Result<String> {
         .create()?;
     let filename =
         file.path().file_name()
-            .ok_or(ErrorKind::Msg("generated file name has no file name".to_string()))?
+            .ok_or_else(|| ErrorKind::Msg("generated file name has no file name".to_string()))?
             .to_str()
-            .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
+            .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
             .to_string();
     Ok(filename)
 }
 
 /// Open a file in a new process.
 pub fn open(url: String) {
-    thread::spawn(move ||
+    let _ = thread::spawn(move ||
         open::that(url).ok()
     );
 }

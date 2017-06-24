@@ -103,7 +103,7 @@ impl Update for MessageServer {
                 let (reader, writer) = stream.split();
                 let reader = ReadBincode::new(FramedRead::new(reader));
                 let writer = WriteBincode::new(FramedWrite::new(writer));
-                self.model.clients.insert(client_id, Client {
+                let _ = self.model.clients.insert(client_id, Client {
                     writer,
                 });
                 self.model.relm.connect_exec(reader, move |msg| MsgRecv(client_id, msg),
@@ -131,7 +131,9 @@ impl MessageServer {
         // automatically?).
         // TODO: should open in the existing process if it already exists.
         // If no other titanium process can be found, delete it.
-        remove_file(PATH).ok();
+        // NOTE: Don't check for errors on remove_file() since it does not matter if the file does
+        // not exist.
+        let _ = remove_file(PATH);
         let listener = UnixListener::bind(PATH, &cx)?;
         Ok(execute::<MessageServer>(listener))
     }
@@ -163,8 +165,11 @@ impl MessageServer {
 pub fn create_message_server() -> EventStream<<MessageServer as Update>::Msg> {
     match MessageServer::new() {
         Ok(message_server) => message_server,
-        Err(error) =>
-            dialog_and_exit("cannot create the message server used to communicate with the web processes"),
+        Err(error) => {
+            let message = format!("cannot create the message server used to communicate with the web processes: {}",
+                error);
+            dialog_and_exit(&message);
+        },
     }
 }
 
@@ -172,6 +177,6 @@ fn dialog_and_exit(message: &str) -> ! {
     let window: Option<&Window> = None;
     let message = format!("Fatal error: {}", message);
     let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close, &message);
-    dialog.run();
+    let _ = dialog.run();
     process::exit(1);
 }

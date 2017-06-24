@@ -418,7 +418,7 @@ impl App {
             connect!(context, connect_download_started(_, download), self.download_list_view, {
                 let stream = stream.clone();
                 let list_stream = list_stream.clone();
-                download.connect_decide_destination(move |download, suggested_filename| {
+                let _ = download.connect_decide_destination(move |download, suggested_filename| {
                     if let Ok(destination) = find_download_destination(suggested_filename) {
                         download.set_destination(&format!("file://{}", destination));
                         stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
@@ -667,7 +667,7 @@ impl App {
     fn open_in_new_window(&self, url: &str) -> Result<()> {
         let url = self.transform_url(url);
         let program = env::args().next().unwrap();
-        Command::new(program)
+        let _ = Command::new(program)
             .arg(url)
             .spawn()?;
         Ok(())

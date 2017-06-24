@@ -178,7 +178,8 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
 }
 
 /// Show a blocking file input dialog.
-pub fn show_blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>, selected_files: Vec<String>)
+pub fn show_blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>,
+    selected_files: &[String])
     -> Result<String, FileInputError>
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,

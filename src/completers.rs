@@ -53,7 +53,7 @@ impl BookmarkCompleter {
         for word in splitted_words {
             if word.starts_with('#') {
                 let mut tag = word.to_string();
-                tag.remove(0); // Remove the #.
+                let _ = tag.remove(0); // Remove the #.
                 if !tag.is_empty() {
                     tags.push(tag);
                 }

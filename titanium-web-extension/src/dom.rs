@@ -173,12 +173,7 @@ pub fn get_position(element: &DOMElement) -> Option<Pos> {
     let mut pos = get_position_from_iframe(&document, element);
     let window = wtry_opt!(document.get_default_view());
     let mut frame = window.get_frame_element();
-    loop {
-        let parent_frame =
-            match frame {
-                Some(ref parent_frame) => parent_frame.clone(),
-                None => break,
-            };
+    while let Some(parent_frame) = frame {
         let parent_document = wtry_opt!(parent_frame.get_owner_document());
         let iframe_pos = get_position_from_iframe(&document, &parent_frame);
         pos.x += iframe_pos.x;
@@ -247,7 +242,7 @@ pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
 pub fn is_text_input(element: &DOMElement) -> bool {
     let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
         .and_then(|input_element| input_element.get_input_type())
-        .unwrap_or("text".to_string());
+        .unwrap_or_else(|| "text".to_string());
     match input_type.as_ref() {
         "button" | "checkbox" | "color" | "file" | "hidden" | "image" | "radio" | "reset" | "submit" => false,
         _ => true,

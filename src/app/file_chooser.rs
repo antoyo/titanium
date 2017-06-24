@@ -56,7 +56,7 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
     }
     else {
         let selected_files = file_chooser_request.get_selected_files();
-        match show_blocking_file_input(stream, selected_files) {
+        match show_blocking_file_input(stream, &selected_files) {
             Ok(file) => file_chooser_request.select_files(&[&file]),
             Err(Cancelled) => file_chooser_request.cancel(),
             Err(FileDoesNotExist) => {

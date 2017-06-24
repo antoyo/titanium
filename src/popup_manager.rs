@@ -81,7 +81,7 @@ impl PopupManager {
     fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>> {
         let mut file = File::open(path)?;
         let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        let _ = file.read_to_string(&mut content)?;
         let set = content.lines()
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string()).collect();
@@ -122,7 +122,7 @@ impl PopupManager {
 
 /// Create a popup manager if the blacklist/whitelist paths can be created.
 pub fn create_popup_manager(config_dir: &ConfigDir) -> Option<PopupManager> {
-    if let (Ok(whitelist_path), Ok(blacklist_path)) = App::popup_path(&config_dir) {
+    if let (Ok(whitelist_path), Ok(blacklist_path)) = App::popup_path(config_dir) {
         Some(PopupManager::new(whitelist_path, blacklist_path))
     }
     else {

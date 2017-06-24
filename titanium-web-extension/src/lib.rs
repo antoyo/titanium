@@ -63,7 +63,7 @@ macro_rules! check_err {
 
 macro_rules! check_err_opt {
     ($e:expr) => {
-        if let None = $e {
+        if $e.is_none() {
             error!("{} is None", stringify!($e));
             return None;
         }
@@ -165,7 +165,7 @@ pub const APP_NAME: &'static str = "titanium";
 
 #[no_mangle]
 /// Initialize the the logger and the message server.
-pub fn web_extension_initialize(extension: WebExtension, user_data: Variant) {
+pub fn web_extension_initialize(extension: &WebExtension, user_data: &Variant) {
     let config = Config {
         time: Some(Error),
         level: Some(Error),

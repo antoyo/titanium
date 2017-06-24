@@ -72,8 +72,11 @@ pub enum Message {
     SubmitLoginForm(),
 }
 
+/// Either all the page is shown (hence, no percentage) or a value between 0 and 100.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum Percentage {
+    /// No percentage, since all the page is shown.
     All,
+    /// A scroll percentage between 0 and 100.
     Percent(i64),
 }

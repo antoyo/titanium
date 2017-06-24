@@ -210,7 +210,6 @@ extern crate futures_glib;
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
-extern crate libc;
 #[cfg(test)]
 extern crate libxdo;
 #[macro_use]
