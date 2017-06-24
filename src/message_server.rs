@@ -145,10 +145,14 @@ impl MessageServer {
     fn send(&mut self, client: usize, msg: Message) {
         let mut error = None;
         if let Some(client) = self.model.clients.get_mut(&client) {
-            if let Ok(AsyncSink::Ready) = client.writer.start_send(msg) {
-                if let Err(poll_error) = client.writer.poll_complete() {
-                    error = Some(poll_error.into());
-                }
+            match client.writer.start_send(msg) {
+                Ok(AsyncSink::Ready) =>
+                    if let Err(poll_error) = client.writer.poll_complete() {
+                        error = Some(poll_error.into());
+                    },
+                Ok(AsyncSink::NotReady(_)) => error = Some("not ready to send to client".into()),
+                Err(send_error) =>
+                    error = Some(format!("cannot send a message to the web process: {}", send_error).into()),
             }
         }
         else {

@@ -143,7 +143,7 @@ impl Update for MessageClient {
 
     fn update(&mut self, event: Msg) {
         match event {
-            MsgError(error) => println!("Error: {:?}", error),
+            MsgError(error) => error!("{}", error),
             MsgRecv(msg) => match msg {
                 ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
                 ActivateSelection() => self.activate_selection(),
@@ -226,24 +226,20 @@ impl MessageClient {
     }
 
     fn click(&mut self, element: DOMHTMLElement) -> Action {
-        if element.is::<DOMHTMLInputElement>() {
-            if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
-                let input_type = input_element.get_input_type();
-                if let Some(input_type) = input_type {
-                    match input_type.as_ref() {
-                        "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
-                        // FIXME: file and color not opening.
-                        "color" => (),
-                        "file" => {
-                            self.model.activated_file_input = Some(input_element);
-                            return FileInput;
-                        },
-                        _ => {
-                            element.focus();
-                            return GoInInsertMode;
-                        },
-                    }
-                }
+        if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
+            let input_type = input_element.get_input_type().unwrap_or_default();
+            match input_type.as_ref() {
+                "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
+                // FIXME: file and color not opening.
+                "color" => (),
+                "file" => {
+                    self.model.activated_file_input = Some(input_element);
+                    return FileInput;
+                },
+                _ => {
+                    element.focus();
+                    return GoInInsertMode;
+                },
             }
         }
         else if element.is::<DOMHTMLTextAreaElement>() {
@@ -376,12 +372,13 @@ impl MessageClient {
     // Send a message to the server.
     fn send(&mut self, msg: Message) {
         match self.model.writer.start_send(msg) {
-            Ok(AsyncSink::Ready) => {
+            Ok(AsyncSink::Ready) =>
                 if let Err(error) = self.model.writer.poll_complete() {
                     error!("Cannot send message to UI process: {}", error);
-                }
-            }
-            res => error!("Cannot send: {:?}", res),
+                },
+            Ok(AsyncSink::NotReady(_)) => error!("not ready to send to client"),
+            Err(send_error) =>
+                error!("cannot send a message to the web process: {}", send_error),
         }
     }
 

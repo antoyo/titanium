@@ -20,6 +20,11 @@
  */
 
 /*
+ * FIXME: running `cargo run -- fsf.org` opens about:blank.
+ * FIXME: error Unacceptable TLS certificate
+ * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
+ * https://zinascii.com/2014/a-posix-queue-implementation.html
+ *
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
  * TODO: add a command to write a password into the focused text field.
@@ -33,22 +38,15 @@
  *
  * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for every method.
- * TODO: handle errors from uds communication.
- * TODO: refactor to remove every use of callbacks in relm widgets, taking advantage of async
- * callback.
+ * TODO: refactor to remove every use of callbacks in relm widgets.
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
- * TODO: switch to error-chain.
  * TODO: use tokio-process to communicate with pass?
  *
  * TODO: shortcut to open the current URL's root.
  *
  * FIXME: negative zoom level.
- * FIXME: running `cargo run -- fsf.org` opens about:blank.
- * FIXME: error Unacceptable TLS certificate
- * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
- * https://zinascii.com/2014/a-posix-queue-implementation.html
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.
  * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
