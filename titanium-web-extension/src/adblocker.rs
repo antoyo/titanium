@@ -23,7 +23,7 @@
 
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{self, BufRead, BufReader};
 use std::mem;
 use std::path::PathBuf;
 
@@ -45,39 +45,43 @@ impl Adblocker {
     }
 
     /// Get the hosts path.
-    pub fn config_path() -> PathBuf {
+    pub fn config_path() -> io::Result<PathBuf> {
         let xdg_dirs = BaseDirectories::with_prefix(APP_NAME).unwrap();
-        xdg_dirs.place_data_file("hosts").expect("cannot create data directory")
+        xdg_dirs.place_data_file("hosts")
     }
 
     /// Get the blacklisted urls.
     fn load_blacklisted_urls() -> HashSet<String> {
         let mut blacklisted_urls = HashSet::new();
-        let path = Adblocker::config_path();
-        match File::open(&path) {
-            Ok(file) => {
-                let mut reader = BufReader::new(file);
-                let mut line = String::new();
-                let mut size_read = 1;
-                while size_read > 0 {
-                    match reader.read_line(&mut line) {
-                        Ok(size) => {
-                            size_read = size;
-                            if size_read > 0 {
-                                line.pop(); // Remove the leading newline.
-                                blacklisted_urls.insert(mem::replace(&mut line, String::new()));
+        if let Ok(path) = Adblocker::config_path() {
+            match File::open(&path) {
+                Ok(file) => {
+                    let mut reader = BufReader::new(file);
+                    let mut line = String::new();
+                    let mut size_read = 1;
+                    while size_read > 0 {
+                        match reader.read_line(&mut line) {
+                            Ok(size) => {
+                                size_read = size;
+                                if size_read > 0 {
+                                    line.pop(); // Remove the leading newline.
+                                    blacklisted_urls.insert(mem::replace(&mut line, String::new()));
+                                }
                             }
+                            Err(error) => {
+                                error!("Error: {}", error);
+                                break;
+                            },
                         }
-                        Err(error) => {
-                            error!("Error: {}", error);
-                            break;
-                        },
                     }
                 }
+                Err(_) => {
+                    error!("Cannot open hosts file {}", path.to_str().unwrap_or_default())
+                },
             }
-            Err(_) => {
-                error!("Cannot open hosts file {}", path.to_str().unwrap_or_default())
-            },
+        }
+        else {
+            warn!("Cannot find hosts file for the ad blocker");
         }
         blacklisted_urls
     }

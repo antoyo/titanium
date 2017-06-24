@@ -28,16 +28,17 @@ use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
 use webkit2gtk::Download;
 
+use INVALID_UTF8_ERROR;
 use app::Msg::OverwriteDownload;
 use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view::Msg::{AddFileToOpen, DownloadCancel, DownloadDestination};
-use errors::Result;
+use errors::{ErrorKind, Result, ResultExt};
 use file::gen_unique_filename;
 use super::App;
 
 impl App {
-    fn ask_download_confirm_if_needed(&self, destination: &str, download: Download, suggested_filename: &str) {
+    fn ask_download_confirm_if_needed(&self, destination: &str, download: Download, suggested_filename: &str) -> Result<()> {
         let path = Path::new(&destination);
         let download_path =
             if path.is_dir() {
@@ -46,7 +47,8 @@ impl App {
             else {
                 path.to_path_buf()
             };
-        let download_destination = download_path.to_str().unwrap(); // TODO: remove unwrap().
+        let download_destination = download_path.to_str()
+            .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
         let exists = download_path.exists() &&
             // Check that it is not the path chosen before (because the download is already started
             // at this point).
@@ -60,6 +62,7 @@ impl App {
         else {
             self.set_download_destination(download, download_destination);
         }
+        Ok(())
     }
 
     pub fn clean_download_folder(&self) -> Result<()> {
@@ -74,18 +77,19 @@ impl App {
 
     /// Handle the download decide destination event.
     pub fn download_destination_chosen(&mut self, destination: DialogResult, download: Download,
-        suggested_filename: String)
+        suggested_filename: String) -> Result<()>
     {
         match destination {
             Answer(Some(destination)) => {
-                self.ask_download_confirm_if_needed(&destination, download, &suggested_filename);
+                self.ask_download_confirm_if_needed(&destination, download, &suggested_filename)?;
             },
             Shortcut(shortcut) => {
                 if shortcut == "download" {
-                    let download_destination = gen_unique_filename(&suggested_filename);
+                    let download_destination = gen_unique_filename(&suggested_filename)?;
                     let temp_file = temp_dir(&self.model.config_dir, &download_destination)
-                        .expect("temp file for download"); // TODO: remove expect().
-                    let temp_file = temp_file.to_str().expect("valid utf-8 string"); // TODO: remove expect().
+                        .chain_err(|| "faild to create temporary file for download")?;
+                    let temp_file = temp_file.to_str()
+                        .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
                     let destination = format!("file://{}", temp_file);
                     self.download_list_view.emit(AddFileToOpen(download.clone()));
                     // DownloadDestination must be emitted after AddFileToOpen because this event
@@ -97,6 +101,7 @@ impl App {
                 self.download_list_view.emit(DownloadCancel(download));
             },
         }
+        Ok(())
     }
 
     pub fn overwrite_download(&self, download: Download, download_destination: String, overwrite: bool) {
@@ -114,32 +119,32 @@ impl App {
     }
 }
 
-pub fn find_download_destination(suggested_filename: &str) -> String {
-    fn next_path(counter: i32, dir: &str, path: &Path) -> PathBuf {
+pub fn find_download_destination(suggested_filename: &str) -> Result<String> {
+    fn next_path(counter: i32, dir: &str, path: &Path) -> Result<PathBuf> {
         let filename = path.file_stem().unwrap_or_default().to_str()
-            .expect("valid utf-8 string"); // TODO: remove expect().
+            .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
         let extension = path.extension().unwrap_or_default().to_str()
-            .expect("valid utf-8 string"); // TODO: remove expect().
-        Path::new(&format!("{}{}_{}.{}", dir, filename, counter, extension))
-            .to_path_buf()
+            .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
+        Ok(Path::new(&format!("{}{}_{}.{}", dir, filename, counter, extension))
+            .to_path_buf())
     }
 
     let dir = download_dir();
     let path = format!("{}{}", dir, suggested_filename);
     if !Path::new(&path).exists() {
-        return path;
+        return Ok(path);
     }
 
     let mut counter = 1;
     let default_path = Path::new(suggested_filename);
-    let mut path = next_path(counter, &dir, default_path);
+    let mut path = next_path(counter, &dir, default_path)?;
     while path.exists() {
         counter += 1;
-        path = next_path(counter, &dir, default_path);
+        path = next_path(counter, &dir, default_path)?;
     }
-    // TODO: remove call to expect().
-    path.to_str().expect("valid utf-8 string")
-        .to_string()
+    Ok(path.to_str()
+       .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
+       .to_string())
 }
 
 fn temp_dir(config_dir: &ConfigDir, filename: &str) -> Result<PathBuf> {

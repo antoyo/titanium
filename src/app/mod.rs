@@ -87,11 +87,16 @@ use commands::AppCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
-use download_list_view::Msg::{ActiveDownloads, Add, DownloadOriginalDestination};
+use download_list_view::Msg::{
+    ActiveDownloads,
+    Add,
+    DownloadListError,
+    DownloadOriginalDestination,
+};
 use errors::{self, Result};
-use message_server::MessageServer;
+use message_server::{MessageServer, create_message_server};
 use pass_manager::PasswordManager;
-use popup_manager::PopupManager;
+use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
 use self::download::find_download_destination;
@@ -107,6 +112,7 @@ use webview::WebView;
 use webview::Msg::{
     AddScripts,
     AddStylesheets,
+    AppError,
     Close,
     EndSearch,
     NewWindow,
@@ -168,7 +174,7 @@ pub struct Model {
     message_server: EventStream<<MessageServer as Update>::Msg>,
     mode: String,
     password_manager: PasswordManager,
-    popup_manager: PopupManager,
+    popup_manager: Option<PopupManager>,
     relm: Relm<App>,
     scroll_text: String,
     search_engines: HashMap<String, String>,
@@ -197,7 +203,9 @@ pub enum Msg {
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
     PopupDecision(Option<String>, String),
+    SavePassword(String, String),
     Scroll(i64),
+    ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
     TitleChanged,
@@ -212,43 +220,20 @@ impl Widget for App {
     fn init_view(&mut self) {
         handle_error!(self.model.bookmark_manager.create_tables());
 
-        handle_error!(self.model.bookmark_manager.connect(App::bookmark_path(&self.model.config_dir)));
-        handle_error!(self.model.popup_manager.load());
+        match App::bookmark_path(&self.model.config_dir) {
+            Ok(bookmark_path) => handle_error!(self.model.bookmark_manager.connect(bookmark_path)),
+            Err(error) => self.show_error(error),
+        }
+
         handle_error!(self.clean_download_folder());
+        self.init_popup_manager();
 
         if let Some(ref url) = self.model.init_url {
             self.webview.emit(PageOpen(url.clone()));
         }
 
-        let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
-            return handle_script_dialog(script_dialog, &mg));
-
-        // TODO: add a #[stream(mg)] attribute in relm to support connecting an event to a
-        // function while getting the stream (for use in view! {})?
-        let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_run_file_chooser(_, file_chooser_request),
-            return handle_file_chooser(&mg, file_chooser_request));
-
-        if let Some(context) = self.get_webview_context() {
-            let stream = self.model.relm.stream().clone();
-            let list_stream = self.download_list_view.stream().clone();
-            connect!(context, connect_download_started(_, download), self.download_list_view, {
-                let stream = stream.clone();
-                let list_stream = list_stream.clone();
-                download.connect_decide_destination(move |download, suggested_filename| {
-                    let destination = find_download_destination(suggested_filename);
-                    download.set_destination(&format!("file://{}", destination));
-                    stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
-                    list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
-                    true
-                });
-                Add(download.clone())
-            });
-        }
-
-        // TODO
-        //app.create_password_keyring();
+        self.connect_dialog_events();
+        self.connect_download_events();
         self.create_variables();
 
         self.listen_messages();
@@ -256,11 +241,8 @@ impl Widget for App {
 
     fn model(relm: &Relm<Self>, (init_url, config_dir): (Option<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config_dir).unwrap();
-        // TODO: better error handling.
-        let (whitelist, blacklist) = App::popup_path(&config_dir);
-        let whitelist = whitelist.expect("cannot create configuration directory");
-        let blacklist = blacklist.expect("cannot create configuration directory");
-        let popup_manager = PopupManager::new((whitelist, blacklist));
+        let popup_manager = create_popup_manager(&config_dir);
+        let message_server = create_message_server();
         Model {
             bookmark_manager: BookmarkManager::new(),
             client: 0, // TODO: real client ID.
@@ -274,7 +256,7 @@ impl Widget for App {
             home_page: None,
             hovered_link: None,
             init_url,
-            message_server: MessageServer::new().unwrap(), // TODO: handle error elsewhere.
+            message_server,
             mode: "normal".to_string(),
             password_manager: PasswordManager::new(),
             popup_manager,
@@ -327,7 +309,7 @@ impl Widget for App {
             DecideDownloadDestination(download, suggested_filename) =>
                 self.download_input(download, suggested_filename),
             DownloadDestination(destination, download, suggested_filename) =>
-                self.download_destination_chosen(destination, download, suggested_filename),
+                handle_error!(self.download_destination_chosen(destination, download, suggested_filename)),
             EmitScrolledEvent => self.emit_scrolled_event(),
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
@@ -339,7 +321,9 @@ impl Widget for App {
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
+            SavePassword(username, password) => handle_error!(self.save_username_password(&username, &password)),
             Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
+            ShowError(error) => self.error(&error),
             ShowZoom(level) => self.show_zoom(level),
             TagEdit(tags) => self.set_tags(tags),
             TitleChanged => self.set_title(),
@@ -374,9 +358,11 @@ impl Widget for App {
                 #[name="download_list_view"]
                 DownloadListView {
                     ActiveDownloads(active) => HasActiveDownloads(active),
+                    DownloadListError(ref error) => ShowError(error.clone()),
                 },
                 #[name="webview"]
                 WebView(self.model.config_dir.clone()) {
+                    AppError(ref error) => ShowError(error.clone()),
                     Close => WebViewClose,
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     ZoomChange(level) => ShowZoom(level),
@@ -410,6 +396,41 @@ impl Widget for App {
 }
 
 impl App {
+    fn connect_dialog_events(&self) {
+        let mg = self.mg.stream().clone();
+        connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
+            return handle_script_dialog(script_dialog, &mg));
+
+        // TODO: add a #[stream(mg)] attribute in relm to support connecting an event to a
+        // function while getting the stream (for use in view! {})?
+        let mg = self.mg.stream().clone();
+        connect!(self.model.relm, self.webview.widget(), connect_run_file_chooser(_, file_chooser_request),
+            return handle_file_chooser(&mg, file_chooser_request));
+    }
+
+    fn connect_download_events(&self) {
+        if let Some(context) = self.get_webview_context() {
+            let stream = self.model.relm.stream().clone();
+            let list_stream = self.download_list_view.stream().clone();
+            connect!(context, connect_download_started(_, download), self.download_list_view, {
+                let stream = stream.clone();
+                let list_stream = list_stream.clone();
+                download.connect_decide_destination(move |download, suggested_filename| {
+                    if let Ok(destination) = find_download_destination(suggested_filename) {
+                        download.set_destination(&format!("file://{}", destination));
+                        stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
+                        list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                        true
+                    }
+                    else {
+                        false
+                    }
+                });
+                Add(download.clone())
+            });
+        }
+    }
+
     /// Show an error from a string.
     pub fn error(&self, error: &str) {
         self.mg.emit(Error(error.into()));
@@ -459,7 +480,7 @@ impl App {
     /// Handle the command.
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
-            ActivateSelection => handle_error!(self.activate_selection()),
+            ActivateSelection => self.activate_selection(),
             Back => self.webview.widget().go_back(),
             BackwardSearch(ref input) => {
                 self.webview.emit(SearchBackward(true));
@@ -474,19 +495,21 @@ impl App {
             DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.emit(PageFinishSearch),
-            FocusInput => handle_error!(self.focus_input()),
+            FocusInput => self.focus_input(),
             Follow => {
+                // TODO: move that into a method.
                 self.model.follow_mode = FollowMode::Click;
                 self.webview.emit(SetOpenInNewWindow(false));
                 self.mg.emit(SetMode("follow"));
-                handle_error!(self.follow_link())
+                self.follow_link();
             },
             Forward => self.webview.widget().go_forward(),
             HideHints => self.hide_hints(),
             Hover => {
+                // TODO: move that into a method.
                 self.model.follow_mode = FollowMode::Hover;
                 self.mg.emit(SetMode("follow"));
-                handle_error!(self.follow_link())
+                self.follow_link();
             },
             Insert => self.go_in_insert_mode(),
             Inspector => self.webview.emit(ShowInspector),
@@ -502,16 +525,16 @@ impl App {
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
             Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
-            ScrollBottom => handle_error!(self.scroll_bottom()),
-            ScrollDown => handle_error!(self.scroll_down_page()),
-            ScrollDownHalf => handle_error!(self.scroll_down_half_page()),
-            ScrollDownLine => handle_error!(self.scroll_down_line()),
-            ScrollLeft => handle_error!(self.scroll_left()),
-            ScrollRight => handle_error!(self.scroll_right()),
-            ScrollTop => handle_error!(self.scroll_top()),
-            ScrollUp => handle_error!(self.scroll_up_page()),
-            ScrollUpHalf => handle_error!(self.scroll_up_half_page()),
-            ScrollUpLine => handle_error!(self.scroll_up_line()),
+            ScrollBottom => self.scroll_bottom(),
+            ScrollDown => self.scroll_down_page(),
+            ScrollDownHalf => self.scroll_down_half_page(),
+            ScrollDownLine => self.scroll_down_line(),
+            ScrollLeft => self.scroll_left(),
+            ScrollRight => self.scroll_right(),
+            ScrollTop => self.scroll_top(),
+            ScrollUp => self.scroll_up_page(),
+            ScrollUpHalf => self.scroll_up_half_page(),
+            ScrollUpLine => self.scroll_up_line(),
             Search(ref input) => {
                 self.webview.emit(SearchBackward(false));
                 self.webview.emit(PageSearch(input.clone()));
@@ -521,10 +544,11 @@ impl App {
             SearchPrevious => self.webview.emit(PageSearchPrevious),
             Stop => self.webview.widget().stop_loading(),
             WinFollow => {
+                // TODO: move that into a function.
                 self.model.follow_mode = FollowMode::Click;
                 self.webview.emit(SetOpenInNewWindow(true));
                 self.mg.emit(SetMode("follow"));
-                handle_error!(self.follow_link())
+                self.follow_link();
             },
             WinOpen(ref url) => self.open_in_new_window_handling_error(url),
             WinPasteUrl => self.win_paste_url(),
@@ -546,12 +570,20 @@ impl App {
     fn handle_create(&mut self, action: NavigationAction) {
         if let Some(request) = action.get_request() {
             if let Some(url) = request.get_uri() {
-                if action.get_navigation_type() == Other && !self.model.popup_manager.is_whitelisted(&url) {
-                    self.handle_popup(url);
+                if action.get_navigation_type() == Other {
+                    let mut should_handle_popup = false;
+                    if let Some(ref mut popup_manager) = self.model.popup_manager {
+                        if !popup_manager.is_whitelisted(&url) {
+                            should_handle_popup = true;
+                        }
+                    }
+
+                    if should_handle_popup {
+                        self.handle_popup(&url);
+                        return;
+                    }
                 }
-                else {
-                    self.open_in_new_window_handling_error(&url);
-                }
+                self.open_in_new_window_handling_error(&url);
             }
         }
     }
@@ -598,6 +630,17 @@ impl App {
     /// Show an info.
     pub fn info(&self, info: String) {
         self.mg.emit(Info(info));
+    }
+
+    fn init_popup_manager(&mut self) {
+        let result =
+            if let Some(ref mut popup_manager) = self.model.popup_manager {
+                popup_manager.load()
+            }
+            else {
+                Ok(())
+            };
+        self.handle_error(result);
     }
 
     /// Handle the mouse target changed event of the webview to show the hovered URL and save it

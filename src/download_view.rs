@@ -60,6 +60,7 @@ pub struct Model {
 pub enum Msg {
     Cancel,
     Destination(String),
+    DownloadError(String),
     Finish,
     OriginalDestination(String),
     Remove,
@@ -129,7 +130,9 @@ impl Widget for DownloadView {
     fn move_or_open(&mut self) {
         if let Some(ref destination) = self.model.new_destination {
             if let Some(ref original_destination) = self.model.original_destination {
-                rename(original_destination, &destination[7..]).unwrap(); // TODO: handle error.
+                if let Err(error) = rename(original_destination, &destination[7..]) {
+                    self.model.relm.stream().emit(DownloadError(error.to_string()));
+                }
             }
             // TODO: warning?
             // Open the file if the user chose to.
@@ -144,6 +147,7 @@ impl Widget for DownloadView {
         match msg {
             Cancel => self.cancel(),
             Destination(destination) => self.destination(destination),
+            DownloadError(_) => (), // To be listened by the user.
             Finish => self.handle_finished(),
             OriginalDestination(destination) => self.model.original_destination = Some(destination),
             Remove => (), // To be listened by the user.

@@ -139,8 +139,9 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
 fn default_directory() -> String {
     let dir = home_dir()
         .unwrap_or_else(temp_dir)
-        .to_str().unwrap() // TODO: remove unwrap().
-        .to_string();
+        .to_str()
+        .map(ToString::to_string)
+        .unwrap_or_default();
     format!("{}/", dir)
 }
 

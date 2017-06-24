@@ -19,6 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+macro_rules! handle_app_error {
+    ($app:ident . $($tt:tt)* ) => {{
+        let result = $app.$($tt)*;
+        if let Err(error) = result {
+            $app.model.relm.stream().emit(AppError(error.to_string()));
+        }
+    }};
+}
+
 mod settings;
 
 use std::fs::{File, read_dir};
@@ -73,6 +82,7 @@ pub struct Model {
 pub enum Msg {
     AddScripts,
     AddStylesheets,
+    AppError(String),
     Close,
     DecidePolicy(PolicyDecision, PolicyDecisionType, Resolver<bool>),
     EndSearch,
@@ -110,24 +120,25 @@ impl Widget for WebView {
 
     fn update(&mut self, event: Msg) {
         match event {
-            AddScripts => { let _ = self.add_scripts(); }, // TODO: handle error.
-            AddStylesheets => { let _ = self.add_stylesheets(); }, // TODO: handle error.
+            AddScripts => handle_app_error!(self.add_scripts()),
+            AddStylesheets => handle_app_error!(self.add_stylesheets()),
+            AppError(_) => (), // To be listened by the user.
             // To be listened by the user.
             Close => (),
             DecidePolicy(policy_decision, policy_decision_type, resolver) =>
                 self.decide_policy(policy_decision, policy_decision_type, resolver),
-            EndSearch => { let _ = self.finish_search(); }, // TODO: handle error.
+            EndSearch => handle_app_error!(self.finish_search()),
             InspectorAttach(inspector, resolver) => self.inspector_attach(inspector, resolver),
             InspectorClose => self.model.inspector_shown = false,
             // To be listened by the user.
             NewWindow(_) => (),
-            PageFinishSearch => { let _ = self.finish_search(); }, // TODO: handle error.
+            PageFinishSearch => handle_app_error!(self.finish_search()),
             PageOpen(url) => self.open(url),
             PagePrint => self.print(),
             PageScreenshot(path) => self.screenshot(path),
-            PageSearch(input) => { let _ = self.search(input); }, // TODO: handle error.
-            PageSearchNext => { let _ = self.search_next(); }, // TODO: handle error.
-            PageSearchPrevious => { let _ = self.search_previous(); }, // TODO: handle error.
+            PageSearch(input) => handle_app_error!(self.search(input)),
+            PageSearchNext => handle_app_error!(self.search_next()),
+            PageSearchPrevious => handle_app_error!(self.search_previous()),
             PageZoomIn => self.show_zoom(self.zoom_in()),
             PageZoomNormal => self.show_zoom(self.zoom_normal()),
             PageZoomOut => self.show_zoom(self.zoom_out()),
@@ -211,9 +222,8 @@ impl WebView {
 
     /// Get the find controller.
     fn find_controller(&self) -> Result<FindController> {
-        // TODO: handle error.
-        Ok(self.view.get_find_controller().expect("find controller"))
-            //.ok_or(Box::new("cannot get find controller".to_string()))
+        self.view.get_find_controller()
+            .ok_or("cannot get find controller".into())
     }
 
     /// Clear the current search.
@@ -267,10 +277,14 @@ impl WebView {
         // TODO: send a sequential number, i.e. the identifier for the current window.
         context.set_web_extensions_initialization_user_data(&PATH.to_variant());
 
-        let cookie_path = config_dir.data_file("cookies")
-            .expect("cannot create data directory");
-        let cookie_manager = context.get_cookie_manager().unwrap();
-        cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
+        if let Ok(cookie_path) = config_dir.data_file("cookies") {
+            let cookie_manager = context.get_cookie_manager().unwrap();
+            // TODO: remove unwrap().
+            cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
+        }
+        else {
+            // TODO: warn.
+        }
 
         context
     }

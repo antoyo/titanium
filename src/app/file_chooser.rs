@@ -37,7 +37,7 @@ use app::dialog::FileInputError::{Cancelled, FileDoesNotExist, SelectedDirectory
 impl App {
     pub fn file_dialog_selection(&self, file: Option<String>) {
         if let Some(file) = file {
-            handle_error!(self.select_file(file));
+            self.select_file(file);
         }
     }
 }

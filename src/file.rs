@@ -23,11 +23,13 @@
 
 use std::thread;
 
+use INVALID_UTF8_ERROR;
+use errors::{ErrorKind, Result};
 use open;
 use tempfile::NamedTempFileOptions;
 
 /// Generate a unique filename from `filename`.
-pub fn gen_unique_filename(filename: &str) -> String {
+pub fn gen_unique_filename(filename: &str) -> Result<String> {
     let (prefix, suffix) =
         if let Some(index) = filename.rfind('.') {
             (&filename[..index], &filename[index..])
@@ -38,9 +40,14 @@ pub fn gen_unique_filename(filename: &str) -> String {
     let file = NamedTempFileOptions::new()
         .prefix(prefix)
         .suffix(suffix)
-        .create()
-        .unwrap();
-    file.path().file_name().unwrap().to_str().unwrap().to_string()
+        .create()?;
+    let filename =
+        file.path().file_name()
+            .ok_or(ErrorKind::Msg("generated file name has no file name".to_string()))?
+            .to_str()
+            .ok_or(ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
+            .to_string();
+    Ok(filename)
 }
 
 /// Open a file in a new process.

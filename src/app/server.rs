@@ -22,50 +22,55 @@
 use titanium_common::Message;
 use titanium_common::Message::*;
 
-use errors::Result;
 use message_server::Msg::*;
 use super::App;
-use super::Msg::{Action, ClickElement, GoToInsertMode, Scroll};
+use super::Msg::{
+    Action,
+    ClickElement,
+    GoToInsertMode,
+    SavePassword,
+    Scroll,
+};
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
 impl App {
     /// Activate the selected hint.
-    pub fn activate_hint(&self) -> Result<()> {
+    pub fn activate_hint(&self) {
         self.focus_webview();
-        self.server_send(ActivateHint(self.model.follow_mode.to_string()))
+        self.server_send(ActivateHint(self.model.follow_mode.to_string()));
     }
 
     /// Activate the link in the selection
-    pub fn activate_selection(&self) -> Result<()> {
-        self.server_send(ActivateSelection())
+    pub fn activate_selection(&self) {
+        self.server_send(ActivateSelection());
     }
 
     /// Emit the scrolled event.
     pub fn emit_scrolled_event(&self) {
-        handle_error!(self.server_send(GetScrollPercentage()));
+        self.server_send(GetScrollPercentage());
     }
 
     /// Send a key to the web process to process with the current hints.
-    pub fn enter_hint_key(&self, key_char: char) -> Result<()> {
-        self.server_send(EnterHintKey(key_char))
+    pub fn enter_hint_key(&self, key_char: char) {
+        self.server_send(EnterHintKey(key_char));
     }
 
     /// Focus the first input element.
-    pub fn focus_input(&self) -> Result<()> {
+    pub fn focus_input(&self) {
         self.focus_webview();
-        self.server_send(FocusInput())
+        self.server_send(FocusInput());
     }
 
     /// Follow a link.
-    pub fn follow_link(&self) -> Result<()> {
-        self.server_send(ShowHints(self.model.hint_chars.clone()))
+    pub fn follow_link(&self) {
+        self.server_send(ShowHints(self.model.hint_chars.clone()));
     }
 
     /// Hide the hints and return to normal mode.
     pub fn hide_hints(&mut self) {
-        handle_error!(self.server_send(HideHints()));
+        self.server_send(HideHints());
         self.go_in_normal_mode();
     }
 
@@ -75,7 +80,7 @@ impl App {
         connect_stream!(message_server@MsgRecv(_, ref msg), self.model.relm.stream(), match *msg {
             ActivateAction(action) => Some(Action(action)),
             ClickHintElement() => Some(ClickElement),
-            Credentials(_, _) => None, // TODO
+            Credentials(ref username, ref password) => Some(SavePassword(username.clone(), password.clone())),
             EnterInsertMode() => Some(GoToInsertMode),
             ScrollPercentage(percentage) => Some(Scroll(percentage)),
             _ => {
@@ -86,72 +91,70 @@ impl App {
     }
 
     /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) -> Result<()> {
-        self.server_send(ScrollBy(pixels as i64))
+    fn scroll(&self, pixels: i32) {
+        self.server_send(ScrollBy(pixels as i64));
     }
 
     /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) -> Result<()> {
-        self.server_send(ScrollBottom())
+    pub fn scroll_bottom(&self) {
+        self.server_send(ScrollBottom());
     }
 
     /// Scroll down by one line.
-    pub fn scroll_down_line(&self) -> Result<()> {
-        self.scroll(SCROLL_LINE_VERTICAL)
+    pub fn scroll_down_line(&self) {
+        self.scroll(SCROLL_LINE_VERTICAL);
     }
 
     /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) -> Result<()> {
+    pub fn scroll_down_half_page(&self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(allocation.height / 2)
+        self.scroll(allocation.height / 2);
     }
 
     /// Scroll down by one page.
-    pub fn scroll_down_page(&self) -> Result<()> {
+    pub fn scroll_down_page(&self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2)
+        self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2);
     }
 
     /// Scroll towards the left of the page.
-    pub fn scroll_left(&self) -> Result<()> {
-        self.server_send(ScrollByX(-SCROLL_LINE_HORIZONTAL))
+    pub fn scroll_left(&self) {
+        self.server_send(ScrollByX(-SCROLL_LINE_HORIZONTAL));
     }
 
     /// Scroll towards the right of the page.
-    pub fn scroll_right(&self) -> Result<()> {
-        self.server_send(ScrollByX(SCROLL_LINE_HORIZONTAL))
+    pub fn scroll_right(&self) {
+        self.server_send(ScrollByX(SCROLL_LINE_HORIZONTAL));
     }
 
     /// Scroll to the top of the page.
-    pub fn scroll_top(&self) -> Result<()> {
-        self.server_send(ScrollTop())
+    pub fn scroll_top(&self) {
+        self.server_send(ScrollTop());
     }
 
     /// Scroll up by one line.
-    pub fn scroll_up_line(&self) -> Result<()> {
-        self.scroll(-SCROLL_LINE_VERTICAL)
+    pub fn scroll_up_line(&self) {
+        self.scroll(-SCROLL_LINE_VERTICAL);
     }
 
     /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) -> Result<()> {
+    pub fn scroll_up_half_page(&self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(-allocation.height / 2)
+        self.scroll(-allocation.height / 2);
     }
 
     /// Scroll up by one page.
-    pub fn scroll_up_page(&self) -> Result<()> {
+    pub fn scroll_up_page(&self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2))
+        self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2));
     }
 
     /// Set the value of an input[type="file"].
-    pub fn select_file(&self, file: String) -> Result<()> {
-        self.server_send(SelectFile(file))
+    pub fn select_file(&self, file: String) {
+        self.server_send(SelectFile(file));
     }
 
-    pub fn server_send(&self, message: Message) -> Result<()> {
+    pub fn server_send(&self, message: Message) {
         self.model.message_server.emit(Send(self.model.client, message));
-        // TODO: manage error.
-        Ok(())
     }
 }

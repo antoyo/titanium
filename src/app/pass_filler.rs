@@ -20,6 +20,7 @@
  */
 
 use titanium_common::Message::{
+    GetCredentials,
     LoadUsernamePass,
     SubmitLoginForm,
 };
@@ -54,21 +55,21 @@ impl App {
         if !usernames.is_empty() {
             let username = &usernames[0];
             let password = self.model.password_manager.get_password(&self.model.current_url, username)?;
-            self.server_send(LoadUsernamePass(username.clone(), password))?;
+            self.server_send(LoadUsernamePass(username.clone(), password));
         }
         Ok(())
     }
 
-    /// Save the password from the currently focused login form into the store.
+    /// Fetch the login data from the web process in order to save them later.
     pub fn save_password(&self) {
+        self.server_send(GetCredentials());
+    }
+
+    /// Save the password from the currently focused login form into the store.
+    pub fn save_username_password(&self, username: &str, password: &str) -> Result<()> {
         // TODO: ask to override existing password.
         // TODO: handle errors.
-        /*if let Ok((username, password)) = self.message_server.get_credentials() {
-            if let Some(url) = self.view.get_uri() {
-                // TODO: handle the check parameter.
-                self.password_manager.add(&url, &username, &password, false);
-            }
-        }*/
+        self.model.password_manager.add(&self.model.current_url, &username, &password)
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
           Err(err) => self.show_error(err),*/
@@ -77,7 +78,8 @@ impl App {
     /// Load the username and password in the login form and submit it.
     pub fn submit_login_form(&self) -> Result<()> {
         self.load_password()?;
-        Ok(self.server_send(SubmitLoginForm())?)
+        self.server_send(SubmitLoginForm());
+        Ok(())
     }
 }
 

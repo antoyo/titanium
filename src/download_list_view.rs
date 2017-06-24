@@ -34,6 +34,7 @@ use download_view::DownloadView;
 use download_view::Msg::{
     Cancel,
     Destination,
+    DownloadError,
     OriginalDestination,
     Remove,
     SetToOpen,
@@ -58,6 +59,7 @@ pub enum Msg {
     DownloadDestination(Download, String),
     DownloadFailed(Error, Download),
     DownloadFinished(Download),
+    DownloadListError(String),
     DownloadOriginalDestination(Download, String),
     DownloadRemove(Download),
 }
@@ -83,6 +85,7 @@ impl Widget for DownloadListView {
             DownloadDestination(download, destination) => self.download_destination(download, destination),
             DownloadFailed(error, download) => self.handle_failed(&error, download),
             DownloadFinished(_) => self.handle_finished(),
+            DownloadListError(_) => (), // To be listened by the user.
             DownloadOriginalDestination(download, destination) =>
                 self.download_original_destination(download, destination),
             DownloadRemove(download) => self.delete(download),
@@ -112,6 +115,7 @@ impl DownloadListView {
             flow_child.set_can_focus(false);
         }
         let down = download.clone();
+        connect!(download_view@DownloadError(ref error), self.model.relm, DownloadListError(error.clone()));
         connect!(download_view@Remove, self.model.relm, DelayedRemove(down.clone()));
 
         // It is necessary to keep the download views because they are connected to events.

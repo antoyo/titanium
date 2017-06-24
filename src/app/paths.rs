@@ -24,12 +24,12 @@ use std::path::PathBuf;
 
 use app::App;
 use config_dir::ConfigDir;
+use errors::Result;
 
 impl App {
     /// Get the config path of the bookmarks file.
-    pub fn bookmark_path(config_dir: &ConfigDir) -> PathBuf {
-        config_dir.config_file("bookmarks.db")
-            .expect("cannot create configuration directory")
+    pub fn bookmark_path(config_dir: &ConfigDir) -> Result<PathBuf> {
+        Ok(config_dir.config_file("bookmarks.db")?)
     }
 
     /// Get the whitelist and blacklist path.

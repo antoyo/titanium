@@ -20,7 +20,11 @@
  */
 
 /*
+ * TODO: remove every unwrap().
+ * TODO: manager error in message server.
  * TODO: add a command to write a password into the focused text field.
+ *
+ * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
  *
  * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
  * redirection, this was working fine before).
@@ -188,7 +192,15 @@
 //! Titanium is a webkit2 keyboard-driven web browser.
 
 #![feature(proc_macro)]
-#![warn(missing_docs)]
+
+#![warn(
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications, unused_results,
+)]
 
 extern crate cairo;
 #[macro_use]
@@ -259,6 +271,8 @@ use simplelog::{Config, LogLevelFilter, TermLogger};
 use structopt::StructOpt;
 
 use app::App;
+
+const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
 #[derive(Debug, StructOpt)]
 #[structopt(about="Titanium web browser.")]

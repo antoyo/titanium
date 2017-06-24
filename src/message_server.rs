@@ -24,11 +24,20 @@
 use std::collections::HashMap;
 use std::fs::remove_file;
 use std::io;
+use std::process;
 
 use futures::{AsyncSink, Sink};
 use fg_uds::{UnixListener, UnixStream};
 use futures_glib::MainContext;
-use relm::{EventStream, Relm, Update, execute};
+use gtk::{
+    ButtonsType,
+    DialogExt,
+    DialogFlags,
+    MessageDialog,
+    MessageType,
+    Window,
+};
+use relm::{EventStream, Relm, Update, UpdateNew, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
@@ -77,16 +86,14 @@ impl Update for MessageServer {
         }
     }
 
-    fn new(_relm: &Relm<Self>, model: Self::Model) -> Option<Self> {
-        Some(MessageServer {
-            model,
-        })
-    }
-
     fn subscriptions(&mut self, relm: &Relm<MessageServer>) {
-        relm.connect_exec(self.model.listener.take().expect("listener").incoming(),
-            |(stream, _addr)| ClientConnect(stream),
-            |error| IncomingError(error.to_string()));
+        match self.model.listener.take() {
+            Some(listener) =>
+                relm.connect_exec(listener.incoming(),
+                    |(stream, _addr)| ClientConnect(stream),
+                    |error| IncomingError(error.to_string())),
+            None => (), // TODO: warn or exit?
+        }
     }
 
     fn update(&mut self, event: Msg) {
@@ -110,11 +117,21 @@ impl Update for MessageServer {
     }
 }
 
+impl UpdateNew for MessageServer {
+    fn new(_relm: &Relm<Self>, model: Self::Model) -> Self {
+        MessageServer {
+            model,
+        }
+    }
+}
+
 impl MessageServer {
     pub fn new() -> io::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
         // TODO: should be removed on Drop instead (or the connection close should remove it
-        // automtically?).
+        // automatically?).
+        // TODO: should open in the existing process if it already exists.
+        // If no other titanium process can be found, delete it.
         remove_file(PATH).ok();
         let listener = UnixListener::bind(PATH, &cx)?;
         Ok(execute::<MessageServer>(listener))
@@ -129,6 +146,21 @@ impl MessageServer {
         else {
             // TODO: return Err
         }
+    }
+}
+
+/// Create a new message server.
+/// If it is not possible to create one, show the error and exit.
+pub fn create_message_server() -> EventStream<<MessageServer as Update>::Msg> {
+    match MessageServer::new() {
+        Ok(message_server) => message_server,
+        Err(error) => {
+            let window: Option<&Window> = None;
+            let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close,
+                "Fatal error: cannot create the message server used to communicate with the web processes");
+            dialog.run();
+            process::exit(1);
+        },
     }
 }
 

@@ -24,6 +24,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use app::App;
+use config_dir::ConfigDir;
 use errors::Result;
 use urls::get_base_url;
 
@@ -37,13 +39,12 @@ pub struct PopupManager {
 
 impl PopupManager {
     /// Create a new popup manager.
-    pub fn new(popup_path: (PathBuf, PathBuf)) -> Self {
-        let (whitelist_path, blacklist_path) = popup_path;
+    pub fn new(whitelist_path: PathBuf, blacklist_path: PathBuf) -> Self {
         PopupManager {
             blacklisted_urls: HashSet::new(),
-            blacklist_path: blacklist_path,
+            blacklist_path,
             whitelisted_urls: HashSet::new(),
-            whitelist_path: whitelist_path,
+            whitelist_path,
         }
     }
 
@@ -116,5 +117,15 @@ impl PopupManager {
             warn!("Not whitelisting {}", url);
             Ok(())
         }
+    }
+}
+
+/// Create a popup manager if the blacklist/whitelist paths can be created.
+pub fn create_popup_manager(config_dir: &ConfigDir) -> Option<PopupManager> {
+    if let (Ok(whitelist_path), Ok(blacklist_path)) = App::popup_path(&config_dir) {
+        Some(PopupManager::new(whitelist_path, blacklist_path))
+    }
+    else {
+        None
     }
 }

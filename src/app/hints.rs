@@ -41,7 +41,7 @@ impl App {
     }
 
     pub fn click_hint_element(&mut self) {
-        self.handle_error(self.activate_hint());
+        self.activate_hint();
         self.hide_hints();
     }
 
@@ -50,7 +50,7 @@ impl App {
         if let Some(key_char) = char::from_u32(event_key.get_keyval()) {
             if key_char.is_alphanumeric() {
                 if let Some(key_char) = key_char.to_lowercase().next() {
-                    handle_error!(self.enter_hint_key(key_char));
+                    self.enter_hint_key(key_char);
                 }
             }
         }
