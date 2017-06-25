@@ -48,6 +48,7 @@ use webkit2gtk::{
     PolicyDecisionExt,
     PrintOperation,
     ResponsePolicyDecision,
+    TLSErrorsPolicy,
     UserContentManager,
     UserScript,
     UserStyleSheet,
@@ -276,6 +277,8 @@ impl WebView {
 
         // TODO: send a sequential number, i.e. the identifier for the current window.
         context.set_web_extensions_initialization_user_data(&PATH.to_variant());
+
+        context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
 
         if let Ok(cookie_path) = config_dir.data_file("cookies") {
             let cookie_manager = context.get_cookie_manager().unwrap();

@@ -20,9 +20,8 @@
  */
 
 /*
- * FIXME: error Unacceptable TLS certificate
- * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
- * https://zinascii.com/2014/a-posix-queue-implementation.html
+ * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
+ * error (test with https://www.pcwebshop.co.uk/)
  *
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
