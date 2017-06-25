@@ -29,10 +29,16 @@ use mg::DialogResult::{self, Answer, Shortcut};
 use webkit2gtk::Download;
 
 use INVALID_UTF8_ERROR;
-use app::Msg::OverwriteDownload;
+use app::Msg::{DecideDownloadDestination, OverwriteDownload};
 use config_dir::ConfigDir;
 use download::download_dir;
-use download_list_view::Msg::{AddFileToOpen, DownloadCancel, DownloadDestination};
+use download_list_view::Msg::{
+    Add,
+    AddFileToOpen,
+    DownloadCancel,
+    DownloadDestination,
+    DownloadOriginalDestination,
+};
 use errors::{ErrorKind, Result, ResultExt};
 use file::gen_unique_filename;
 use super::App;
@@ -73,6 +79,29 @@ impl App {
             remove_file(file?.path())?;
         }
         Ok(())
+    }
+
+    pub fn connect_download_events(&self) {
+        if let Some(context) = self.get_webview_context() {
+            let stream = self.model.relm.stream().clone();
+            let list_stream = self.download_list_view.stream().clone();
+            connect!(context, connect_download_started(_, download), self.download_list_view, {
+                let stream = stream.clone();
+                let list_stream = list_stream.clone();
+                let _ = download.connect_decide_destination(move |download, suggested_filename| {
+                    if let Ok(destination) = find_download_destination(suggested_filename) {
+                        download.set_destination(&format!("file://{}", destination));
+                        stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
+                        list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                        true
+                    }
+                    else {
+                        false
+                    }
+                });
+                Add(download.clone())
+            });
+        }
     }
 
     /// Handle the download decide destination event.
@@ -119,7 +148,7 @@ impl App {
     }
 }
 
-pub fn find_download_destination(suggested_filename: &str) -> Result<String> {
+fn find_download_destination(suggested_filename: &str) -> Result<String> {
     fn next_path(counter: i32, dir: &str, path: &Path) -> Result<PathBuf> {
         let filename = path.file_stem().unwrap_or_default().to_str()
             .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;

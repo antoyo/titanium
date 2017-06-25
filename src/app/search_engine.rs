@@ -23,7 +23,7 @@
 
 use urls::is_url;
 
-use super::App;
+use app::App;
 
 impl App {
     /// Add a search engine.
@@ -63,12 +63,7 @@ impl App {
                 return engine_url.replace("{}", &rest);
             }
         }
-        if !url.contains("://") {
-            format!("http://{}", url)
-        }
-        else {
-            url.to_string()
-        }
+        url.to_string()
     }
 }
 

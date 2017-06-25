@@ -299,6 +299,7 @@ impl WebView {
 
     /// Open the specified URL.
     fn open(&self, url: String) {
+        let url = add_http_if_missing(&url);
         self.view.load_uri(&url);
     }
 
@@ -395,5 +396,14 @@ impl WebView {
         let level = self.view.get_zoom_level();
         self.view.set_zoom_level(level - 0.1);
         (self.view.get_zoom_level() * 100.0) as i32
+    }
+}
+
+fn add_http_if_missing(url: &str) -> String {
+    if !url.contains("://") {
+        format!("http://{}", url)
+    }
+    else {
+        url.to_string()
     }
 }

@@ -40,11 +40,10 @@ mod popup;
 mod search_engine;
 mod server;
 mod test_utils;
+mod url;
 
 use std::collections::HashMap;
-use std::env;
 use std::fmt::{self, Display, Formatter};
-use std::process::Command;
 
 use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
 use gtk::{self, Inhibit, OrientableExt, WidgetExt};
@@ -92,9 +91,7 @@ use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
 use download_list_view::Msg::{
     ActiveDownloads,
-    Add,
     DownloadListError,
-    DownloadOriginalDestination,
 };
 use errors::{self, Result};
 use message_server::{MessageServer, create_message_server};
@@ -102,7 +99,6 @@ use pass_manager::PasswordManager;
 use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
-use self::download::find_download_destination;
 use self::file_chooser::handle_file_chooser;
 use self::Msg::*;
 use settings::AppSettings;
@@ -411,29 +407,6 @@ impl App {
             return handle_file_chooser(&mg, file_chooser_request));
     }
 
-    fn connect_download_events(&self) {
-        if let Some(context) = self.get_webview_context() {
-            let stream = self.model.relm.stream().clone();
-            let list_stream = self.download_list_view.stream().clone();
-            connect!(context, connect_download_started(_, download), self.download_list_view, {
-                let stream = stream.clone();
-                let list_stream = list_stream.clone();
-                let _ = download.connect_decide_destination(move |download, suggested_filename| {
-                    if let Ok(destination) = find_download_destination(suggested_filename) {
-                        download.set_destination(&format!("file://{}", destination));
-                        stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
-                        list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
-                        true
-                    }
-                    else {
-                        false
-                    }
-                });
-                Add(download.clone())
-            });
-        }
-    }
-
     /// Show an error from a string.
     pub fn error(&self, error: &str) {
         self.mg.emit(Error(error.into()));
@@ -657,27 +630,6 @@ impl App {
         }
     }
 
-    /// Open the given URL in the web view.
-    fn open(&self, url: &str) {
-        let url = self.transform_url(url);
-        self.webview.emit(PageOpen(url));
-    }
-
-    /// Open the given URL in a new window.
-    fn open_in_new_window(&self, url: &str) -> Result<()> {
-        let url = self.transform_url(url);
-        let program = env::args().next().unwrap();
-        let _ = Command::new(program)
-            .arg(url)
-            .spawn()?;
-        Ok(())
-    }
-
-    /// Open the given URL in a new window, showing the error if any.
-    fn open_in_new_window_handling_error(&self, url: &str) {
-        handle_error!(self.open_in_new_window(url));
-    }
-
     /// Try to close the web view and quit the application.
     fn try_quit(&self) {
         // Ask for a confirmation before quitting the application when there are active
@@ -725,13 +677,6 @@ impl App {
     /// Handle the web process crashed event.
     fn web_process_crashed(&mut self) {
         self.error("The web process crashed.");
-    }
-
-    /// Open in a new window the url from the system clipboard.
-    fn win_paste_url(&self) {
-        if let Some(url) = self.get_url_from_clipboard() {
-            self.open_in_new_window_handling_error(&url);
-        }
     }
 
     /// Zoom in.

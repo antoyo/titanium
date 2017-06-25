@@ -20,8 +20,6 @@
  */
 
 /*
- * FIXME: running `cargo run -- fsf.org` opens about:blank.
- * TODO: add test for the initial URL handling.
  * FIXME: error Unacceptable TLS certificate
  * (context.set_tls_errors_policy(TLSErrorsPolicy::Ignore) ?).
  * https://zinascii.com/2014/a-posix-queue-implementation.html
@@ -31,6 +29,8 @@
  * TODO: add a command to write a password into the focused text field.
  *
  * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
+ *
+ * TODO: attempt to migrate to gecko.
  *
  * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
  * redirection, this was working fine before).
@@ -47,6 +47,7 @@
  *
  * TODO: shortcut to open the current URL's root.
  *
+ * TODO: cli argument for minimal log level.
  * FIXME: negative zoom level.
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.
@@ -153,12 +154,15 @@
  * TODO: separate config options in section (like webkit.enable-java instead of webkit-enable-java).
  * TODO: i18n.
  * TODO: plugin to block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
+ * TODO: plugin to prevent a menu bar in a website to appear from scrolling up (ou keep fixed elements at the top)
+ * (example: https://www.fastcoexist.com/3027876/millennials-dont-care-about-owning-cars-and-car-makers-cant-figure-out-why).
  * FIXME: trigger a GTK+ event to activate hints (this will fix clicking on a link hidden by
  * another element).
  * FIXME: popup not blocked on bnc.ca.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
+ * TODO: Rust-based plugin architecture (based on webkit web extensions).
  * TODO: command to update adblocker hosts file.
  * TODO: option to disable the adblocker.
  * TODO: block ads coming from websocket.
