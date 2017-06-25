@@ -80,12 +80,16 @@ impl App {
 
     /// Edit the tags of the current page from the bookmarks.
     pub fn edit_bookmark_tags(&self) {
-        let tags = self.model.bookmark_manager.get_tags(&self.model.current_url);
-        if let Some(tags) = tags {
-            let default_answer = tags.join(", ");
-            // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
-            input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
-            default_answer, TagEdit);
+        if self.model.bookmark_manager.exists(&self.model.current_url) {
+            match self.model.bookmark_manager.get_tags(&self.model.current_url) {
+                Ok(tags) => {
+                    let default_answer = tags.join(", ");
+                    // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
+                    input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
+                    default_answer, TagEdit);
+                },
+                Err(err) => self.show_error(err),
+            }
         }
         else {
             self.info_page_not_in_bookmarks();

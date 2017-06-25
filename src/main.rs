@@ -20,6 +20,15 @@
  */
 
 /*
+ * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
+ * FIXME: sometimes, the page load percentage stays shown after the load is finished.
+ * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
+ * TODO: allow to remove tags from bookmarks.
+ *
+ * TODO: switch to one UI process (and one message server).
+ * TODO: save the current URLs of every window in case of a crash.
+ * TODO: command to restore the last closed window.
+ *
  * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
  * error (test with https://www.pcwebshop.co.uk/)
  *
@@ -55,42 +64,25 @@
  * TODO: add a --redirect option or redirect command to bypass the adblocker.
  * TODO: show an error when a page is blocked by the adblocker.
  * FIXME: google is very slow.
- * FIXME: saying no to overwrite a download crashes.
  * FIXME: the browser (opened with window-new) is closed when the parent process is closed (mutt).
- * FIXME: sometimes, the page load percentage stays shown after the load is finished.
- * FIXME: some pages are white: https://devswag.com/products/classic-rust-t-shirt
- * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
- * FIXME: web process crash on print (follow onclick="javascript:print").
- * FIXME: web process crashes on travis CI build page.
  *
- * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
- * FIXME: I can set tags on URLs that are not bookmarked.
  * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
  * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
- * TODO: allow to remove tags from bookmarks.
  * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows: use a thread and/or catch_unwind()).
  * FIXME: hitting the 's' key on https://developer.github.com/ scroll to the search bar.
  * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
  * TODO: auto-detect static bars at the bottom/top of webpages to scroll less when one is present.
  *
- * TODO: unlock the password store when loading a password.
- * FIXME: loading credentials does not work.
  * FIXME: saving empty credentials on https://lichess4545.slack.com/
- *
- * TODO: switch to one UI process (and one DBus server to see if it resolves the timeout issues).
- * TODO: save the current URLs of every window in case of a crash.
- * TODO: command to restore the last closed window.
  *
  * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
  * alphebetical order) and perhaps also by relevance (like the percentage of tags/words that
  * matches).
  * TODO: automatically propose tags when editting bookmark tags (fetch them from the webpage, <meta
  * property="og:article:tag"/> is a start).
- *
- * TODO: use lifetimes to ensure the pointers live long enough for the connect!() macro.
  *
  * TODO: hint file input.
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
@@ -101,14 +93,11 @@
  *
  * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
- * FIXME: a link on https://www.verywell.com/ear-pressure-pose-karnapidasana-3567089 cannot be
- * clicked (and many gobject critical error: g_object_ref assertion G_IS_OBJECT failed).
  *
  * TODO: handle the errors instead of unwrap().
- * TODO: continue to parse the config files even when there are errors.
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: show an error for request blocked by host blocker.
+ * TODO: show an error for request blocked by host blocker (instead of a white page).
  * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
  * FIXME: ctrl-/ should not trigger the mapping for /.
  * TODO: allow using Backspace to remove the last hint character.
@@ -130,7 +119,6 @@
  * TODO: add help text for commands and settings.
  * TODO: handle network errors.
  * TODO: support marks.
- * FIXME: titanium seems slower than other browsers.
  * TODO: show a star next to the url of a bookmarked site.
  * TODO: find a way to recover accidently removed bookmarks (bookmark to readd bookmarks from a
  * stack of removed bookmarks? another shortcut which is harder to do C-S-d?).
@@ -146,7 +134,6 @@
  * TODO: do not search for the empty string, only disable the current search to allow continuing
  * the search on another page.
  * FIXME: do not show (or move) hints hidden by another element (branch button on GitHub).
- * TODO: use a custom error type (wrapping the other errors) instead of Box<Error>.
  * TODO: show source.
  * TODO: prevent videos from autoplaying.
  * TODO: copier plugin (word, line, sentense, block, links…).

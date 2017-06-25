@@ -143,6 +143,11 @@ impl BookmarkManager {
         })
     }
 
+    /// Check if a bookmark exists.
+    pub fn exists(&self, url: &str) -> bool {
+        self.get_id(url).is_some()
+    }
+
     /// Get the id of a bookmark.
     pub fn get_id(&self, url: &str) -> Option<i32> {
         CONNECTION.with(|connection| {
@@ -177,7 +182,7 @@ impl BookmarkManager {
     }
 
     /// Get the tags of a bookmark.
-    pub fn get_tags(&self, url: &str) -> Option<Vec<String>> {
+    pub fn get_tags(&self, url: &str) -> Result<Vec<String>> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
                 if let Ok(mut statement) = connection.prepare("
@@ -194,11 +199,12 @@ impl BookmarkManager {
                             row.get(0)
                         })
                     {
-                        return rows.collect::<result::Result<Vec<_>, _>>().ok();
+                        return rows.collect::<result::Result<Vec<_>, _>>()
+                            .map_err(Into::into);
                     }
                 }
             }
-            None
+            Ok(vec![])
         })
     }
 
