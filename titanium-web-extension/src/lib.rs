@@ -61,6 +61,13 @@ macro_rules! check_err {
     };
 }
 
+macro_rules! get_page {
+    ($_self:ident) => {
+        $_self.model.page_id
+            .and_then(|page_id| $_self.model.extension.get_page(page_id))
+    };
+}
+
 macro_rules! check_err_opt {
     ($e:expr) => {
         if $e.is_none() {
@@ -145,7 +152,6 @@ mod hints;
 mod login_form;
 mod message_client;
 mod option_util;
-mod scroll;
 
 use std::mem::forget;
 
@@ -153,7 +159,7 @@ use glib::variant::Variant;
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
-use webkit2gtk_webextension::WebExtension;
+use webkit2gtk_webextension::{WebExtension, WebExtensionExt};
 
 use message_client::MessageClient;
 use message_client::Msg::PageCreated;

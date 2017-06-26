@@ -61,6 +61,7 @@ pub enum Message {
     GetScrollPercentage(),
     HideHints(),
     LoadUsernamePass(String, String),
+    ResetScrollElement(),
     ScrollBottom(),
     ScrollBy(i64),
     ScrollByX(i64),

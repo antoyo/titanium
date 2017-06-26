@@ -199,6 +199,7 @@ pub enum Msg {
     HasActiveDownloads(bool),
     KeyPress(EventKey, Resolver<Inhibit>),
     LoadChanged(LoadEvent),
+    LoadStarted,
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
     PopupDecision(Option<String>, String),
@@ -316,6 +317,7 @@ impl Widget for App {
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
             KeyPress(event_key, resolver) => self.handle_key_press(event_key, resolver),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
+            LoadStarted => self.load_started(),
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
@@ -371,7 +373,7 @@ impl Widget for App {
                     draw(_, _) => (EmitScrolledEvent, Inhibit(false)),
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
-                    resource_load_started(_, _, _) => TitleChanged,
+                    resource_load_started(_, _, _) => LoadStarted,
                     title_changed() => TitleChanged,
                     uri_changed() => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
@@ -601,6 +603,11 @@ impl App {
         else {
             self.set_title();
         }
+    }
+
+    fn load_started(&mut self) {
+        self.set_title();
+        self.reset_scroll_element();
     }
 
     /// Show an info.

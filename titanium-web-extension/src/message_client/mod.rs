@@ -19,6 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+mod scroll;
+
 use std::collections::HashMap;
 use std::io;
 
@@ -32,19 +34,24 @@ use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
 use tokio_io::io::WriteHalf;
 use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
 use webkit2gtk_webextension::{
-    DOMDOMWindowExtManual,
+    DOMDOMSelectionExt,
+    DOMDOMWindowExt,
     DOMDocumentExt,
     DOMElement,
     DOMElementExt,
     DOMHTMLElement,
     DOMHTMLElementExt,
     DOMHTMLInputElement,
+    DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
     DOMNodeExt,
     URIRequest,
+    URIRequestExt,
     WebExtension,
+    WebExtensionExt,
     WebPage,
+    WebPageExt,
 };
 
 use titanium_common::Message;
@@ -55,11 +62,10 @@ use titanium_common::Action::{
     NoAction,
 };
 use titanium_common::Message::*;
-use titanium_common::Percentage::All;
 
 use adblocker::Adblocker;
 use dom::{
-    ElementIter,
+    NodeIter,
     get_body,
     is_enabled,
     is_hidden,
@@ -70,7 +76,6 @@ use dom::{
 };
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use login_form::{get_credentials, load_password, load_username, submit_login_form};
-use scroll::Scrollable;
 use self::Msg::*;
 
 lazy_static! {
@@ -90,13 +95,6 @@ macro_rules! get_document {
     }};
 }
 
-macro_rules! get_page {
-    ($_self:ident) => {
-        $_self.model.page_id
-            .and_then(|page_id| $_self.model.extension.get_page(page_id))
-    };
-}
-
 pub struct MessageClient {
     model: Model,
 }
@@ -109,6 +107,7 @@ pub struct Model {
     last_hovered_element: Option<DOMElement>,
     page_id: Option<u64>,
     relm: Relm<MessageClient>,
+    scroll_element: Option<DOMElement>,
     writer: WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>,
 }
 
@@ -137,6 +136,7 @@ impl Update for MessageClient {
             last_hovered_element: None,
             page_id: None,
             relm: relm.clone(),
+            scroll_element: None,
             writer,
         }
     }
@@ -153,6 +153,7 @@ impl Update for MessageClient {
                 GetScrollPercentage() => self.send_scroll_percentage(),
                 HideHints() => self.hide_hints(),
                 LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
+                ResetScrollElement() => self.model.scroll_element = None,
                 ScrollBottom() => self.scroll_bottom(),
                 ScrollBy(pixels) => self.scroll_by(pixels),
                 ScrollByX(pixels) => self.scroll_by_x(pixels),
@@ -291,7 +292,7 @@ impl MessageClient {
         if let Some(document) = document {
             let tag_names = ["input", "textarea"];
             for tag_name in &tag_names {
-                let iter = ElementIter::new(document.get_elements_by_tag_name(tag_name));
+                let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
                 for element in iter {
                     let tabindex = element.get_attribute("tabindex");
                     if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
@@ -333,34 +334,6 @@ impl MessageClient {
         load_password(&document, password);
     }
 
-    // Scroll to the bottom of the page.
-    fn scroll_bottom(&self) {
-        if let Some(page) = get_page!(self) {
-            page.scroll_bottom();
-        }
-    }
-
-    // Scroll by the specified amount of pixels.
-    fn scroll_by(&self, pixels: i64) {
-        if let Some(page) = get_page!(self) {
-            page.scroll_by(pixels);
-        }
-    }
-
-    // Scroll horizontally by the specified amount of pixels.
-    fn scroll_by_x(&self, pixels: i64) {
-        if let Some(page) = get_page!(self) {
-            page.scroll_by_x(pixels);
-        }
-    }
-
-    // Scroll to the top of the page.
-    fn scroll_top(&self) {
-        if let Some(page) = get_page!(self) {
-            page.scroll_top();
-        }
-    }
-
     // Set the selected file on the input[type="file"].
     fn select_file(&mut self, file: &str) {
         if let Some(ref input_file) = self.model.activated_file_input.take() {
@@ -399,13 +372,7 @@ impl MessageClient {
 
     // Get the page scroll percentage.
     fn send_scroll_percentage(&mut self) {
-        let percentage =
-            if let Some(page) = get_page!(self) {
-                page.scroll_percentage()
-            }
-            else {
-                All
-            };
+        let percentage = self.scroll_percentage();
         // TODO: only send the message if the percentage actually changed?
         // TODO: even better: add an even handler for scrolling and only send a message when an
         // actual scroll happened.

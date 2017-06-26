@@ -44,7 +44,7 @@ git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
 version = "^0.2"
 
 [features]
-default = ["webkit2gtk-webextension/v2_12"]
+default = ["webkit2gtk-webextension/v2_16"]
 
 [lib]
 crate-type = ["dylib"]

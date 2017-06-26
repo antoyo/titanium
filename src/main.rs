@@ -20,9 +20,8 @@
  */
 
 /*
- * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc).
- * FIXME: sometimes, the page load percentage stays shown after the load is finished.
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
+ * TODO: add tests for the scrolling element.
  * TODO: allow to remove tags from bookmarks.
  *
  * TODO: switch to one UI process (and one message server).
@@ -32,11 +31,17 @@
  * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
  * error (test with https://www.pcwebshop.co.uk/)
  *
+ * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc: http://www.scala-lang.org/api/current/).
+ * FIXME: sometimes, the page load percentage stays shown after the load is finished.
+ *
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
  * TODO: add a command to write a password into the focused text field.
  *
  * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
+ *
+ * FIXME: on http://ticki.github.io/blog/how-lz4-works/, clicking on the other article links at the
+ * bottom redirect to a blank page.
  *
  * TODO: attempt to migrate to gecko.
  *

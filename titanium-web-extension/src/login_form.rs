@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -25,11 +25,13 @@ use webkit2gtk_webextension::{
     DOMDocumentExt,
     DOMElementExt,
     DOMHTMLFormElement,
+    DOMHTMLFormElementExt,
     DOMHTMLInputElement,
+    DOMHTMLInputElementExt,
     DOMNodeExt,
 };
 
-use dom::{ElementIter, is_hidden};
+use dom::{NodeIter, is_hidden};
 use option_util::OptionExt;
 
 pub struct Credential {
@@ -41,7 +43,7 @@ pub struct Credential {
 /// Find a login form.
 /// If a visible form exists, prefer it.
 fn find_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
-    let elements = ElementIter::new(document.query_selector_all("input[type='password']").ok());
+    let elements = NodeIter::new(document.query_selector_all("input[type='password']").ok());
     for input_element in elements {
         if !is_hidden(document, &input_element) {
             let mut form_element = None;

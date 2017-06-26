@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,25 +22,34 @@
 use glib::Cast;
 
 use webkit2gtk_webextension::{
+    DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
-    DOMDOMWindowExtManual,
+    DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
     DOMEventTarget,
     DOMEventTargetExt,
     DOMHTMLButtonElement,
+    DOMHTMLButtonElementExt,
+    DOMHTMLCollection,
+    DOMHTMLCollectionExt,
     DOMHTMLElement,
     DOMHTMLFieldSetElement,
     DOMHTMLFieldSetElementExtManual,
     DOMHTMLInputElement,
+    DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
+    DOMHTMLSelectElementExt,
     DOMHTMLTextAreaElement,
+    DOMHTMLTextAreaElementExt,
     DOMMouseEvent,
     DOMMouseEventExt,
     DOMNodeExt,
     DOMNodeList,
+    DOMNodeListExt,
     WebPage,
+    WebPageExt,
 };
 
 macro_rules! return_if_disabled {
@@ -55,41 +64,48 @@ macro_rules! return_if_disabled {
     };
 }
 
-/// A `DOMElement` iterator for a node list.
-pub struct ElementIter {
-    index: u64,
-    node_list: Option<DOMNodeList>,
-}
-
-impl ElementIter {
-    /// Create a new dom element iterator.
-    pub fn new(node_list: Option<DOMNodeList>) -> Self {
-        ElementIter {
-            index: 0,
-            node_list: node_list,
+macro_rules! iter {
+    ($name:ident, $list:ident) => {
+        /// A `DOMElement` iterator for a node list.
+        pub struct $name {
+            index: u64,
+            node_list: Option<$list>,
         }
-    }
-}
 
-impl Iterator for ElementIter {
-    type Item = DOMElement;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.node_list {
-            Some(ref list) => {
-                if self.index < list.get_length() {
-                    let element = list.item(self.index);
-                    self.index += 1;
-                    element.and_then(|element| element.downcast::<DOMElement>().ok())
+        impl $name {
+            /// Create a new dom element iterator.
+            pub fn new(node_list: Option<$list>) -> Self {
+                $name {
+                    index: 0,
+                    node_list,
                 }
-                else {
-                    None
-                }
-            },
-            None => None,
+            }
         }
-    }
+
+        impl Iterator for $name {
+            type Item = DOMElement;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                match self.node_list {
+                    Some(ref list) => {
+                        if self.index < list.get_length() {
+                            let element = list.item(self.index);
+                            self.index += 1;
+                            element.and_then(|element| element.downcast::<DOMElement>().ok())
+                        }
+                        else {
+                            None
+                        }
+                    },
+                    None => None,
+                }
+            }
+        }
+    };
 }
+
+iter!(NodeIter, DOMNodeList);
+iter!(ElementIter, DOMHTMLCollection);
 
 #[derive(Debug)]
 pub struct Pos {

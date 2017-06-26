@@ -93,6 +93,11 @@ impl App {
         });
     }
 
+    /// Reset the scroll element.
+    pub fn reset_scroll_element(&self) {
+        self.server_send(ResetScrollElement());
+    }
+
     /// Scroll by the specified number of pixels.
     fn scroll(&self, pixels: i32) {
         self.server_send(ScrollBy(pixels as i64));

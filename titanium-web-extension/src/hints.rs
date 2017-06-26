@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,15 +24,26 @@ use std::i32;
 
 use glib::object::Downcast;
 use webkit2gtk_webextension::{
+    DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
     DOMElement,
     DOMElementExt,
     DOMHTMLIFrameElement,
+    DOMHTMLIFrameElementExt,
     DOMNodeExt,
+    DOMNodeListExt,
 };
 
-use dom::{ElementIter, Pos, get_position, hide, is_enabled, is_visible, show};
+use dom::{
+    NodeIter,
+    Pos,
+    get_position,
+    hide,
+    is_enabled,
+    is_visible,
+    show,
+};
 
 pub const HINTS_ID: &'static str = "__titanium_hints";
 
@@ -153,7 +164,7 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
     let tag_names = ["a", "button", "select", "textarea"];
     for tag_name in &tag_names {
-        let elements = ElementIter::new(document.get_elements_by_tag_name(tag_name));
+        let elements = NodeIter::new(document.get_elements_by_tag_name(tag_name));
         for element in elements {
             // Only show the hints for visible elements that are not disabled.
             if is_visible(document, &element) && is_enabled(&element) {
@@ -167,7 +178,7 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
 /// Get the hintable elements from the iframes.
 fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
-    let iter = ElementIter::new(document.get_elements_by_tag_name("iframe"));
+    let iter = NodeIter::new(document.get_elements_by_tag_name("iframe"));
     for iframe in iter {
         if let Ok(iframe) = iframe.downcast() {
             let iframe: DOMHTMLIFrameElement = iframe;
@@ -182,7 +193,7 @@ fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement>
 /// Get the hintable input elements.
 fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
-    let form_elements = ElementIter::new(document.get_elements_by_tag_name("input"));
+    let form_elements = NodeIter::new(document.get_elements_by_tag_name("input"));
     for element in form_elements {
         if is_visible(document, &element) && is_enabled(&element) &&
             // Do not show hints for hidden form elements.
@@ -200,7 +211,7 @@ pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) -> bool {
         &format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys))
         .ok();
     let hints_len = hints_to_hide.as_ref().map(|hints| hints.get_length()).unwrap_or(0);
-    let hints = ElementIter::new(hints_to_hide);
+    let hints = NodeIter::new(hints_to_hide);
     for hint in hints {
         hide(&hint);
     }
@@ -210,7 +221,7 @@ pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) -> bool {
 
 /// Show all hints.
 pub fn show_all_hints(document: &DOMDocument) {
-    let hints = ElementIter::new(document.query_selector_all(".__titanium_hint").ok());
+    let hints = NodeIter::new(document.query_selector_all(".__titanium_hint").ok());
     for hint in hints {
         show(&hint);
     }
