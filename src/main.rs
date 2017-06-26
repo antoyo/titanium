@@ -22,11 +22,12 @@
 /*
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * TODO: add tests for the scrolling element.
- * TODO: allow to remove tags from bookmarks.
  *
  * TODO: switch to one UI process (and one message server).
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
+ *
+ * TODO: add command (;f) to change the active element.
  *
  * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
  * error (test with https://www.pcwebshop.co.uk/)
@@ -167,7 +168,6 @@
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element (disable insert mode when focus is lost).
  * TODO: show URL in title when the title is not available.
- * TODO: add command (;f) to focus frame.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try

@@ -84,7 +84,7 @@ impl App {
             match self.model.bookmark_manager.get_tags(&self.model.current_url) {
                 Ok(tags) => {
                     let default_answer = tags.join(", ");
-                    // TODO: tags completion (with a Ctrl-D shortcut to delete tags.).
+                    // TODO: tags completion.
                     input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
                     default_answer, TagEdit);
                 },

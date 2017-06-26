@@ -22,6 +22,7 @@
 //! Bookmark management.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::result;
 
@@ -141,6 +142,23 @@ impl BookmarkManager {
             }
             Ok(false)
         })
+    }
+
+    /// Delete the tags that are in `original_tags` but not in `tags`.
+    fn delete_tags(&self, connection: &Connection, bookmark_id: i32, original_tags: &[String], tags: &[String])
+        -> Result<()>
+    {
+        let original_tags: HashSet<_> = original_tags.iter().collect();
+        let tags: HashSet<_> = tags.iter().collect();
+        let tags_to_delete = &original_tags - &tags;
+        for tag in tags_to_delete {
+            let tag_id = self.get_tag_id(connection, tag)?;
+            let _ = connection.execute("
+                DELETE FROM bookmarks_tags
+                WHERE bookmark_id = $1 AND tag_id = $2
+            ", &[&bookmark_id, &tag_id])?;
+        }
+        Ok(())
     }
 
     /// Check if a bookmark exists.
@@ -271,11 +289,12 @@ impl BookmarkManager {
 
     /// Set the tags of a bookmark.
     pub fn set_tags(&self, url: &str, tags: Vec<String>) -> Result<()> {
+        let original_tags = self.get_tags(url)?;
         CONNECTION.with(|connection| {
             if let Some(bookmark_id) = self.get_id(url) {
-                for tag in &tags {
-                    let tag = tag.to_lowercase();
-                    if let Some(ref connection) = *connection.borrow() {
+                if let Some(ref connection) = *connection.borrow() {
+                    for tag in &tags {
+                        let tag = tag.to_lowercase();
                         let _ = connection.execute("
                             INSERT OR IGNORE INTO tags (name)
                             VALUES ($1)
@@ -287,6 +306,7 @@ impl BookmarkManager {
                         ", &[&bookmark_id, &tag_id])
                             .map(|_| ())?
                     }
+                    self.delete_tags(connection, bookmark_id, &original_tags, &tags)?;
                 }
             }
             Ok(())
