@@ -20,12 +20,24 @@
  */
 
 /*
- * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
- * TODO: add tests for the scrolling element.
+ * FIXME: scroll on https://webkitgtk.org/reference/webkit2gtk/stable/index.html
+ * http://agendadulibre.qc.ca/events?start_date=2017-07-01
+ * file:///home/bouanto
+ * https://tutorial.ponylang.org/getting-started/how-it-works.html
+ * https://news.ycombinator.com/item?id=14686745
  *
- * TODO: switch to one UI process (and one message server).
+ * FIXME: focus does not go to first element (duckduckgo, wikipedia, walmart).
+ *
+ * FIXME: when cannot find a scrollable element, use the body.
+ * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
+ * signal does with the returned web view (perhaps it is needed).
+ * TODO: open the URL in the existing process when starting a new titanium process.
+ * FIXME: download input show in wrong window when download starts in new window.
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
+ *
+ * FIXME: cannot delete bookmarks with Ctrl-D in auto-completion.
+ * FIXME: gi goes to the second input on many sites including duckduckgo and wikipedia.
  *
  * TODO: add command (;f) to change the active element.
  *
@@ -61,7 +73,11 @@
  *
  * TODO: shortcut to open the current URL's root.
  *
+ * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
+ * TODO: add tests for the scrolling element.
+ *
  * TODO: cli argument for minimal log level.
+ * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
  * FIXME: negative zoom level.
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.
@@ -126,7 +142,7 @@
  * TODO: handle network errors.
  * TODO: support marks.
  * TODO: show a star next to the url of a bookmarked site.
- * TODO: find a way to recover accidently removed bookmarks (bookmark to readd bookmarks from a
+ * TODO: find a way to recover accidently removed bookmarks (shortcut to read bookmarks from a
  * stack of removed bookmarks? another shortcut which is harder to do C-S-d?).
  * TODO: warn when adding a bookmarks that has the same URL as another one, except with(out) a /.
  * TODO: preferred languages.
@@ -259,10 +275,10 @@ use std::env::args;
 
 use gumdrop::Options;
 use log::LogLevel::Error;
-use relm::Widget;
 use simplelog::{Config, LogLevelFilter, TermLogger};
 
-use app::{App, APP_NAME};
+use app::APP_NAME;
+use message_server::create_message_server;
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
@@ -279,11 +295,11 @@ struct Args {
 }
 
 fn main() {
-    gtk::init().unwrap();
+    gtk::init().unwrap(); // TODO: this is called twice. Remove?
 
     let args: Vec<_> = args().collect();
 
-    let mut args = match Args::parse_args_default(&args[1..]) {
+    let args = match Args::parse_args_default(&args[1..]) {
         Ok(options) => options,
         Err(error) => {
             println!("{}: {}", APP_NAME, error);
@@ -309,15 +325,7 @@ fn main() {
             TermLogger::init(LogLevelFilter::max(), config).unwrap();
         }
 
-        let url =
-            if !args.url.is_empty() {
-                // TODO: open the other URLs in new windows?
-                Some(args.url.remove(0))
-            }
-            else {
-                None
-            };
-
-        App::run((url, args.config)).unwrap();
+        let _message_server = create_message_server(args.url, args.config);
+        gtk::main();
     }
 }

@@ -19,11 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::env;
-use std::process::Command;
-
 use app::App;
-use errors::Result;
+use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
 
 impl App {
@@ -34,24 +31,15 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    pub fn open_in_new_window(&self, url: &str) -> Result<()> {
+    pub fn open_in_new_window(&mut self, url: &str) {
         let url = self.transform_url(url);
-        let program = env::args().next().unwrap();
-        let _ = Command::new(program)
-            .arg(url)
-            .spawn()?;
-        Ok(())
-    }
-
-    /// Open the given URL in a new window, showing the error if any.
-    pub fn open_in_new_window_handling_error(&self, url: &str) {
-        handle_error!(self.open_in_new_window(url));
+        self.model.relm.stream().emit(CreateWindow(url));
     }
 
     /// Open in a new window the url from the system clipboard.
-    pub fn win_paste_url(&self) {
+    pub fn win_paste_url(&mut self) {
         if let Some(url) = self.get_url_from_clipboard() {
-            self.open_in_new_window_handling_error(&url);
+            self.open_in_new_window(&url);
         }
     }
 }

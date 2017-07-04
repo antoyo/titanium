@@ -54,10 +54,10 @@ impl App {
     pub fn handle_answer(&mut self, answer: Option<&str>, url: &str) {
         match answer {
             Some("a") => {
-                self.open_in_new_window_handling_error(url);
+                self.open_in_new_window(url);
                 self.whitelist_popup(url);
             },
-            Some("y") => self.open_in_new_window_handling_error(url),
+            Some("y") => self.open_in_new_window(url),
             Some("e") => self.blacklist_popup(url),
             _ => (),
         }
@@ -67,9 +67,10 @@ impl App {
     /// If the url is whitelisted, open it.
     /// If the url is blacklisted, block it.
     /// Otherwise, ask to the user whether to open it.
-    pub fn handle_popup(&self, url: &str) {
+    pub fn handle_popup(&mut self, url: &str) {
         // Block popup.
         if let Some(base_url) = get_base_url(url) {
+            let mut open = false;
             if let Some(ref popup_manager) = self.model.popup_manager {
                 if !popup_manager.is_whitelisted(url) {
                     if popup_manager.is_blacklisted(url) {
@@ -80,8 +81,11 @@ impl App {
                     }
                 }
                 else {
-                    self.open_in_new_window_handling_error(url);
+                    open = true;
                 }
+            }
+            if open {
+                self.open_in_new_window(url);
             }
         }
         else {

@@ -19,54 +19,48 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use titanium_common::Message;
-use titanium_common::Message::*;
+use titanium_common::InnerMessage;
+use titanium_common::InnerMessage::*;
 
-use message_server::Msg::*;
 use super::App;
-use super::Msg::{
-    ClickElement,
-    DoAction,
-    GoToInsertMode,
-    SavePassword,
-    Scroll,
-    ShowError,
-};
+use super::Msg::ServerSend;
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
 
 impl App {
     /// Activate the selected hint.
-    pub fn activate_hint(&self) {
+    pub fn activate_hint(&mut self) {
         self.focus_webview();
-        self.server_send(ActivateHint(self.model.follow_mode.to_string()));
+        let mode = self.model.follow_mode.to_string();
+        self.server_send(ActivateHint(mode));
     }
 
     /// Activate the link in the selection
-    pub fn activate_selection(&self) {
+    pub fn activate_selection(&mut self) {
         self.server_send(ActivateSelection());
     }
 
     /// Emit the scrolled event.
-    pub fn emit_scrolled_event(&self) {
+    pub fn emit_scrolled_event(&mut self) {
         self.server_send(GetScrollPercentage());
     }
 
     /// Send a key to the web process to process with the current hints.
-    pub fn enter_hint_key(&self, key_char: char) {
+    pub fn enter_hint_key(&mut self, key_char: char) {
         self.server_send(EnterHintKey(key_char));
     }
 
     /// Focus the first input element.
-    pub fn focus_input(&self) {
+    pub fn focus_input(&mut self) {
         self.focus_webview();
         self.server_send(FocusInput());
     }
 
     /// Follow a link.
-    pub fn follow_link(&self) {
-        self.server_send(ShowHints(self.model.hint_chars.clone()));
+    pub fn follow_link(&mut self) {
+        let chars = self.model.hint_chars.clone();
+        self.server_send(ShowHints(chars));
     }
 
     /// Hide the hints and return to normal mode.
@@ -75,94 +69,90 @@ impl App {
         self.go_in_normal_mode();
     }
 
-    pub fn listen_messages(&self) {
-        let message_server = &self.model.message_server;
-        connect_stream!(message_server@MsgError(ref error), self.model.relm.stream(), ShowError(error.to_string()));
-        // TODO: use client_id (first param of MsgRecv).
-        connect_stream!(message_server@MsgRecv(_, ref msg), self.model.relm.stream(), match *msg {
-            ActivateAction(action) => Some(DoAction(action)),
-            ClickHintElement() => Some(ClickElement),
-            Credentials(ref username, ref password) => Some(SavePassword(username.clone(), password.clone())),
-            EnterInsertMode() => Some(GoToInsertMode),
-            ScrollPercentage(percentage) => Some(Scroll(percentage)),
-            _ => {
+    pub fn message_recv(&mut self, message: InnerMessage) {
+        match message {
+            ActivateAction(action) => self.activate_action(action),
+            ClickHintElement() => self.click_hint_element(),
+            Credentials(ref username, ref password) => handle_error!(self.save_username_password(&username, &password)),
+            EnterInsertMode() => self.go_in_insert_mode(),
+            ScrollPercentage(percentage) => self.show_scroll(percentage),
+            _ =>
                 // TODO: show the warning in the UI?
-                warn!("Unexpected message received: {:?}", msg);
-                None
-            },
-        });
+                warn!("Unexpected message received: {:?}", message),
+        }
     }
 
     /// Reset the scroll element.
-    pub fn reset_scroll_element(&self) {
+    pub fn reset_scroll_element(&mut self) {
         self.server_send(ResetScrollElement());
     }
 
     /// Scroll by the specified number of pixels.
-    fn scroll(&self, pixels: i32) {
+    fn scroll(&mut self, pixels: i32) {
         self.server_send(ScrollBy(pixels as i64));
     }
 
     /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&self) {
+    pub fn scroll_bottom(&mut self) {
         self.server_send(ScrollBottom());
     }
 
     /// Scroll down by one line.
-    pub fn scroll_down_line(&self) {
+    pub fn scroll_down_line(&mut self) {
         self.scroll(SCROLL_LINE_VERTICAL);
     }
 
     /// Scroll down by one half of page.
-    pub fn scroll_down_half_page(&self) {
+    pub fn scroll_down_half_page(&mut self) {
         let allocation = self.get_webview_allocation();
         self.scroll(allocation.height / 2);
     }
 
     /// Scroll down by one page.
-    pub fn scroll_down_page(&self) {
+    pub fn scroll_down_page(&mut self) {
         let allocation = self.get_webview_allocation();
         self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2);
     }
 
     /// Scroll towards the left of the page.
-    pub fn scroll_left(&self) {
+    pub fn scroll_left(&mut self) {
         self.server_send(ScrollByX(-SCROLL_LINE_HORIZONTAL));
     }
 
     /// Scroll towards the right of the page.
-    pub fn scroll_right(&self) {
+    pub fn scroll_right(&mut self) {
         self.server_send(ScrollByX(SCROLL_LINE_HORIZONTAL));
     }
 
     /// Scroll to the top of the page.
-    pub fn scroll_top(&self) {
+    pub fn scroll_top(&mut self) {
         self.server_send(ScrollTop());
     }
 
     /// Scroll up by one line.
-    pub fn scroll_up_line(&self) {
+    pub fn scroll_up_line(&mut self) {
         self.scroll(-SCROLL_LINE_VERTICAL);
     }
 
     /// Scroll up by one half of page.
-    pub fn scroll_up_half_page(&self) {
+    pub fn scroll_up_half_page(&mut self) {
         let allocation = self.get_webview_allocation();
         self.scroll(-allocation.height / 2);
     }
 
     /// Scroll up by one page.
-    pub fn scroll_up_page(&self) {
+    pub fn scroll_up_page(&mut self) {
         let allocation = self.get_webview_allocation();
         self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2));
     }
 
     /// Set the value of an input[type="file"].
-    pub fn select_file(&self, file: String) {
+    pub fn select_file(&mut self, file: String) {
         self.server_send(SelectFile(file));
     }
 
-    pub fn server_send(&self, message: Message) {
-        self.model.message_server.emit(Send(self.model.client, message));
+    pub fn server_send(&mut self, message: InnerMessage) {
+        let page_id = self.webview.widget().get_page_id();
+        self.model.relm.stream().emit(ServerSend(page_id, message));
     }
 }

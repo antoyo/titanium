@@ -34,42 +34,78 @@
 #[macro_use]
 extern crate serde_derive;
 
+// TODO: put in the home directory.
+/// The path to the unix domain socket.
+pub const PATH: &str = "/tmp/titanium";
+
+#[doc(hidden)]
+pub type ExtensionId = u64;
+#[doc(hidden)]
+pub type PageId = u64;
+
 /// Action that should be executed from the UI process.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum Action {
+    /// Show the file input.
     FileInput,
+    /// Go in insert mode.
     GoInInsertMode,
+    /// No action.
     NoAction,
 }
 
-// Switch to SimpleMsg to avoid these empty ().
+/// Message with the associated window/page id.
 #[derive(Debug, Deserialize, Serialize)]
-pub enum Message {
+pub struct Message(pub PageId, pub InnerMessage);
+
+/// Message representing actions to to in the web page.
+// Switch to SimpleMsg to avoid these empty ().
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum InnerMessage {
     /// Response to ActivateHint.
     ActivateAction(Action),
+    /// Activate the selected hint according to the specified follow mode.
     ActivateHint(String),
+    /// Click on the link in the selection.
     ActivateSelection(),
     /// Response to EnterHintKey.
     ClickHintElement(),
     /// Response to GetCredentials.
     Credentials(String, String),
+    /// Add a key to the current hint text.
     EnterHintKey(char),
     /// Response to FocusInput.
     EnterInsertMode(),
+    /// Focus the first text input.
     FocusInput(),
+    /// Ask for the credentials from the login form.
     GetCredentials(),
+    /// Ask for the scroll percentage of the web page.
     GetScrollPercentage(),
+    /// Send the page ID to the application to connect the web extension with the right window.
+    /// Answer to GetId.
+    Id(ExtensionId, PageId),
+    /// Hide the hints.
     HideHints(),
+    /// Write the username and password in the login form.
     LoadUsernamePass(String, String),
+    /// Reset the scroll element to None.
     ResetScrollElement(),
+    /// Scroll to the bottom of the web page
     ScrollBottom(),
+    /// Scroll vertically by the specified amount of pixels.
     ScrollBy(i64),
+    /// Scroll horizontally by the specified amount of pixels.
     ScrollByX(i64),
     /// Response of GetScrollPercentage.
     ScrollPercentage(Percentage),
+    /// Scroll to the top of the web page.
     ScrollTop(),
+    /// Set the selected file on a file input.
     SelectFile(String),
+    /// Show the hints over the elements.
     ShowHints(String),
+    /// Submit the login form.
     SubmitLoginForm(),
 }
 

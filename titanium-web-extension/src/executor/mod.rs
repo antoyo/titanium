@@ -19,20 +19,24 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+macro_rules! get_document {
+    ($_self:ident) => {{
+        let document = $_self.model.page.get_dom_document();
+        if let Some(document) = document {
+            document
+        }
+        else {
+            return;
+        }
+    }};
+}
+
 mod scroll;
 
 use std::collections::HashMap;
-use std::io;
 
-use fg_uds::UnixStream;
-use futures::{AsyncSink, Sink};
-use futures_glib::MainContext;
 use glib::Cast;
-use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
-use tokio_io::AsyncRead;
-use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
-use tokio_io::io::WriteHalf;
-use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
+use relm_state::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
     DOMDOMSelectionExt,
     DOMDOMWindowExt,
@@ -46,24 +50,19 @@ use webkit2gtk_webextension::{
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
     DOMNodeExt,
-    URIRequest,
-    URIRequestExt,
-    WebExtension,
-    WebExtensionExt,
     WebPage,
     WebPageExt,
 };
 
-use titanium_common::Message;
+use titanium_common::{InnerMessage, PageId};
 use titanium_common::Action::{
     self,
     FileInput,
     GoInInsertMode,
     NoAction,
 };
-use titanium_common::Message::*;
+use titanium_common::InnerMessage::*;
 
-use adblocker::Adblocker;
 use dom::{
     NodeIter,
     get_body,
@@ -78,124 +77,88 @@ use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use login_form::{get_credentials, load_password, load_username, submit_login_form};
 use self::Msg::*;
 
-lazy_static! {
-    static ref ADBLOCKER: Adblocker = Adblocker::new();
-}
-
-macro_rules! get_document {
-    ($_self:ident) => {{
-        let document = get_page!($_self)
-            .and_then(|page| page.get_dom_document());
-        if let Some(document) = document {
-            document
-        }
-        else {
-            return;
-        }
-    }};
-}
-
-pub struct MessageClient {
+pub struct Executor {
     model: Model,
 }
 
 pub struct Model {
     activated_file_input: Option<DOMHTMLInputElement>,
-    extension: WebExtension,
     hint_keys: String,
     hint_map: HashMap<String, DOMElement>,
     last_hovered_element: Option<DOMElement>,
-    page_id: Option<u64>,
-    relm: Relm<MessageClient>,
+    page: WebPage,
+    relm: Relm<Executor>,
     scroll_element: Option<DOMElement>,
-    writer: WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>,
 }
 
 #[derive(Msg)]
 pub enum Msg {
-    MsgRecv(Message),
-    MsgError(Error),
-    PageCreated(WebPage),
+    MessageRecv(InnerMessage),
+    ServerSend(PageId, InnerMessage),
 }
 
-impl Update for MessageClient {
+impl Update for Executor {
     type Model = Model;
-    type ModelParam = (UnixStream, WebExtension);
+    type ModelParam = WebPage;
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (stream, extension): Self::ModelParam) -> Model {
-        let (reader, writer) = stream.split();
-        let writer = WriteBincode::new(FramedWrite::new(writer));
-        let reader = ReadBincode::new(FramedRead::new(reader));
-        relm.connect_exec(reader, MsgRecv, MsgError);
+    fn model(relm: &Relm<Self>, page: WebPage) -> Model {
         Model {
             activated_file_input: None,
-            extension,
             hint_keys: String::new(),
             hint_map: HashMap::new(),
             last_hovered_element: None,
-            page_id: None,
+            page,
             relm: relm.clone(),
             scroll_element: None,
-            writer,
         }
     }
 
-    fn update(&mut self, event: Msg) {
-        match event {
-            MsgError(error) => error!("{}", error),
-            MsgRecv(msg) => match msg {
-                ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
-                ActivateSelection() => self.activate_selection(),
-                EnterHintKey(key) => self.enter_hint_key(key),
-                FocusInput() => self.focus_input(),
-                GetCredentials() => self.send_credentials(),
-                GetScrollPercentage() => self.send_scroll_percentage(),
-                HideHints() => self.hide_hints(),
-                LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
-                ResetScrollElement() => self.model.scroll_element = None,
-                ScrollBottom() => self.scroll_bottom(),
-                ScrollBy(pixels) => self.scroll_by(pixels),
-                ScrollByX(pixels) => self.scroll_by_x(pixels),
-                ScrollTop() => self.scroll_top(),
-                SelectFile(file) => self.select_file(&file),
-                ShowHints(hint_chars) => self.show_hints(&hint_chars),
-                SubmitLoginForm() => self.submit_login_form(),
-                _ => warn!("Unexpected message received: {:?}", msg),
-            },
-            PageCreated(page) => {
-                // TODO: this should be disconnected later somehow.
-                connect!(self.model.relm, page, connect_send_request(_, request, _),
-                    return block_request(request));
-                self.model.page_id = Some(page.get_id())
-            },
+    fn update(&mut self, message: Msg) {
+        match message {
+            MessageRecv(msg) =>
+                match msg {
+                    ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
+                    ActivateSelection() => self.activate_selection(),
+                    EnterHintKey(key) => self.enter_hint_key(key),
+                    FocusInput() => self.focus_input(),
+                    GetCredentials() => self.send_credentials(),
+                    GetScrollPercentage() => self.send_scroll_percentage(),
+                    HideHints() => self.hide_hints(),
+                    LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
+                    ResetScrollElement() => self.model.scroll_element = None,
+                    ScrollBottom() => self.scroll_bottom(),
+                    ScrollBy(pixels) => self.scroll_by(pixels),
+                    ScrollByX(pixels) => self.scroll_by_x(pixels),
+                    ScrollTop() => self.scroll_top(),
+                    SelectFile(file) => self.select_file(&file),
+                    ShowHints(hint_chars) => self.show_hints(&hint_chars),
+                    SubmitLoginForm() => self.submit_login_form(),
+                    _ => warn!("Unexpected message received: {:?}", msg),
+                },
+            // To be listened by the user.
+            ServerSend(_, _) => (),
         }
     }
 }
 
-impl UpdateNew for MessageClient {
+impl UpdateNew for Executor {
     fn new(_relm: &Relm<Self>, model: Model) -> Self {
-        MessageClient {
+        Executor {
             model,
         }
     }
 }
 
-impl MessageClient {
-    pub fn new(path: &str, extension: WebExtension) -> io::Result<EventStream<<Self as Update>::Msg>> {
-        let cx = MainContext::default(|cx| cx.clone());
-        let stream = UnixStream::connect(path, &cx)?;
-        Ok(execute::<MessageClient>((stream, extension)))
-    }
-
+impl Executor {
     // Activate (click, focus, hover) the selected hint.
     fn activate_hint(&mut self, follow_mode: &str) {
         let follow =
             if follow_mode == "hover" {
-                MessageClient::hover
+                Executor::hover
             }
             else {
-                MessageClient::click
+                Executor::click
             };
 
         let element = self.model.hint_map.get(&self.model.hint_keys)
@@ -214,8 +177,8 @@ impl MessageClient {
 
     // Click on the link of the selected text.
     fn activate_selection(&self) {
-        let result = get_page!(self)
-            .and_then(|page| page.get_dom_document())
+        // TODO: switch to using some macros to simplify this code.
+        let result = self.model.page.get_dom_document()
             .and_then(|document| document.get_default_view())
             .and_then(|window| window.get_selection())
             .and_then(|selection| selection.get_anchor_node())
@@ -273,8 +236,7 @@ impl MessageClient {
             self.send(ClickHintElement());
         }
         else {
-            let document = get_page!(self)
-                .and_then(|page| page.get_dom_document());
+            let document = self.model.page.get_dom_document();
             if let Some(document) = document {
                 let all_hidden = hide_unrelevant_hints(&document, &self.model.hint_keys);
                 if all_hidden {
@@ -287,8 +249,7 @@ impl MessageClient {
 
     // Focus the first input element.
     fn focus_input(&mut self) {
-        let document = get_page!(self)
-            .and_then(|page| page.get_dom_document());
+        let document = self.model.page.get_dom_document();
         if let Some(document) = document {
             let tag_names = ["input", "textarea"];
             for tag_name in &tag_names {
@@ -308,11 +269,10 @@ impl MessageClient {
 
     // Hide all the hints.
     fn hide_hints(&self) {
-        let page = get_page!(self);
-        let elements = page.as_ref()
-            .and_then(|page| page.get_dom_document())
+        let elements =
+            self.model.page.get_dom_document()
             .and_then(|document| document.get_element_by_id(HINTS_ID))
-            .and_then(|hints| page.as_ref().and_then(|page| get_body(page).map(|body| (hints, body))));
+            .and_then(|hints| get_body(&self.model.page).map(|body| (hints, body)));
         if let Some((hints, body)) = elements {
             check_err!(body.remove_child(&hints));
         }
@@ -342,25 +302,16 @@ impl MessageClient {
         }
     }
 
-    // Send a message to the server.
-    fn send(&mut self, msg: Message) {
-        match self.model.writer.start_send(msg) {
-            Ok(AsyncSink::Ready) =>
-                if let Err(error) = self.model.writer.poll_complete() {
-                    error!("Cannot send message to UI process: {}", error);
-                },
-            Ok(AsyncSink::NotReady(_)) => error!("not ready to send to client"),
-            Err(send_error) =>
-                error!("cannot send a message to the web process: {}", send_error),
-        }
+    fn send(&self, message: InnerMessage) {
+        self.model.relm.stream().emit(ServerSend(self.model.page.get_id(), message));
     }
 
     // Get the username and password from the login form.
     fn send_credentials(&mut self) {
         let mut username = String::new();
         let mut password = String::new();
-        let credential = get_page!(self)
-            .and_then(|page| page.get_dom_document())
+        let credential =
+            self.model.page.get_dom_document()
             .and_then(|document| get_credentials(&document));
         if let Some(credential) = credential {
             username = credential.username;
@@ -380,11 +331,11 @@ impl MessageClient {
     }
 
     // Show the hint of elements using the hint characters.
+    // TODO: only send the hint characters once, not every time?
     fn show_hints(&mut self, hint_chars: &str) {
         self.model.hint_keys.clear();
-        let page = get_page!(self);
-        let body = wtry_opt_no_ret!(page.as_ref().and_then(|page| get_body(page)));
-        let document = wtry_opt_no_ret!(page.and_then(|page| page.get_dom_document()));
+        let body = wtry_opt_no_ret!(get_body(&self.model.page));
+        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
         let (hints, hint_map) = wtry_opt_no_ret!(create_hints(&document, hint_chars));
         self.model.hint_map = hint_map;
         check_err!(body.append_child(&hints));
@@ -395,11 +346,4 @@ impl MessageClient {
         let document = get_document!(self);
         submit_login_form(&document);
     }
-}
-
-fn block_request(request: &URIRequest) -> bool {
-    if let Some(url) = request.get_uri() {
-        return ADBLOCKER.should_block(&url);
-    }
-    false
 }

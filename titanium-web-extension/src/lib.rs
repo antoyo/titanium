@@ -61,13 +61,6 @@ macro_rules! check_err {
     };
 }
 
-macro_rules! get_page {
-    ($_self:ident) => {
-        $_self.model.page_id
-            .and_then(|page_id| $_self.model.extension.get_page(page_id))
-    };
-}
-
 macro_rules! check_err_opt {
     ($e:expr) => {
         if $e.is_none() {
@@ -148,6 +141,7 @@ macro_rules! wtry_opt_no_ret {
 
 mod adblocker;
 mod dom;
+mod executor;
 mod hints;
 mod login_form;
 mod message_client;
@@ -155,7 +149,6 @@ mod option_util;
 
 use std::mem::forget;
 
-use glib::variant::Variant;
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
@@ -169,9 +162,8 @@ web_extension_init!();
 #[doc(hidden)]
 pub const APP_NAME: &'static str = "titanium";
 
-#[no_mangle]
 /// Initialize the the logger and the message server.
-pub fn web_extension_initialize(extension: &WebExtension, user_data: &Variant) {
+pub fn web_extension_initialize(extension: &WebExtension) {
     let config = Config {
         time: Some(Error),
         level: Some(Error),
@@ -182,9 +174,7 @@ pub fn web_extension_initialize(extension: &WebExtension, user_data: &Variant) {
         println!("Cannot initialize the logger: {}", error);
     }
 
-    let server_name = user_data.get_str();
-    let server_name = wtry_opt_no_ret!(server_name);
-    let client = wtry!(MessageClient::new(server_name, extension.clone()));
+    let client = wtry!(MessageClient::new());
 
     connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
 

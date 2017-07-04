@@ -46,10 +46,12 @@ use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 
 use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
-use gtk::{self, Inhibit, OrientableExt, WidgetExt};
+use glib::Cast;
+use gtk::{self, ContainerExt, Inhibit, OrientableExt, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{
     AppClose,
+    CloseWin,
     Completers,
     CompletionViewChange,
     CustomCommand,
@@ -68,7 +70,7 @@ use mg::{
     Title,
     yes_no_question,
 };
-use relm::{EventStream, Relm, Resolver, Update, Widget};
+use relm::{Relm, Resolver, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     Download,
@@ -80,7 +82,7 @@ use webkit2gtk::{
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
 
-use titanium_common::Action;
+use titanium_common::{InnerMessage, PageId};
 use titanium_common::Percentage::{self, All, Percent};
 
 use bookmarks::BookmarkManager;
@@ -94,7 +96,6 @@ use download_list_view::Msg::{
     DownloadListError,
 };
 use errors::{self, Result};
-use message_server::{MessageServer, create_message_server};
 use pass_manager::PasswordManager;
 use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
@@ -128,6 +129,7 @@ use webview::Msg::{
     SearchBackward,
     SetOpenInNewWindow,
     ShowInspector,
+    WebPageId,
     WebViewSettingChanged,
     ZoomChange,
 };
@@ -159,7 +161,6 @@ impl Display for FollowMode {
 
 pub struct Model {
     bookmark_manager: BookmarkManager,
-    client: usize,
     command_text: String,
     config_dir: ConfigDir,
     current_url: String,
@@ -170,7 +171,6 @@ pub struct Model {
     home_page: Option<String>,
     hovered_link: Option<String>,
     init_url: Option<String>,
-    message_server: EventStream<<MessageServer as Update>::Msg>,
     mode: String,
     password_manager: PasswordManager,
     popup_manager: Option<PopupManager>,
@@ -178,6 +178,7 @@ pub struct Model {
     scroll_text: String,
     search_engines: HashMap<String, String>,
     title: String,
+    web_context: WebContext,
 }
 
 #[derive(Msg)]
@@ -185,26 +186,26 @@ pub enum Msg {
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
     ButtonRelease(EventButton, Resolver<Inhibit>),
-    ClickElement,
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
+    CreateWindow(String),
     DecideDownloadDestination(Download, String),
-    DoAction(Action),
     DownloadDestination(DialogResult, Download, String),
     EmitScrolledEvent,
     Exit(bool),
     FileDialogSelection(Option<String>),
-    GoToInsertMode,
     HasActiveDownloads(bool),
     KeyPress(EventKey, Resolver<Inhibit>),
     LoadChanged(LoadEvent),
     LoadStarted,
+    MessageRecv(InnerMessage),
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
+    SetPageId(PageId),
     PopupDecision(Option<String>, String),
-    SavePassword(String, String),
-    Scroll(Percentage),
+    Remove(PageId),
+    ServerSend(PageId, InnerMessage),
     ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
@@ -235,17 +236,12 @@ impl Widget for App {
         self.connect_dialog_events();
         self.connect_download_events();
         self.create_variables();
-
-        self.listen_messages();
     }
 
-    fn model(relm: &Relm<Self>, (init_url, config_dir): (Option<String>, Option<String>)) -> Model {
-        let config_dir = ConfigDir::new(&config_dir).unwrap();
+    fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
         let popup_manager = create_popup_manager(&config_dir);
-        let message_server = create_message_server();
         Model {
             bookmark_manager: BookmarkManager::new(),
-            client: 0, // TODO: real client ID.
             command_text: String::new(),
             config_dir,
             current_url: String::new(),
@@ -256,7 +252,6 @@ impl Widget for App {
             home_page: None,
             hovered_link: None,
             init_url,
-            message_server,
             mode: "normal".to_string(),
             password_manager: PasswordManager::new(),
             popup_manager,
@@ -264,6 +259,7 @@ impl Widget for App {
             scroll_text: "[top]".to_string(),
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
+            web_context,
         }
     }
 
@@ -301,29 +297,33 @@ impl Widget for App {
             AppSetMode(mode) => self.model.mode = mode,
             AppSettingChanged(setting) => self.setting_changed(setting),
             ButtonRelease(event, resolver) => self.handle_button_release(event, resolver),
-            ClickElement => self.click_hint_element(),
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
             DecideDownloadDestination(download, suggested_filename) =>
                 self.download_input(download, suggested_filename),
-            DoAction(action) => self.activate_action(action),
             DownloadDestination(destination, download, suggested_filename) =>
                 handle_error!(self.download_destination_chosen(destination, download, suggested_filename)),
             EmitScrolledEvent => self.emit_scrolled_event(),
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
-            GoToInsertMode => self.go_in_insert_mode(),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
             KeyPress(event_key, resolver) => self.handle_key_press(event_key, resolver),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
             LoadStarted => self.load_started(),
+            MessageRecv(message) => self.message_recv(message),
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
+            // To be listened by the user.
+            CreateWindow(_) => (),
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
-            SavePassword(username, password) => handle_error!(self.save_username_password(&username, &password)),
-            Scroll(scroll_percentage) => self.show_scroll(scroll_percentage),
+            // To be listened by the user.
+            Remove(_) => (),
+            // To be listened by the user.
+            ServerSend(_, _) => (),
+            // To be listened by the user.
+            SetPageId(_) => (),
             ShowError(error) => self.error(&error),
             ShowZoom(level) => self.show_zoom(level),
             TagEdit(tags) => self.set_tags(tags),
@@ -331,7 +331,7 @@ impl Widget for App {
             TryClose => self.try_quit(),
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
-            WebViewClose => gtk::main_quit(),
+            WebViewClose => self.close_webview(),
         }
     }
 
@@ -362,10 +362,11 @@ impl Widget for App {
                     DownloadListError(ref error) => ShowError(error.clone()),
                 },
                 #[name="webview"]
-                WebView(self.model.config_dir.clone()) {
+                WebView((self.model.config_dir.clone(), self.model.web_context.clone())) {
                     AppError(ref error) => ShowError(error.clone()),
                     Close => WebViewClose,
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
+                    WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
                     button_release_event(_, event) => async ButtonRelease(event.clone()),
                     create(_, action) => (Create(action.clone()), None),
@@ -397,6 +398,21 @@ impl Widget for App {
 }
 
 impl App {
+    fn close_webview(&self) {
+        let page_id = self.webview.widget().get_page_id();
+        self.model.relm.stream().emit(Remove(page_id));
+
+        // FIXME: The following is a hack to avoid the black windows issue.
+        let webview = self.webview.widget();
+        if let Some(parent) = webview.get_parent() {
+            if let Ok(parent) = parent.downcast::<::gtk::Container>() {
+                let children = parent.get_children();
+                parent.remove(&children[1]);
+                self.mg.stream().emit(CloseWin);
+            }
+        }
+    }
+
     fn connect_dialog_events(&self) {
         let mg = self.mg.stream().clone();
         connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
@@ -449,7 +465,7 @@ impl App {
     fn handle_button_release(&mut self, event: EventButton, mut resolver: Resolver<Inhibit>) {
         if event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) {
             if let Some(url) = self.model.hovered_link.clone() {
-                self.open_in_new_window_handling_error(&url);
+                self.open_in_new_window(&url);
                 resolver.resolve(Inhibit(true));
             }
         }
@@ -528,7 +544,7 @@ impl App {
                 self.mg.emit(SetMode("follow"));
                 self.follow_link();
             },
-            WinOpen(ref url) => self.open_in_new_window_handling_error(url),
+            WinOpen(ref url) => self.open_in_new_window(url),
             WinPasteUrl => self.win_paste_url(),
             ZoomIn => self.zoom_in(),
             ZoomNormal => self.zoom_normal(),
@@ -561,7 +577,7 @@ impl App {
                         return;
                     }
                 }
-                self.open_in_new_window_handling_error(&url);
+                self.open_in_new_window(&url);
             }
         }
     }

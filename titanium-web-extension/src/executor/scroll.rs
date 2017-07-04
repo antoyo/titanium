@@ -27,21 +27,20 @@ use webkit2gtk_webextension::{
     DOMElement,
     DOMElementExt,
     DOMNodeExt,
-    WebExtensionExt,
     WebPage,
 };
 
 use titanium_common::Percentage::{self, All, Percent};
 
 use dom::{ElementIter, get_body, get_document};
-use message_client::MessageClient;
+use executor::Executor;
 
-impl MessageClient {
+impl Executor {
     /// Initialize the scroll element if needed.
     fn init_scroll_element(&mut self) {
-        let page = wtry_opt_no_ret!(get_page!(self));
         if self.model.scroll_element.is_none() {
-            self.model.scroll_element = find_scrollable_element(&page);
+            // FIXME: if the page is not scrollable, no scrollable element is found.
+            self.model.scroll_element = find_scrollable_element(&self.model.page);
         }
     }
 
@@ -73,8 +72,7 @@ impl MessageClient {
         self.init_scroll_element();
         let default = All;
         let element = unwrap_opt_or_ret!(self.model.scroll_element.as_ref(), default);
-        let page = unwrap_opt_or_ret!(get_page!(self), default);
-        let document = unwrap_opt_or_ret!(get_document(&page), default);
+        let document = unwrap_opt_or_ret!(get_document(&self.model.page), default);
         let height = document.get_client_height();
         let scroll_height = element.get_scroll_height();
         if scroll_height <= height as i64 {

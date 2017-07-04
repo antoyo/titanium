@@ -34,7 +34,7 @@ use std::fs::{File, read_dir};
 use std::io::Read;
 
 use cairo::{Context, Format, ImageSurface};
-use glib::{Cast, ToVariant};
+use glib::Cast;
 use gtk::{WidgetExt, Window};
 use relm::{Relm, Resolver, Widget};
 use relm_attributes::widget;
@@ -60,19 +60,22 @@ use webkit2gtk::{
 };
 use webkit2gtk::NavigationType::LinkClicked;
 use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
+use webkit2gtk::ProcessModel::MultipleSecondaryProcesses;
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
+use titanium_common::PageId;
+
 use config_dir::ConfigDir;
 use errors::Result;
-use message_server::PATH;
 use self::Msg::*;
 use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
 
 pub struct Model {
     config_dir: ConfigDir,
+    context: WebContext,
     inspector_shown: bool,
     open_in_new_window: bool,
     relm: Relm<WebView>,
@@ -101,17 +104,25 @@ pub enum Msg {
     PageZoomNormal,
     PageZoomOut,
     SearchBackward(bool),
+    SendPageId,
     SetOpenInNewWindow(bool),
     ShowInspector,
+    WebPageId(PageId),
     WebViewSettingChanged(AppSettingsVariant),
     ZoomChange(i32),
 }
 
 #[widget]
 impl Widget for WebView {
-    fn model(relm: &Relm<Self>, config_dir: ConfigDir) -> Model {
+    fn init_view(&mut self) {
+        // Send the page id later when the event connection in the app is made.
+        self.model.relm.stream().emit(SendPageId);
+    }
+
+    fn model(relm: &Relm<Self>, (config_dir, context): (ConfigDir, WebContext)) -> Model {
         Model {
             config_dir,
+            context,
             inspector_shown: false,
             open_in_new_window: false,
             relm: relm.clone(),
@@ -144,8 +155,11 @@ impl Widget for WebView {
             PageZoomNormal => self.show_zoom(self.zoom_normal()),
             PageZoomOut => self.show_zoom(self.zoom_out()),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
+            SendPageId => self.send_page_id(),
             SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
             ShowInspector => self.show_inspector(),
+            // To be listened by the user.
+            WebPageId(_) => (),
             WebViewSettingChanged(setting) => self.setting_changed(setting),
             // To be listened by the user.
             ZoomChange(_) => (),
@@ -156,7 +170,7 @@ impl Widget for WebView {
         #[name="view"]
         webkit2gtk::WebView({
             user_content_manager: UserContentManager::new(), // FIXME: seems to be deallocated.
-            web_context: WebView::initialize_web_extension(&self.model.config_dir)
+            web_context: self.model.context
         }) {
             close => Close,
             vexpand: true,
@@ -265,7 +279,7 @@ impl WebView {
     }
 
     /// Create the context and initialize the web extension.
-    fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
+    pub fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
         let context = WebContext::get_default().unwrap();
         if cfg!(debug_assertions) {
             context.set_web_extensions_directory("titanium-web-extension/target/debug");
@@ -275,9 +289,8 @@ impl WebView {
             context.set_web_extensions_directory(install_path);
         }
 
-        // TODO: send a sequential number, i.e. the identifier for the current window.
-        context.set_web_extensions_initialization_user_data(&PATH.to_variant());
-
+        context.set_process_model(MultipleSecondaryProcesses);
+        context.set_web_process_count_limit(4);
         context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
 
         if let Ok(cookie_path) = config_dir.data_file("cookies") {
@@ -360,6 +373,11 @@ impl WebView {
             self.find_controller()?.search_previous();
         }
         Ok(())
+    }
+
+    /// Send the page ID to the application.
+    fn send_page_id(&self) {
+        self.model.relm.stream().emit(WebPageId(self.view.get_page_id()));
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a

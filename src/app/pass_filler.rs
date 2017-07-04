@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use titanium_common::Message::{
+use titanium_common::InnerMessage::{
     GetCredentials,
     LoadUsernamePass,
     SubmitLoginForm,
@@ -47,7 +47,7 @@ impl App {
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
-    pub fn load_password(&self) -> Result<()> {
+    pub fn load_password(&mut self) -> Result<()> {
         /*Ok(true) => return Ok(true),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
@@ -61,7 +61,7 @@ impl App {
     }
 
     /// Fetch the login data from the web process in order to save them later.
-    pub fn save_password(&self) {
+    pub fn save_password(&mut self) {
         self.server_send(GetCredentials());
     }
 
@@ -76,7 +76,7 @@ impl App {
     }
 
     /// Load the username and password in the login form and submit it.
-    pub fn submit_login_form(&self) -> Result<()> {
+    pub fn submit_login_form(&mut self) -> Result<()> {
         self.load_password()?;
         self.server_send(SubmitLoginForm());
         Ok(())
