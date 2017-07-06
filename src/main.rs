@@ -20,16 +20,16 @@
  */
 
 /*
- * FIXME: scroll on https://webkitgtk.org/reference/webkit2gtk/stable/index.html
- * http://agendadulibre.qc.ca/events?start_date=2017-07-01
- * file:///home/bouanto
+ * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
- * https://news.ycombinator.com/item?id=14686745
+ * FIXME: scroll percentage wrong on:
+ * file:///home/bouanto
+ * FIXME: scroll percentage is all:
+ * https://github.com/rust-lang/rust/issues/23742
  *
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
  *
- * FIXME: when cannot find a scrollable element, use the body.
  * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
  * signal does with the returned web view (perhaps it is needed).
  * TODO: open the URL in the existing process when starting a new titanium process.

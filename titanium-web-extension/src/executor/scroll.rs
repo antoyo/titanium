@@ -37,7 +37,7 @@ use executor::Executor;
 
 impl Executor {
     /// Initialize the scroll element if needed.
-    fn init_scroll_element(&mut self) {
+    pub fn init_scroll_element(&mut self) {
         if self.model.scroll_element.is_none() {
             // FIXME: if the page is not scrollable, no scrollable element is found.
             self.model.scroll_element = find_scrollable_element(&self.model.page);
@@ -69,7 +69,6 @@ impl Executor {
 
     /// Get the current vertical scroll position of the web page as a percentage.
     pub fn scroll_percentage(&mut self) -> Percentage {
-        self.init_scroll_element();
         let default = All;
         let element = unwrap_opt_or_ret!(self.model.scroll_element.as_ref(), default);
         let document = unwrap_opt_or_ret!(get_document(&self.model.page), default);
@@ -123,7 +122,7 @@ pub fn find_scrollable_element(page: &WebPage) -> Option<DOMElement> {
                 }
             }
         }
-        best_child
+        Some(best_child.unwrap_or(body))
     }
 }
 

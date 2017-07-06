@@ -93,6 +93,7 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
+    InitScrollElement,
     MessageRecv(InnerMessage),
     ServerSend(PageId, InnerMessage),
 }
@@ -116,6 +117,7 @@ impl Update for Executor {
 
     fn update(&mut self, message: Msg) {
         match message {
+            InitScrollElement => self.init_scroll_element(),
             MessageRecv(msg) =>
                 match msg {
                     ActivateHint(follow_mode) => self.activate_hint(&follow_mode),

@@ -43,7 +43,7 @@ use titanium_common::InnerMessage::*;
 
 use adblocker::Adblocker;
 use executor::Executor;
-use executor::Msg::{MessageRecv, ServerSend};
+use executor::Msg::{InitScrollElement, MessageRecv, ServerSend};
 use self::Msg::*;
 
 lazy_static! {
@@ -106,7 +106,8 @@ impl Update for MessageClient {
                 if self.model.extension_id.is_none() {
                     self.model.extension_id = Some(page_id);
                 }
-                let executor = execute::<Executor>(page);
+                let executor = execute::<Executor>(page.clone());
+                connect_stream!(page, connect_document_loaded(_), executor, InitScrollElement);
                 connect_stream!(executor@ServerSend(page_id, ref msg),
                     self.model.relm.stream(), Send(page_id, msg.clone()));
                 let _ = self.model.executors.insert(page_id, executor);
