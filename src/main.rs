@@ -30,6 +30,8 @@
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
  *
+ * TODO: add a command to write a password into the focused text field.
+ *
  * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
  * signal does with the returned web view (perhaps it is needed).
  * TODO: open the URL in the existing process when starting a new titanium process.
@@ -50,7 +52,6 @@
  *
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
- * TODO: add a command to write a password into the focused text field.
  *
  * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
  *

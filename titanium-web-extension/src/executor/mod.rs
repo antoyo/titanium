@@ -262,6 +262,7 @@ impl Executor {
                         && tabindex != Some("-1".to_string())
                     {
                         element.focus();
+                        element.scroll_into_view_if_needed(false);
                         self.send(EnterInsertMode());
                         break;
                     }
