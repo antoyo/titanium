@@ -26,7 +26,8 @@
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
  * https://news.ycombinator.com/item?id=14686745
  *
- * FIXME: focus does not go to first element (duckduckgo, wikipedia, walmart).
+ * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
+ * order.
  *
  * FIXME: when cannot find a scrollable element, use the body.
  * FIXME: black windows with multiple web processes when destroying a window. Look at what the create

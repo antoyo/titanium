@@ -261,6 +261,7 @@ impl Executor {
                     {
                         element.focus();
                         self.send(EnterInsertMode());
+                        break;
                     }
                 }
             }
