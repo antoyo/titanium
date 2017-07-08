@@ -55,7 +55,7 @@ extern crate webkit2gtk_webextension;
 macro_rules! check_err {
     ($e:expr) => {
         if let Err(error) = $e {
-            error!("{}", error);
+            error!("check_err: {}", error);
             return;
         }
     };
@@ -84,7 +84,7 @@ macro_rules! unwrap_or_ret {
         match $e {
             Ok(expr) => expr,
             Err(error) => {
-                error!("{}", error);
+                error!("unwrap_or_ret: {}", error);
                 return $default;
             },
         }
@@ -96,7 +96,7 @@ macro_rules! wtry {
         match $e {
             Ok(expr) => expr,
             Err(error) => {
-                error!("{}", error);
+                error!("wtry: {}", error);
                 return;
             },
         }
@@ -147,10 +147,11 @@ mod login_form;
 mod message_client;
 mod option_util;
 
+use std::fs::OpenOptions;
 use std::mem::forget;
 
 use log::LogLevel::Error;
-use simplelog::{Config, TermLogger};
+use simplelog::{Config, TermLogger, WriteLogger};
 use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::{WebExtension, WebExtensionExt};
 
@@ -170,11 +171,20 @@ pub fn web_extension_initialize(extension: &WebExtension) {
         target: None,
         location: None,
     };
-    if let Err(error) = TermLogger::init(LogLevelFilter::Info, config) {
+    let file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("/home/bouanto/web-extension-log").unwrap();
+    if let Err(error) = WriteLogger::init(LogLevelFilter::Trace, config, file) {
         println!("Cannot initialize the logger: {}", error);
     }
+    /*if let Err(error) = TermLogger::init(LogLevelFilter::Info, config) {
+        println!("Cannot initialize the logger: {}", error);
+    }*/
 
+    trace!("Before MessageClient::new()");
     let client = wtry!(MessageClient::new());
+    trace!("After MessageClient::new()");
 
     connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
 

@@ -89,7 +89,7 @@ impl Update for MessageClient {
 
     fn update(&mut self, event: Msg) {
         match event {
-            MsgError(error) => error!("{}", error),
+            MsgError(error) => error!("MsgError: {}", error),
             MsgRecv(Message(page_id, msg)) => {
                 if let Some(executor) = self.model.executors.get(&page_id) {
                     executor.emit(MessageRecv(msg));
@@ -103,6 +103,7 @@ impl Update for MessageClient {
                 connect!(self.model.relm, page, connect_send_request(_, request, _),
                     return block_request(request));
                 let page_id = page.get_id();
+                trace!("New page created with id {}", page_id);
                 if self.model.extension_id.is_none() {
                     self.model.extension_id = Some(page_id);
                 }
@@ -113,6 +114,7 @@ impl Update for MessageClient {
                 let _ = self.model.executors.insert(page_id, executor);
                 // The extension id is initialized a couple of lines before, hence unwrap().
                 let extension_id = self.model.extension_id.unwrap();
+                trace!("Send page id {}", page_id);
                 self.send(page_id, Id(extension_id, page_id));
             },
             Send(page_id, msg) => self.send(page_id, msg),

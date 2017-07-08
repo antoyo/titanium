@@ -20,6 +20,15 @@
  */
 
 /*
+ * TODO: open the URL in the existing process when starting a new titanium process.
+ *
+ * TODO: add a command to write a password into the focused text field.
+ *
+ * TODO: "extension id for page X does not exist".
+ * The page ID is sent, but not received (no message received). Check that the message is really
+ * sent.
+ * Connection refused (os error 111) might be why the message is not received (or actually sent).
+ *
  * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
  * FIXME: scroll percentage wrong on:
@@ -30,11 +39,8 @@
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
  *
- * TODO: add a command to write a password into the focused text field.
- *
  * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
  * signal does with the returned web view (perhaps it is needed).
- * TODO: open the URL in the existing process when starting a new titanium process.
  * FIXME: download input show in wrong window when download starts in new window.
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
@@ -244,6 +250,8 @@ extern crate relm_attributes;
 extern crate relm_derive;
 extern crate rusqlite;
 extern crate simplelog;
+extern crate sysinfo;
+extern crate syslog;
 #[cfg(test)]
 extern crate tempdir;
 extern crate tempfile;
@@ -274,13 +282,25 @@ mod urls;
 mod webview;
 
 use std::env::args;
+use std::process;
 
+use fg_uds::UnixStream;
+use futures::{AsyncSink, Sink};
+use futures_glib::MainContext;
 use gumdrop::Options;
 use log::LogLevel::Error;
 use simplelog::{Config, LogLevelFilter, TermLogger};
+use sysinfo::{System, SystemExt, get_current_pid};
+use syslog::Facility;
+use tokio_io::AsyncRead;
+use tokio_io::codec::length_delimited::FramedWrite;
+use tokio_serde_bincode::WriteBincode;
 
 use app::APP_NAME;
+use errors::Result;
 use message_server::create_message_server;
+use titanium_common::{Message, PATH};
+use titanium_common::InnerMessage::Open;
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
@@ -317,17 +337,59 @@ fn main() {
         println!("{}", Args::usage());
     }
     else {
-        if args.log {
-            let config = Config {
-                time: Some(Error),
-                level: Some(Error),
-                target: None,
-                location: None,
-            };
-            TermLogger::init(LogLevelFilter::max(), config).unwrap();
-        }
+        check_already_running(&args.url);
+
+        init_logging(args.log);
 
         let _message_server = create_message_server(args.url, args.config);
         gtk::main();
     }
+}
+
+fn check_already_running(url: &[String]) {
+    let mut system = System::new();
+    system.refresh_processes();
+
+    let current_pid = get_current_pid();
+
+    for process in system.get_process_by_name(APP_NAME) {
+        if process.pid != current_pid {
+            if let Err(ref e) = send_url_to_existing_process(url) {
+                println!("error: {}", e);
+
+                for e in e.iter().skip(1) {
+                    println!("caused by: {}", e);
+                }
+
+                process::exit(1);
+            }
+            break;
+        }
+    }
+}
+
+fn init_logging(log_to_term: bool) {
+    if log_to_term {
+        let config = Config {
+            time: Some(Error),
+            level: Some(Error),
+            target: None,
+            location: None,
+        };
+        TermLogger::init(LogLevelFilter::max(), config).unwrap();
+    }
+
+    syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
+}
+
+fn send_url_to_existing_process(url: &[String]) -> Result<()> {
+    let cx = MainContext::default(|cx| cx.clone());
+    let (_, writer) = UnixStream::connect(PATH, &cx)?.split();
+    let mut writer = WriteBincode::new(FramedWrite::new(writer));
+    match writer.start_send(Message(0, Open(url.to_vec()))) {
+        Ok(AsyncSink::Ready) => { let _ = writer.poll_complete()?; },
+        Ok(AsyncSink::NotReady(_)) => bail!("not ready to send to client"),
+        Err(send_error) => bail!(format!("cannot send a message to the web process: {}", send_error)),
+    }
+    process::exit(0);
 }

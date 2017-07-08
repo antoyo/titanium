@@ -117,6 +117,7 @@ impl Widget for WebView {
     fn init_view(&mut self) {
         // Send the page id later when the event connection in the app is made.
         self.model.relm.stream().emit(SendPageId);
+        trace!("New web view with page id {}", self.view.get_page_id());
     }
 
     fn model(relm: &Relm<Self>, (config_dir, context): (ConfigDir, WebContext)) -> Model {

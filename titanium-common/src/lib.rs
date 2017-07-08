@@ -89,6 +89,10 @@ pub enum InnerMessage {
     HideHints(),
     /// Write the username and password in the login form.
     LoadUsernamePass(String, String),
+    /// Open the given URL.
+    /// This is used when starting a new titanium process to tell the existing process to open a
+    /// new window.
+    Open(Vec<String>),
     /// Reset the scroll element to None.
     ResetScrollElement(),
     /// Scroll to the bottom of the web page

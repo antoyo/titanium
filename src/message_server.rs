@@ -47,7 +47,7 @@ use webkit2gtk::WebContext;
 
 use titanium_common::PATH;
 use titanium_common::{ExtensionId, InnerMessage, Message, PageId};
-use titanium_common::InnerMessage::Id;
+use titanium_common::InnerMessage::{Id, Open};
 
 use app::{self, App};
 use app::Msg::{
@@ -114,18 +114,17 @@ impl Update for MessageServer {
     type ModelParam = (UnixListener, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (listener, mut url, config): (UnixListener, Vec<String>, Option<String>)) -> Model {
-        let url =
-            if !url.is_empty() {
-                // TODO: open the other URLs in new windows?
-                Some(url.remove(0))
-            }
-            else {
-                None
-            };
+    fn model(relm: &Relm<Self>, (listener, urls, config): (UnixListener, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let web_context = WebView::initialize_web_extension(&config_dir);
-        relm.stream().emit(NewApp(url));
+        if urls.is_empty() {
+            relm.stream().emit(NewApp(None));
+        }
+        else {
+            for url in urls {
+                relm.stream().emit(NewApp(Some(url)));
+            }
+        }
         Model {
             app_count: 0,
             app_extensions: HashMap::new(),
@@ -216,6 +215,7 @@ impl MessageServer {
 
     fn connect_app_and_extension(&mut self, extension_id: ExtensionId, page_id: PageId, writer_counter: usize) {
         if let Some(ref mut app) = self.model.apps.get_mut(&page_id) {
+            trace!("Inserting page id {} in extension_page", page_id);
             let _ = self.model.extension_page.insert(page_id, extension_id);
             if let Some(writer) = self.model.writers.remove(&writer_counter) {
                 app.writer = Some(writer);
@@ -233,12 +233,24 @@ impl MessageServer {
     }
 
     fn msg_recv(&mut self, writer_counter: usize, page_id: PageId, msg: InnerMessage) {
+        trace!("Receive message");
         if let Id(extension_id, page_id) = msg {
+            trace!("Receive page id {}", page_id);
             if self.model.apps.contains_key(&page_id) {
                 self.connect_app_and_extension(extension_id, page_id, writer_counter);
             }
             else {
                 let _ = self.model.app_extensions.insert(page_id, (extension_id, writer_counter));
+            }
+        }
+        else if let Open(urls) = msg {
+            if urls.is_empty() {
+                self.add_app(None);
+            }
+            else {
+                for url in urls {
+                    self.add_app(Some(url));
+                }
             }
         }
         else if let Some(ref app) = self.model.apps.get(&page_id) {
@@ -254,6 +266,7 @@ impl MessageServer {
         if let Some(extension_id) = self.model.extension_page.get(&page_id).cloned() {
             if page_id != extension_id {
                 let _ = self.model.apps.remove(&page_id);
+                trace!("Removing page id {} in extension_page", page_id);
                 let _ = self.model.extension_page.remove(&page_id);
             }
             // TODO: remove the apps with extension ID? It seems web extensions are not recreated.
