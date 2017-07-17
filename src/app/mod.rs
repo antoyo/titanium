@@ -46,8 +46,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 
 use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
-use glib::Cast;
-use gtk::{self, ContainerExt, Inhibit, OrientableExt, WidgetExt};
+use gtk::{self, Inhibit, OrientableExt, WidgetExt};
 use gtk::Orientation::Vertical;
 use mg::{
     AppClose,
@@ -402,15 +401,7 @@ impl App {
         let page_id = self.webview.widget().get_page_id();
         self.model.relm.stream().emit(Remove(page_id));
 
-        // FIXME: The following is a hack to avoid the black windows issue.
-        let webview = self.webview.widget();
-        if let Some(parent) = webview.get_parent() {
-            if let Ok(parent) = parent.downcast::<::gtk::Container>() {
-                let children = parent.get_children();
-                parent.remove(&children[1]);
-                self.mg.stream().emit(CloseWin);
-            }
-        }
+        self.mg.stream().emit(CloseWin);
     }
 
     fn connect_dialog_events(&self) {

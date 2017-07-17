@@ -244,6 +244,7 @@ impl MessageServer {
             }
         }
         else if let Open(urls) = msg {
+            let _ = self.model.writers.remove(&writer_counter);
             if urls.is_empty() {
                 self.add_app(None);
             }

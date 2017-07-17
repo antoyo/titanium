@@ -20,8 +20,6 @@
  */
 
 /*
- * TODO: open the URL in the existing process when starting a new titanium process.
- *
  * TODO: add a command to write a password into the focused text field.
  *
  * TODO: "extension id for page X does not exist".
@@ -93,6 +91,7 @@
  * TODO: modal dialog for authentication.
  * TODO: add a --redirect option or redirect command to bypass the adblocker.
  * TODO: show an error when a page is blocked by the adblocker.
+ * TODO: block cookie banner.
  * FIXME: google is very slow.
  * FIXME: the browser (opened with window-new) is closed when the parent process is closed (mutt).
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
@@ -285,8 +284,8 @@ use std::env::args;
 use std::process;
 
 use fg_uds::UnixStream;
-use futures::{AsyncSink, Sink};
-use futures_glib::MainContext;
+use futures::{Future, Sink};
+use futures_glib::{Executor, MainContext};
 use gumdrop::Options;
 use log::LogLevel::Error;
 use simplelog::{Config, LogLevelFilter, TermLogger};
@@ -317,6 +316,7 @@ struct Args {
 }
 
 fn main() {
+    futures_glib::init();
     gtk::init().unwrap(); // TODO: this is called twice. Remove?
 
     let args: Vec<_> = args().collect();
@@ -337,16 +337,17 @@ fn main() {
         println!("{}", Args::usage());
     }
     else {
-        check_already_running(&args.url);
+        if !check_already_running(&args.url) {
 
-        init_logging(args.log);
+            init_logging(args.log);
 
-        let _message_server = create_message_server(args.url, args.config);
-        gtk::main();
+            let _message_server = create_message_server(args.url, args.config);
+            gtk::main();
+        }
     }
 }
 
-fn check_already_running(url: &[String]) {
+fn check_already_running(url: &[String]) -> bool {
     let mut system = System::new();
     system.refresh_processes();
 
@@ -363,9 +364,11 @@ fn check_already_running(url: &[String]) {
 
                 process::exit(1);
             }
-            break;
+            return true;
         }
     }
+
+    false
 }
 
 fn init_logging(log_to_term: bool) {
@@ -378,18 +381,34 @@ fn init_logging(log_to_term: bool) {
         };
         TermLogger::init(LogLevelFilter::max(), config).unwrap();
     }
-
-    syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
+    else {
+        syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
+    }
 }
 
 fn send_url_to_existing_process(url: &[String]) -> Result<()> {
     let cx = MainContext::default(|cx| cx.clone());
-    let (_, writer) = UnixStream::connect(PATH, &cx)?.split();
-    let mut writer = WriteBincode::new(FramedWrite::new(writer));
-    match writer.start_send(Message(0, Open(url.to_vec()))) {
-        Ok(AsyncSink::Ready) => { let _ = writer.poll_complete()?; },
-        Ok(AsyncSink::NotReady(_)) => bail!("not ready to send to client"),
-        Err(send_error) => bail!(format!("cannot send a message to the web process: {}", send_error)),
-    }
-    process::exit(0);
+    let stream = UnixStream::connect(PATH, &cx);
+
+    let cx = MainContext::default(|cx| cx.clone());
+    let ex = Executor::new();
+    ex.attach(&cx);
+
+    let url = url.to_vec();
+    let tcp = stream.and_then(move |stream| {
+        let (_, writer) = stream.split();
+        let writer = WriteBincode::new(FramedWrite::new(writer));
+        let res = writer.send(Message(0, Open(url.to_vec())));
+        res
+    });
+    let tcp = tcp.and_then(|_| {
+        gtk::main_quit();
+        Ok(())
+    });
+
+    ex.spawn(tcp.map_err(|_| ()));
+
+    gtk::main();
+
+    Ok(())
 }

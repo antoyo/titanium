@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 use std::io;
 
-use fg_uds::UnixStream;
+use fg_uds::{UnixStream, UnixStreamConnect};
 use futures::{AsyncSink, Sink};
 use futures_glib::MainContext;
 use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
@@ -57,12 +57,15 @@ pub struct MessageClient {
 pub struct Model {
     executors: HashMap<PageId, EventStream<<Executor as Update>::Msg>>,
     extension_id: Option<ExtensionId>,
+    page_id_to_send: Option<u64>,
     relm: Relm<MessageClient>,
-    writer: WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>,
+    writer: Option<WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>>,
 }
 
 #[derive(Msg)]
 pub enum Msg {
+    ConnectErr(io::Error),
+    Connection(UnixStream),
     MsgRecv(Message),
     MsgError(Error),
     PageCreated(WebPage),
@@ -71,24 +74,36 @@ pub enum Msg {
 
 impl Update for MessageClient {
     type Model = Model;
-    type ModelParam = UnixStream;
+    type ModelParam = UnixStreamConnect;
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, stream: Self::ModelParam) -> Model {
-        let (reader, writer) = stream.split();
-        let writer = WriteBincode::new(FramedWrite::new(writer));
-        let reader = ReadBincode::new(FramedRead::new(reader));
-        relm.connect_exec(reader, MsgRecv, MsgError);
+    fn model(relm: &Relm<Self>, connection: Self::ModelParam) -> Model {
+        relm.connect_exec(connection, Connection, ConnectErr);
         Model {
             executors: HashMap::new(),
             extension_id: None,
+            page_id_to_send: None,
             relm: relm.clone(),
-            writer,
+            writer: None,
         }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
+            ConnectErr(error) => error!("MsgError: {}", error),
+            Connection(stream) => {
+                let (reader, writer) = stream.split();
+                self.model.writer = Some(WriteBincode::new(FramedWrite::new(writer)));
+                let reader = ReadBincode::new(FramedRead::new(reader));
+                self.model.relm.connect_exec(reader, MsgRecv, MsgError);
+
+                // The extension id is initialized when a page is created, hence unwrap().
+                let extension_id = self.model.extension_id.unwrap();
+                if let Some(page_id) = self.model.page_id_to_send {
+                    trace!("Send page id {}", page_id);
+                    self.send(page_id, Id(extension_id, page_id));
+                }
+            },
             MsgError(error) => error!("MsgError: {}", error),
             MsgRecv(Message(page_id, msg)) => {
                 if let Some(executor) = self.model.executors.get(&page_id) {
@@ -112,10 +127,15 @@ impl Update for MessageClient {
                 connect_stream!(executor@ServerSend(page_id, ref msg),
                     self.model.relm.stream(), Send(page_id, msg.clone()));
                 let _ = self.model.executors.insert(page_id, executor);
-                // The extension id is initialized a couple of lines before, hence unwrap().
+
                 let extension_id = self.model.extension_id.unwrap();
-                trace!("Send page id {}", page_id);
-                self.send(page_id, Id(extension_id, page_id));
+                if self.model.writer.is_some() {
+                    trace!("Send page id {}", page_id);
+                    self.send(page_id, Id(extension_id, page_id));
+                }
+                else {
+                    self.model.page_id_to_send = Some(page_id);
+                }
             },
             Send(page_id, msg) => self.send(page_id, msg),
         }
@@ -133,20 +153,25 @@ impl UpdateNew for MessageClient {
 impl MessageClient {
     pub fn new() -> io::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
-        let stream = UnixStream::connect(PATH, &cx)?;
+        let stream = UnixStream::connect(PATH, &cx);
         Ok(execute::<MessageClient>(stream))
     }
 
     // Send a message to the server.
     fn send(&mut self, page_id: PageId, msg: InnerMessage) {
-        match self.model.writer.start_send(Message(page_id, msg)) {
-            Ok(AsyncSink::Ready) =>
-                if let Err(error) = self.model.writer.poll_complete() {
-                    error!("Cannot send message to UI process: {}", error);
-                },
-            Ok(AsyncSink::NotReady(_)) => error!("not ready to send to server"),
-            Err(send_error) =>
-                error!("cannot send a message to the web process: {}", send_error),
+        if let Some(ref mut writer) = self.model.writer {
+            match writer.start_send(Message(page_id, msg)) {
+                Ok(AsyncSink::Ready) =>
+                    if let Err(error) = writer.poll_complete() {
+                        error!("Cannot send message to UI process: {}", error);
+                    },
+                Ok(AsyncSink::NotReady(_)) => error!("not ready to send to server"),
+                Err(send_error) =>
+                    error!("cannot send a message to the web process: {}", send_error),
+            }
+        }
+        else {
+            println!("No writer");
         }
     }
 }
