@@ -13,6 +13,7 @@ gtk = "^0.1.3"
 gumdrop = "^0.2.0"
 gumdrop_derive = "^0.2.0"
 log = "^0.3"
+log-panics = "^1.1.0"
 mg-settings = "^0.2.2"
 mg-settings-macros = "^0.2.1"
 number_prefix = "^0.2"
@@ -63,4 +64,4 @@ libxdo = "^0.4.1"
 tempdir = "^0.3"
 
 [features]
-default = ["cairo-rs/png", "gtk/v3_16", "relm/use_impl_trait", "webkit2gtk/v2_12"]
+default = ["cairo-rs/png", "gtk/v3_16", "log-panics/with-backtrace", "relm/use_impl_trait", "webkit2gtk/v2_12"]

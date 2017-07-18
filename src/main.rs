@@ -20,6 +20,12 @@
  */
 
 /*
+ * FIXME: panic when download when there was windows already opened.
+ *
+ * FIXME: download not removed in all windows.
+ * FIXME: download input shown in wrong window when download starts in new window.
+ * TODO: disable tab in status bar entry.
+ *
  * TODO: add a command to write a password into the focused text field.
  *
  * TODO: "extension id for page X does not exist".
@@ -39,7 +45,6 @@
  *
  * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
  * signal does with the returned web view (perhaps it is needed).
- * FIXME: download input show in wrong window when download starts in new window.
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
  *
@@ -234,6 +239,7 @@ extern crate gumdrop_derive;
 extern crate libxdo;
 #[macro_use]
 extern crate log;
+extern crate log_panics;
 #[macro_use]
 extern crate mg;
 extern crate mg_settings;
@@ -384,6 +390,7 @@ fn init_logging(log_to_term: bool) {
     else {
         syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
     }
+    log_panics::init();
 }
 
 fn send_url_to_existing_process(url: &[String]) -> Result<()> {
