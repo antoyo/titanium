@@ -29,7 +29,7 @@ use mg::DialogResult::{self, Answer, Shortcut};
 use webkit2gtk::Download;
 
 use INVALID_UTF8_ERROR;
-use app::Msg::{DecideDownloadDestination, OverwriteDownload};
+use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};
 use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view::Msg::{
@@ -85,21 +85,33 @@ impl App {
         if let Some(context) = self.get_webview_context() {
             let stream = self.model.relm.stream().clone();
             let list_stream = self.download_list_view.stream().clone();
+            let webview = self.webview.widget().clone();
             connect!(context, connect_download_started(_, download), self.download_list_view, {
-                let stream = stream.clone();
-                let list_stream = list_stream.clone();
-                let _ = download.connect_decide_destination(move |download, suggested_filename| {
-                    if let Ok(destination) = find_download_destination(suggested_filename) {
-                        download.set_destination(&format!("file://{}", destination));
-                        stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
-                        list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
-                        true
+                if let Some(download_web_view) = download.get_web_view() {
+                    if download_web_view == webview {
+                        let stream = stream.clone();
+                        let list_stream = list_stream.clone();
+                        let _ = download.connect_decide_destination(move |download, suggested_filename| {
+                            if let Ok(destination) = find_download_destination(suggested_filename) {
+                                download.set_destination(&format!("file://{}", destination));
+                                stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
+                                list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                                true
+                            }
+                            else {
+                                false
+                            }
+                        });
+                        Some(Add(download.clone()))
                     }
                     else {
-                        false
+                        None
                     }
-                });
-                Add(download.clone())
+                }
+                else {
+                    stream.emit(ShowError("Cannot handle download not initiated by a web view".to_string()));
+                    None
+                }
             });
         }
     }

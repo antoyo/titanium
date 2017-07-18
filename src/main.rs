@@ -22,8 +22,6 @@
 /*
  * FIXME: panic when download when there was windows already opened.
  *
- * FIXME: download not removed in all windows.
- * FIXME: download input shown in wrong window when download starts in new window.
  * TODO: disable tab in status bar entry.
  *
  * TODO: add a command to write a password into the focused text field.
