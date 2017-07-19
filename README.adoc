@@ -28,3 +28,10 @@ image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="
  * download manager
  * bookmarks (with completions)
  * ad blocker
+
+//== Building
+
+`export TITANIUM_EXTENSION_INSTALL_PATH=titanium-web-extension/debug/target`
+
+`cd titanium-web-extension && cargo build`
+`cd ../ && cargo build`

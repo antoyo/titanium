@@ -149,6 +149,7 @@ mod option_util;
 
 use std::fs::OpenOptions;
 use std::mem::forget;
+use std::path::Path;
 
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger, WriteLogger};
@@ -171,10 +172,13 @@ pub fn web_extension_initialize(extension: &WebExtension) {
         target: None,
         location: None,
     };
+
     let file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open("/home/bouanto/web-extension-log").unwrap();
+        .open(Path::new(env!("XDG_CACHE_HOME")).join("titanium-web-extension-log"))
+        .unwrap();
+    
     if let Err(error) = WriteLogger::init(LogLevelFilter::Trace, config, file) {
         println!("Cannot initialize the logger: {}", error);
     }
