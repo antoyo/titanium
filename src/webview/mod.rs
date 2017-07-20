@@ -282,13 +282,7 @@ impl WebView {
     /// Create the context and initialize the web extension.
     pub fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
         let context = WebContext::get_default().unwrap();
-        if cfg!(debug_assertions) {
-            context.set_web_extensions_directory("titanium-web-extension/target/debug");
-        }
-        else {
-            let install_path = env!("TITANIUM_EXTENSION_INSTALL_PATH");
-            context.set_web_extensions_directory(install_path);
-        }
+        set_context_ext_dir(&context);
 
         context.set_process_model(MultipleSecondaryProcesses);
         context.set_web_process_count_limit(4);
@@ -428,4 +422,14 @@ fn add_http_if_missing(url: &str) -> String {
     else {
         url.to_string()
     }
+}
+
+#[cfg(not(debug_assertions))]
+fn set_context_ext_dir(context: &WebContext) {
+    context.set_web_extensions_directory(env!("TITANIUM_EXTENSION_INSTALL_PATH"));
+}
+
+#[cfg(debug_assertions)]
+fn set_context_ext_dir(context: &WebContext) {
+    context.set_web_extensions_directory("titanium-web-extension/target/debug");
 }

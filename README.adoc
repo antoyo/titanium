@@ -15,8 +15,6 @@ It is inspired on Vimperator and qutebrowser.py.
 image:doc/screenshots/titanium.png[Titanium,300,link="doc/screenshots/titanium.png"]
 image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="doc/screenshots/titanium-follow-links.png"]
 
-//== Installing Titanium
-
 == Features
 
  * vim-like keybindings
@@ -31,18 +29,27 @@ image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="
 
 == Building
 
-
 [source, bash]
 ----
-cd titanium-web-extension
 cargo build
-cd ../ 
+cd titanium-web-extension
 cargo build
 ----
 
 if you have issues compiling due to requiring an environment variable, set it to the web extension path
 
+== Installing Titanium
+
+Set the `TITANIUM_EXTENSION_INSTALL_PATH` environment variable and compile in release mode.
+Then copy the executable and the library in `/usr/local`.
+
 [source, bash]
 ----
-export TITANIUM_EXTENSION_INSTALL_PATH=titanium-web-extension/debug/target
+sudo mkdir -p /usr/local/lib/titanium/web-extensions
+export TITANIUM_EXTENSION_INSTALL_PATH=/usr/local/lib/titanium/web-extensions
+cargo build --release
+sudo cp target/release/titanium /usr/local/bin
+cd titanium-web-extension
+cargo build --release
+sudo cp target/release/libtitanium_web_extension.so /usr/local/lib/titanium/web-extensions/
 ----
