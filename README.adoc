@@ -28,3 +28,21 @@ image:doc/screenshots/titanium-follow-links.png[Titanium-Follow-Links,300,link="
  * download manager
  * bookmarks (with completions)
  * ad blocker
+
+== Building
+
+
+[source, bash]
+----
+cd titanium-web-extension
+cargo build
+cd ../ 
+cargo build
+----
+
+if you have issues compiling due to requiring an environment variable, set it to the web extension path
+
+[source, bash]
+----
+export TITANIUM_EXTENSION_INSTALL_PATH=titanium-web-extension/debug/target
+----
