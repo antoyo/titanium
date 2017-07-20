@@ -489,6 +489,8 @@ impl App {
                 self.follow_link();
             },
             Forward => self.webview.widget().go_forward(),
+            GoParentDir => self.go_parent_directory(),
+            GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
             Hover => {
                 // TODO: move that into a method.

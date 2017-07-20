@@ -51,6 +51,10 @@ pub enum AppCommand {
     Follow,
     #[help(text="Go forward in the history")]
     Forward,
+    #[help(text="Go up one directory in url")]
+    GoParentDir,
+    #[help(text="Go to root directory of url")]
+    GoRootDir,
     #[completion(hidden)]
     HideHints,
     #[completion(hidden)]

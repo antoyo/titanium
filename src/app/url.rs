@@ -22,6 +22,7 @@
 use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
+use url::{Url, Position};
 
 impl App {
     /// Open the given URL in the web view.
@@ -40,6 +41,33 @@ impl App {
     pub fn win_paste_url(&mut self) {
         if let Some(url) = self.get_url_from_clipboard() {
             self.open_in_new_window(&url);
+        }
+    }
+
+    /// Go up one directory in url
+    pub fn go_parent_directory(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Ok(base_url) = Url::parse(url) {
+
+                // #TODO: go up nth directories
+                if let Ok(parent) = base_url.join("../") {
+                    self.open(parent.as_str());
+                }
+            }
+        }
+    }
+
+    /// Go to the root directory or url hostname 
+    pub fn go_root_directory(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Ok(base_url) = Url::parse(url) {
+                let root = &base_url[..Position::BeforePath];
+
+                // #TODO: Test on file:/// and edge cases
+                if !root.is_empty() {
+                    self.open(&base_url[..Position::BeforePath]);
+                }
+            }
         }
     }
 }

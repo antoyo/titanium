@@ -11,6 +11,8 @@ nmap f follow
 nmap F win-follow
 nmap gg scroll-top
 nmap gi focus-input
+nmap gu go-parent-dir
+nmap gU go-root-dir
 nmap G scroll-bottom
 nmap h scroll-left
 nmap i insert
