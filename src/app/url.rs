@@ -65,7 +65,7 @@ impl App {
 
                 // #TODO: Test on file:/// and edge cases
                 if !root.is_empty() {
-                    self.open(&base_url[..Position::BeforePath]);
+                    self.open(root);
                 }
             }
         }
