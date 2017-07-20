@@ -21,8 +21,7 @@
 
 /*
  * FIXME: panic when download when there was windows already opened.
- *
- * TODO: disable tab in status bar entry.
+ * FIXME: web extension crashed with: "Ioctl() inappropré pour un périphérique (os error 25)"
  *
  * TODO: add a command to write a password into the focused text field.
  *
@@ -41,8 +40,6 @@
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
  *
- * FIXME: black windows with multiple web processes when destroying a window. Look at what the create
- * signal does with the returned web view (perhaps it is needed).
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
  *
