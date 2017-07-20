@@ -80,8 +80,6 @@
  *
  * TODO: use tokio-process to communicate with pass?
  *
- * TODO: shortcut to open the current URL's root.
- *
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * TODO: add tests for the scrolling element.
  *
