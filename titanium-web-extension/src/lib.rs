@@ -149,7 +149,6 @@ mod option_util;
 
 use std::fs::OpenOptions;
 use std::mem::forget;
-use std::path::Path;
 
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger, WriteLogger};
