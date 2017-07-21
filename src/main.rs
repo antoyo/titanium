@@ -20,6 +20,9 @@
  */
 
 /*
+ * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
+ * javascript_can_close_windows when the window was opened by JS.
+ *
  * FIXME: panic when download when there was windows already opened.
  * FIXME: web extension crashed with: "Ioctl() inappropré pour un périphérique (os error 25)"
  *

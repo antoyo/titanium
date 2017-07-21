@@ -30,13 +30,15 @@ macro_rules! handle_app_error {
 
 mod settings;
 
+use std::cell::Cell;
 use std::fs::{File, read_dir};
 use std::io::Read;
+use std::rc::Rc;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::Cast;
 use gtk::{WidgetExt, Window};
-use relm::{Relm, Resolver, Widget};
+use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     self,
@@ -76,8 +78,8 @@ use stylesheet::get_stylesheet_and_whitelist;
 pub struct Model {
     config_dir: ConfigDir,
     context: WebContext,
-    inspector_shown: bool,
-    open_in_new_window: bool,
+    inspector_shown: Rc<Cell<bool>>,
+    open_in_new_window: Rc<Cell<bool>>,
     relm: Relm<WebView>,
     search_backwards: bool,
 }
@@ -88,9 +90,8 @@ pub enum Msg {
     AddStylesheets,
     AppError(String),
     Close,
-    DecidePolicy(PolicyDecision, PolicyDecisionType, Resolver<bool>),
+    DecidePolicy(PolicyDecision, PolicyDecisionType),
     EndSearch,
-    InspectorAttach(WebInspector, Resolver<bool>),
     InspectorClose,
     NewWindow(String),
     PageFinishSearch,
@@ -124,8 +125,8 @@ impl Widget for WebView {
         Model {
             config_dir,
             context,
-            inspector_shown: false,
-            open_in_new_window: false,
+            inspector_shown: Rc::new(Cell::new(false)),
+            open_in_new_window: Rc::new(Cell::new(false)),
             relm: relm.clone(),
             search_backwards: false,
         }
@@ -138,11 +139,10 @@ impl Widget for WebView {
             AppError(_) => (), // To be listened by the user.
             // To be listened by the user.
             Close => (),
-            DecidePolicy(policy_decision, policy_decision_type, resolver) =>
-                self.decide_policy(policy_decision, policy_decision_type, resolver),
+            DecidePolicy(policy_decision, policy_decision_type) =>
+                self.decide_policy(policy_decision, policy_decision_type),
             EndSearch => handle_app_error!(self.finish_search()),
-            InspectorAttach(inspector, resolver) => self.inspector_attach(inspector, resolver),
-            InspectorClose => self.model.inspector_shown = false,
+            InspectorClose => self.model.inspector_shown.set(false),
             // To be listened by the user.
             NewWindow(_) => (),
             PageFinishSearch => handle_app_error!(self.finish_search()),
@@ -175,8 +175,9 @@ impl Widget for WebView {
         }) {
             close => Close,
             vexpand: true,
-            decide_policy(_, policy_decision, policy_decision_type) =>
-                async DecidePolicy(policy_decision.clone(), policy_decision_type),
+            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window) =>
+                return (DecidePolicy(policy_decision.clone(), policy_decision_type),
+                    WebView::inhibit_decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window)),
         }
     }
 }
@@ -217,17 +218,27 @@ impl WebView {
         Ok(())
     }
 
-    /// Handle the decide policy event.
-    fn decide_policy(&mut self, policy_decision: PolicyDecision, policy_decision_type: PolicyDecisionType,
-        mut resolver: Resolver<bool>)
+    fn inhibit_decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
+        open_in_new_window: &Rc<Cell<bool>>) -> bool
     {
-        if policy_decision_type == NavigationAction {
-            if self.handle_navigation_action(policy_decision.clone()) {
-                resolver.resolve(true);
-            }
+        if *policy_decision_type == NavigationAction {
+            WebView::inhibit_navigation_action(open_in_new_window, policy_decision)
         }
-        else if policy_decision_type == Response && self.handle_response(policy_decision.clone()) {
-            resolver.resolve(true);
+        else if *policy_decision_type == Response {
+            WebView::inhibit_response(policy_decision)
+        }
+        else {
+            false
+        }
+    }
+
+    /// Handle the decide policy event.
+    fn decide_policy(&mut self, policy_decision: PolicyDecision, policy_decision_type: PolicyDecisionType) {
+        if policy_decision_type == NavigationAction {
+            self.handle_navigation_action(policy_decision.clone());
+        }
+        else if policy_decision_type == Response {
+            self.handle_response(policy_decision.clone());
         }
     }
 
@@ -249,34 +260,63 @@ impl WebView {
         Ok(())
     }
 
-    /// Handle follow link in new window.
-    fn handle_navigation_action(&mut self, policy_decision: PolicyDecision) -> bool {
+    fn handle_inspector_attach(inspector_shown: &Rc<Cell<bool>>, inspector: &WebInspector) -> bool {
+        if !inspector_shown.get() {
+            inspector_shown.set(true);
+            inspector.detach();
+            true
+        }
+        else {
+            false
+        }
+    }
+
+    fn inhibit_navigation_action(open_in_new_window: &Rc<Cell<bool>>, policy_decision: &PolicyDecision) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
-            if self.model.open_in_new_window && policy_decision.get_navigation_type() == LinkClicked {
+            if open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
+                let url = policy_decision.get_request()
+                    .and_then(|request| request.get_uri());
+                return url.is_some();
+            }
+        }
+        false
+    }
+
+    /// Handle follow link in new window.
+    fn handle_navigation_action(&mut self, policy_decision: PolicyDecision) {
+        let policy_decision = policy_decision.clone();
+        if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
+            if self.model.open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
-                    self.model.open_in_new_window = false;
+                    self.model.open_in_new_window.set(false);
                     self.emit_new_window_event(&url);
-                    return true;
                 }
+            }
+        }
+    }
+
+    fn inhibit_response(policy_decision: &PolicyDecision) -> bool {
+        let policy_decision = policy_decision.clone();
+        if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
+            if !policy_decision.is_mime_type_supported() {
+                return true;
             }
         }
         false
     }
 
     /// Download file whose mime type is not supported.
-    fn handle_response(&self, policy_decision: PolicyDecision) -> bool {
+    fn handle_response(&self, policy_decision: PolicyDecision) {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
             if !policy_decision.is_mime_type_supported() {
                 policy_decision.download();
-                return true;
             }
         }
-        false
     }
 
     /// Create the context and initialize the web extension.
@@ -298,14 +338,6 @@ impl WebView {
         }
 
         context
-    }
-
-    fn inspector_attach(&mut self, inspector: WebInspector, mut resolver: Resolver<bool>) {
-        if !self.model.inspector_shown {
-            inspector.detach();
-            resolver.resolve(true);
-        }
-        self.model.inspector_shown = true;
     }
 
     /// Open the specified URL.
@@ -378,13 +410,15 @@ impl WebView {
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
     fn set_open_in_new_window(&mut self, in_new_window: bool) {
-        self.model.open_in_new_window = in_new_window;
+        self.model.open_in_new_window.set(in_new_window);
     }
 
     /// Show the web inspector.
     fn show_inspector(&self) {
         if let Some(inspector) = self.view.get_inspector() {
-            connect!(self.model.relm, inspector, connect_attach(inspector), async InspectorAttach(inspector.clone()));
+            let inspector_shown = self.model.inspector_shown.clone();
+            connect!(self.model.relm, inspector, connect_attach(inspector),
+                return WebView::handle_inspector_attach(&inspector_shown, inspector));
             connect!(inspector, connect_closed(_), self.model.relm, InspectorClose);
             inspector.show();
         }
