@@ -23,7 +23,7 @@ use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
 use url::{Url, Position};
-use urls:: {offset};
+use urls::{offset};
 
 impl App {
     /// Open the given URL in the web view.
