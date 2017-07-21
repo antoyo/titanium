@@ -23,6 +23,7 @@ use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
 use url::{Url, Position};
+use urls:: {offset};
 
 impl App {
     /// Open the given URL in the web view.
@@ -73,7 +74,7 @@ impl App {
 
     pub fn url_increment(&self) {
         if let Some(ref url) = self.webview.widget().get_uri() {
-            if let Some(url) = urls::offset(url, 1) {
+            if let Some(url) = offset(url, 1) {
                 self.open(&url);
             }
         }
@@ -81,7 +82,7 @@ impl App {
 
     pub fn url_decrement(&self) {
         if let Some(ref url) = self.webview.widget().get_uri() {
-            if let Some(url) = urls::offset(url, -1) {
+            if let Some(url) = offset(url, -1) {
                 self.open(&url);
             }
         }
