@@ -20,6 +20,7 @@
  */
 
 use glib::Cast;
+use regex::Regex;
 
 use webkit2gtk_webextension::{
     DOMCSSStyleDeclarationExt,
@@ -327,4 +328,35 @@ pub fn mouse_over(element: &DOMElement) {
 pub fn show(element: &DOMElement) {
     let style = wtry_opt_no_ret!(element.get_style());
     let _ = wtry!(style.remove_property("display"));
+}
+
+/// Lookup dom elements by tag and regex
+pub fn match_pattern(document: &DOMDocument, selector: &str, regex: Regex) -> Option<DOMElement> {
+    let iter = NodeIter::new(document.get_elements_by_tag_name(selector));
+
+    for element in iter {
+        if let Some(text) = element.get_inner_html() {
+            if regex.is_match(&text) {
+                return Some(element);
+            }
+        }
+    }
+
+    None
+}
+
+/// Get all dom elements that match regex
+pub fn match_pattern_all(document: &DOMDocument, selector: &str, regex: Regex) -> Vec<DOMElement> {
+    let iter = NodeIter::new(document.get_elements_by_tag_name(selector));
+    let mut results = Vec::new();
+
+    for element in iter {
+        if let Some(text) = element.get_inner_html() {
+            if regex.is_match(&text) {
+                results.push(element);
+            }
+        }
+    }
+    
+    results 
 }

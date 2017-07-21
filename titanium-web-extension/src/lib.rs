@@ -32,6 +32,7 @@
     unused_results,
 )]
 
+extern crate regex;
 extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;

@@ -70,4 +70,20 @@ impl App {
             }
         }
     }
+
+    pub fn url_increment(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Some(url) = urls::offset(url, 1) {
+                self.open(&url);
+            }
+        }
+    }
+
+    pub fn url_decrement(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Some(url) = urls::offset(url, -1) {
+                self.open(&url);
+            }
+        }
+    }
 }

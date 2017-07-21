@@ -70,6 +70,10 @@ pub enum InnerMessage {
     ActivateSelection(),
     /// Response to EnterHintKey.
     ClickHintElement(),
+    /// Regex lookup next page link to click
+    ClickNextPage(),
+    /// Regex lookup prev page link to click
+    ClickPrevPage(),
     /// Response to GetCredentials.
     Credentials(String, String),
     /// Add a key to the current hint text.

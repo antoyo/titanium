@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use url::Url;
+use url::{Position, Url};
 use url::percent_encoding::percent_decode;
 
 #[cfg(test)]
@@ -68,4 +68,36 @@ pub fn is_url(input: &str) -> bool {
     Url::parse(input).is_ok() || (Url::parse(&format!("http://{}", input)).is_ok() &&
                                   (input.contains('.') || input.contains(':'))) ||
         input == "localhost"
+}
+
+/// Take url and increment the first number with offset    
+pub fn offset(url: &str, offset: i32) -> Option<String> {
+    if let Ok(url) = Url::parse(url) {
+        if let Some(path_segments) = url.path_segments() {
+            let mut updated = false;
+
+            let next = path_segments
+                .rev() // check in reverse
+                .map(|segment| {
+                    if !updated {
+                        if let Ok(number) = segment.parse::<i32>() {
+                            updated = true;
+                            return String::from("/") + (number + offset).to_string().as_str();
+                        }
+                    }
+                    
+                    String::from("/") + segment
+                })
+                .rev() // reverse again to normal state
+                .collect::<String>();
+
+            if updated {
+                return Some(url[..Position::BeforePath].to_string() + &next);
+            } else {
+                // TODO: Check for some edge cases with a regex, ie: example.com/page6 
+            }
+        }
+    }
+
+    None
 }
