@@ -56,7 +56,7 @@ pub fn get_base_url(url: &str) -> Option<String> {
 
 /// Get the filename from the URL.
 pub fn get_filename(url: &str) -> Option<String> {
-    let parsed_url = Url::parse(url).unwrap();
+    let parsed_url = Url::parse(url).unwrap(); // TODO: convert to option instead of unwrap().
     parsed_url.path_segments()
         .and_then(|segments| segments.last())
         .and_then(|filename| percent_decode(filename.as_bytes()).decode_utf8().ok())

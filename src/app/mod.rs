@@ -42,8 +42,10 @@ mod server;
 mod test_utils;
 mod url;
 
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
+use std::rc::Rc;
 
 use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
 use gtk::{self, Inhibit, OrientableExt, WidgetExt};
@@ -69,7 +71,7 @@ use mg::{
     Title,
     yes_no_question,
 };
-use relm::{Relm, Resolver, Widget};
+use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     Download,
@@ -166,9 +168,11 @@ pub struct Model {
     default_search_engine: Option<String>,
     follow_mode: FollowMode,
     has_active_downloads: bool,
+    has_hovered_link: Rc<Cell<bool>>,
     hint_chars: String,
     home_page: Option<String>,
     hovered_link: Option<String>,
+    in_follow_mode: Rc<Cell<bool>>,
     init_url: Option<String>,
     mode: String,
     password_manager: PasswordManager,
@@ -184,7 +188,7 @@ pub struct Model {
 pub enum Msg {
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
-    ButtonRelease(EventButton, Resolver<Inhibit>),
+    ButtonRelease(EventButton),
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
@@ -195,7 +199,7 @@ pub enum Msg {
     Exit(bool),
     FileDialogSelection(Option<String>),
     HasActiveDownloads(bool),
-    KeyPress(EventKey, Resolver<Inhibit>),
+    KeyPress(EventKey),
     LoadChanged(LoadEvent),
     LoadStarted,
     MessageRecv(InnerMessage),
@@ -247,9 +251,11 @@ impl Widget for App {
             default_search_engine: None,
             follow_mode: FollowMode::Click,
             has_active_downloads: false,
+            has_hovered_link: Rc::new(Cell::new(false)),
             hint_chars: "hjklasdfgyuiopqwertnmzxcvb".to_string(),
             home_page: None,
             hovered_link: None,
+            in_follow_mode: Rc::new(Cell::new(false)),
             init_url,
             mode: "normal".to_string(),
             password_manager: PasswordManager::new(),
@@ -293,9 +299,12 @@ impl Widget for App {
 
     fn update(&mut self, event: Msg) {
         match event {
-            AppSetMode(mode) => self.model.mode = mode,
+            AppSetMode(mode) => {
+                self.adjust_in_follow_mode(&mode);
+                self.model.mode = mode
+            },
             AppSettingChanged(setting) => self.setting_changed(setting),
-            ButtonRelease(event, resolver) => self.handle_button_release(event, resolver),
+            ButtonRelease(event) => self.handle_button_release(event),
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
@@ -307,7 +316,7 @@ impl Widget for App {
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
-            KeyPress(event_key, resolver) => self.handle_key_press(event_key, resolver),
+            KeyPress(event_key) => self.handle_key_press(event_key),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
             LoadStarted => self.load_started(),
             MessageRecv(message) => self.message_recv(message),
@@ -367,7 +376,8 @@ impl Widget for App {
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
-                    button_release_event(_, event) => async ButtonRelease(event.clone()),
+                    button_release_event(_, event) with (has_hovered_link) =>
+                        (ButtonRelease(event.clone()), App::inhibit_button_release(&has_hovered_link, event)),
                     create(_, action) => (Create(action.clone()), None),
                     // Emit the scroll event whenever the view is drawn.
                     draw(_, _) => (EmitScrolledEvent, Inhibit(false)),
@@ -391,12 +401,17 @@ impl Widget for App {
             CustomCommand(ref command) => Command(command.clone()),
             ModeChanged(ref mode) => AppSetMode(mode.clone()),
             SettingChanged(ref setting) => AppSettingChanged(setting.clone()),
-            key_press_event(_, event_key) => async KeyPress(event_key.clone()),
+            key_press_event(_, event_key) with (in_follow_mode) =>
+                (KeyPress(event_key.clone()), App::inhibit_key_press(&in_follow_mode)),
         }
     }
 }
 
 impl App {
+    fn adjust_in_follow_mode(&mut self, mode: &str) {
+        self.model.in_follow_mode.set(mode == "follow");
+    }
+
     fn close_webview(&self) {
         let page_id = self.webview.widget().get_page_id();
         self.model.relm.stream().emit(Remove(page_id));
@@ -452,12 +467,19 @@ impl App {
         context
     }
 
+    fn go_in_insert_mode(&mut self) {
+        self.set_mode("insert");
+    }
+
+    fn go_in_normal_mode(&mut self) {
+        self.set_mode("normal");
+    }
+
     /// Handle the button release event to open in new window when using Ctrl-click.
-    fn handle_button_release(&mut self, event: EventButton, mut resolver: Resolver<Inhibit>) {
+    fn handle_button_release(&mut self, event: EventButton) {
         if event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) {
             if let Some(url) = self.model.hovered_link.clone() {
                 self.open_in_new_window(&url);
-                resolver.resolve(Inhibit(true));
             }
         }
     }
@@ -487,7 +509,7 @@ impl App {
                 // TODO: move that into a method.
                 self.model.follow_mode = FollowMode::Click;
                 self.webview.emit(SetOpenInNewWindow(false));
-                self.mg.emit(SetMode("follow"));
+                self.set_mode("follow");
                 self.follow_link();
             },
             Forward => self.webview.widget().go_forward(),
@@ -497,7 +519,7 @@ impl App {
             Hover => {
                 // TODO: move that into a method.
                 self.model.follow_mode = FollowMode::Hover;
-                self.mg.emit(SetMode("follow"));
+                self.set_mode("follow");
                 self.follow_link();
             },
             Insert => self.go_in_insert_mode(),
@@ -538,7 +560,7 @@ impl App {
                 // TODO: move that into a function.
                 self.model.follow_mode = FollowMode::Click;
                 self.webview.emit(SetOpenInNewWindow(true));
-                self.mg.emit(SetMode("follow"));
+                self.set_mode("follow");
                 self.follow_link();
             },
             WinOpen(ref url) => self.open_in_new_window(url),
@@ -547,14 +569,6 @@ impl App {
             ZoomNormal => self.zoom_normal(),
             ZoomOut => self.zoom_out(),
         }
-    }
-
-    fn go_in_insert_mode(&mut self) {
-        self.mg.emit(SetMode("insert"));
-    }
-
-    fn go_in_normal_mode(&mut self) {
-        self.mg.emit(SetMode("normal"));
     }
 
     /// Handle create window.
@@ -587,10 +601,9 @@ impl App {
     }
 
     /// Handle the key press event.
-    fn handle_key_press(&mut self, event_key: EventKey, mut resolver: Resolver<Inhibit>) {
+    fn handle_key_press(&mut self, event_key: EventKey) {
         if self.model.mode == "follow" {
             self.handle_follow_key_press(event_key);
-            resolver.resolve(Inhibit(true));
         }
     }
 
@@ -618,9 +631,14 @@ impl App {
         }
     }
 
-    fn load_started(&mut self) {
-        self.set_title();
-        self.reset_scroll_element();
+    fn inhibit_button_release(has_hovered_link: &Rc<Cell<bool>>, event: &EventButton) -> Inhibit {
+        let inhibit = event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) &&
+            has_hovered_link.get();
+        Inhibit(inhibit)
+    }
+
+    fn inhibit_key_press(in_follow_mode: &Rc<Cell<bool>>) -> Inhibit {
+        Inhibit(in_follow_mode.get())
     }
 
     /// Show an info.
@@ -639,15 +657,26 @@ impl App {
         self.handle_error(result);
     }
 
+    fn load_started(&mut self) {
+        self.set_title();
+        self.reset_scroll_element();
+    }
+
     /// Handle the mouse target changed event of the webview to show the hovered URL and save it
     /// for use when using Ctrl-click.
     fn mouse_target_changed(&mut self, hit_test_result: HitTestResult) {
         let link = hit_test_result.get_link_uri();
         self.model.hovered_link = link.clone();
+        self.model.has_hovered_link.set(link.is_some());
         {
             let text = link.unwrap_or_else(String::new);
             self.mg.emit(Message(text));
         }
+    }
+
+    fn set_mode(&mut self, mode: &'static str) {
+        self.adjust_in_follow_mode(mode);
+        self.mg.emit(SetMode(mode));
     }
 
     /// Try to close the web view and quit the application.
