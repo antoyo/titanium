@@ -237,10 +237,8 @@ impl Executor {
 
         if let Some(document) = document {
             if let Some(link) = match_pattern(&document, "a", regex) {
-                if let Ok(element) = link.clone().downcast::<DOMHTMLElement>() {
+                if let Ok(element) = wtry!(link.clone().downcast::<DOMHTMLElement>()) {
                     self.click(element);
-                } else {
-                    warn!("click_next_page, Failed downcast on element");
                 }
             } else {
                 // TODO: Check if url (not text) is *very* similar to our current one
@@ -255,10 +253,8 @@ impl Executor {
 
         if let Some(document) = document {
             if let Some(link) = match_pattern(&document, "a", regex) {
-                if let Ok(element) = link.clone().downcast::<DOMHTMLElement>() {
+                if let Ok(element) = wtry!(link.clone().downcast::<DOMHTMLElement>()) {
                     self.click(element);
-                } else {
-                    warn!("click_next_page, Failed downcast on element");
                 }
             } else {
                 // TODO: See above
