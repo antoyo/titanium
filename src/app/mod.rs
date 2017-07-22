@@ -28,6 +28,7 @@ macro_rules! handle_error {
 
 mod bookmarks;
 mod browser;
+mod clipboard;
 mod config;
 mod copy_paste;
 mod dialog;
@@ -86,19 +87,17 @@ use webkit2gtk::NavigationType::Other;
 use titanium_common::{InnerMessage, PageId};
 use titanium_common::Percentage::{self, All, Percent};
 
-use bookmarks::BookmarkManager;
+use managers::{BookmarkManager, ConfigDir, PasswordManager};
+use managers::popup::{PopupManager, create_popup_manager};
 use commands::AppCommand;
 use commands::AppCommand::*;
 use completers::{BookmarkCompleter, FileCompleter};
-use config_dir::ConfigDir;
-use download_list_view::DownloadListView;
-use download_list_view::Msg::{
+use views::DownloadListView;
+use views::download_list::Msg::{
     ActiveDownloads,
     DownloadListError,
 };
 use errors::{self, Result};
-use pass_manager::PasswordManager;
-use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
 use self::file_chooser::handle_file_chooser;
@@ -109,8 +108,8 @@ use settings::AppSettingsVariant::{
     HintChars,
     HomePage,
 };
-use webview::WebView;
-use webview::Msg::{
+use views::WebView;
+use views::webview::Msg::{
     AddScripts,
     AddStylesheets,
     AppError,

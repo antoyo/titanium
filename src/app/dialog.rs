@@ -49,7 +49,7 @@ use webkit2gtk::{Download, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
 use app::Msg::{DownloadDestination, FileDialogSelection};
-use download::download_dir;
+use file::download_dir;
 use self::FileInputError::*;
 use super::App;
 

@@ -23,7 +23,7 @@ use std::io;
 use std::path::PathBuf;
 
 use app::App;
-use config_dir::ConfigDir;
+use managers::ConfigDir;
 use errors::Result;
 
 impl App {

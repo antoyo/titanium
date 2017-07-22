@@ -30,9 +30,8 @@ use webkit2gtk::Download;
 
 use INVALID_UTF8_ERROR;
 use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};
-use config_dir::ConfigDir;
-use download::download_dir;
-use download_list_view::Msg::{
+use managers::ConfigDir;
+use views::download_list::Msg::{
     Add,
     AddFileToOpen,
     DownloadCancel,
@@ -40,7 +39,7 @@ use download_list_view::Msg::{
     DownloadOriginalDestination,
 };
 use errors::{ErrorKind, Result, ResultExt};
-use file::gen_unique_filename;
+use file::{gen_unique_filename, download_dir};
 use super::App;
 
 impl App {

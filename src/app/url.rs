@@ -21,7 +21,7 @@
 
 use app::App;
 use app::Msg::CreateWindow;
-use webview::Msg::PageOpen;
+use views::webview::Msg::PageOpen;
 use url::{Url, Position};
 use urls::offset;
 

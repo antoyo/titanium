@@ -30,8 +30,8 @@ use relm_attributes::widget;
 use webkit2gtk::{Download, Error};
 use webkit2gtk::DownloadError::CancelledByUser;
 
-use download_view::DownloadView;
-use download_view::Msg::{
+use super::download::DownloadView;
+use super::download::Msg::{
     Cancel,
     Destination,
     DownloadError,
