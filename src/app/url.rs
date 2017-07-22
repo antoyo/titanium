@@ -72,7 +72,6 @@ impl App {
             if let Ok(base_url) = Url::parse(url) {
                 let root = &base_url[..Position::BeforePath];
 
-                // #TODO: Test on file:/// and edge cases
                 if !root.is_empty() {
                     self.open(root);
                 }
