@@ -47,9 +47,10 @@ impl App {
 
     /// Go up one directory in url
     pub fn go_parent_directory(&self) {
-        let mut parent = String::new();
-
         if let Some(ref url) = self.webview.widget().get_uri() {
+            let mut parent = String::new();
+
+            /// TODO: Do manually without use of get_filename
             if let Some(filename) = get_filename(url) {
                 if filename.is_empty() {
                     if let Ok(base_url) = Url::parse(url) {
