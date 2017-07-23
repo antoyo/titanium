@@ -344,19 +344,3 @@ pub fn match_pattern(document: &DOMDocument, selector: &str, regex: Regex) -> Op
 
     None
 }
-
-/// Get all dom elements that match regex
-pub fn match_pattern_all(document: &DOMDocument, selector: &str, regex: Regex) -> Vec<DOMElement> {
-    let iter = NodeIter::new(document.get_elements_by_tag_name(selector));
-    let mut results = Vec::new();
-
-    for element in iter {
-        if let Some(text) = element.get_inner_html() {
-            if regex.is_match(&text) {
-                results.push(element);
-            }
-        }
-    }
-    
-    results 
-}
