@@ -238,7 +238,7 @@ impl Executor {
         if let Some(document) = document {
             if let Some(link) = match_pattern(&document, "a", regex) {
                 let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
-                self.click(element);
+                element.click();
             } else {
                 // TODO: Check if url (not text) is *very* similar to our current one
                 // example.com/page/4 => example.com/page/5
@@ -253,7 +253,7 @@ impl Executor {
         if let Some(document) = document {
             if let Some(link) = match_pattern(&document, "a", regex) {
                 let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
-                self.click(element);
+                element.click();
             } else {
                 // TODO: See above
             }

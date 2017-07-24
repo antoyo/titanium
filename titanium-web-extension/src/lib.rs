@@ -148,11 +148,10 @@ mod login_form;
 mod message_client;
 mod option_util;
 
-use std::fs::OpenOptions;
 use std::mem::forget;
 
 use log::LogLevel::Error;
-use simplelog::{Config, TermLogger, WriteLogger};
+use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::{WebExtension, WebExtensionExt};
 
@@ -172,7 +171,7 @@ pub fn web_extension_initialize(extension: &WebExtension) {
         target: None,
         location: None,
     };
-    
+
     if let Err(error) = TermLogger::init(LogLevelFilter::Info, config) {
         println!("Cannot initialize the logger: {}", error);
     }
