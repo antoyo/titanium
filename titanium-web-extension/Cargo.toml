@@ -16,6 +16,7 @@ tokio-io = "^0.1.1"
 tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
 xdg = "^2.0"
+regex = "^0.2.2"
 
 [dependencies.fg-uds]
 git = "https://github.com/antoyo/fg-uds-rs"

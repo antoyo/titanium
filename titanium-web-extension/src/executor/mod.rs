@@ -33,6 +33,7 @@ macro_rules! get_document {
 
 mod scroll;
 
+use regex::Regex;
 use std::collections::HashMap;
 
 use glib::Cast;
@@ -72,6 +73,7 @@ use dom::{
     mouse_down,
     mouse_out,
     mouse_over,
+    match_pattern,
 };
 use hints::{create_hints, hide_unrelevant_hints, show_all_hints, HINTS_ID};
 use login_form::{get_credentials, load_password, load_username, submit_login_form};
@@ -122,6 +124,8 @@ impl Update for Executor {
                 match msg {
                     ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
                     ActivateSelection() => self.activate_selection(),
+                    ClickNextPage() => self.click_next_page(),
+                    ClickPrevPage() => self.click_prev_page(),
                     EnterHintKey(key) => self.enter_hint_key(key),
                     FocusInput() => self.focus_input(),
                     GetCredentials() => self.send_credentials(),
@@ -225,6 +229,35 @@ impl Executor {
             element.click();
         }
         NoAction
+    }
+
+    fn click_next_page(&mut self) {
+        let document = self.model.page.get_dom_document();
+        let regex = Regex::new(r"(?i:next|forward|older|more|›|»)|(?:<.+>)>(?:<.+>)").unwrap();
+
+        if let Some(document) = document {
+            if let Some(link) = match_pattern(&document, "a", regex) {
+                let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
+                self.click(element);
+            } else {
+                // TODO: Check if url (not text) is *very* similar to our current one
+                // example.com/page/4 => example.com/page/5
+            }
+        }
+    }
+
+    fn click_prev_page(&mut self) {
+        let document = self.model.page.get_dom_document();
+        let regex = Regex::new(r"(?i:prev(ious)|back|newer|less|«|‹)|(?:<.+>)<(?:<.+>)").unwrap();
+
+        if let Some(document) = document {
+            if let Some(link) = match_pattern(&document, "a", regex) {
+                let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
+                self.click(element);
+            } else {
+                // TODO: See above
+            }
+        }
     }
 
     // Handle the key press event for the hint mode.

@@ -35,6 +35,10 @@ pub enum AppCommand {
     BookmarkEditTags,
     #[help(text="Clear the browser cache")]
     ClearCache,
+    #[help(text="Try to click link to next page if it exists")]
+    ClickNextPage,
+    #[help(text="Try to click link to the previous page if it exists")]
+    ClickPrevPage,
     #[completion(hidden)]
     CopyUrl,
     #[help(text="Delete all the cookies")]
@@ -51,6 +55,10 @@ pub enum AppCommand {
     Follow,
     #[help(text="Go forward in the history")]
     Forward,
+    #[help(text="Go up one directory in url")]
+    GoParentDir,
+    #[help(text="Go to root directory of url")]
+    GoRootDir,
     #[completion(hidden)]
     HideHints,
     #[completion(hidden)]
@@ -113,6 +121,10 @@ pub enum AppCommand {
     SearchPrevious,
     #[help(text="Stop loading the current page")]
     Stop,
+    #[completion(hidden)]
+    UrlIncrement,
+    #[completion(hidden)]
+    UrlDecrement,
     #[completion(hidden)]
     WinFollow,
     #[help(text="Open an URL in a new window")]

@@ -497,6 +497,8 @@ impl App {
             BookmarkDel => self.delete_bookmark(),
             BookmarkEditTags => self.edit_bookmark_tags(),
             ClearCache => self.clear_cache(),
+            ClickNextPage => self.server_send(InnerMessage::ClickNextPage()),
+            ClickPrevPage => self.server_send(InnerMessage::ClickPrevPage()),
             CopyUrl => self.copy_url(),
             DeleteAllCookies => self.delete_all_cookies(),
             DeleteCookies(ref domain) => self.delete_cookies(domain),
@@ -511,6 +513,8 @@ impl App {
                 self.follow_link();
             },
             Forward => self.webview.widget().go_forward(),
+            GoParentDir => self.go_parent_directory(),
+            GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
             Hover => {
                 // TODO: move that into a method.
@@ -550,6 +554,8 @@ impl App {
             SearchNext => self.webview.emit(PageSearchNext),
             SearchPrevious => self.webview.emit(PageSearchPrevious),
             Stop => self.webview.widget().stop_loading(),
+            UrlIncrement => self.url_increment(),
+            UrlDecrement => self.url_decrement(),
             WinFollow => {
                 // TODO: move that into a function.
                 self.model.follow_mode = FollowMode::Click;

@@ -11,6 +11,10 @@ nmap f follow
 nmap F win-follow
 nmap gg scroll-top
 nmap gi focus-input
+nmap gu go-parent-dir
+nmap gU go-root-dir
+nmap g- url-decrement
+nmap g+ url-increment
 nmap G scroll-bottom
 nmap h scroll-left
 nmap i insert
@@ -40,6 +44,8 @@ nmap <C-t> bookmark-edit-tags
 nmap <Enter> activate-selection
 nmap <Esc> finish-search
 nmap ;h hover
+nmap [[ click-prev-page
+nmap ]] click-next-page
 
 fmap <Esc> hide-hints
 imap <Esc> normal

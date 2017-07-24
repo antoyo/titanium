@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use url::Url;
+use url::{Position, Url};
 use url::percent_encoding::percent_decode;
 
 #[cfg(test)]
@@ -68,4 +68,62 @@ pub fn is_url(input: &str) -> bool {
     Url::parse(input).is_ok() || (Url::parse(&format!("http://{}", input)).is_ok() &&
                                   (input.contains('.') || input.contains(':'))) ||
         input == "localhost"
+}
+
+/// Take url and increment the first number with offset    
+pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
+    if let Ok(url) = Url::parse(url) {
+        let mut updated = false;
+
+        if let Some(query) = url.query(){
+            let pairs = url.query_pairs().into_owned();
+
+            // ParseIntoOwned lacks DoubleEndedIterator for rev(), must be parsed left to right
+            let next = pairs.map(|(lhs, rhs)| {
+                if updated {
+                    lhs + "=" + &rhs
+                } else if let Ok(number) = rhs.parse::<i32>() {
+                    updated = true;
+                    lhs + "=" + (number + inc_offset).to_string().as_str()
+                } else {
+                    lhs + "=" + &rhs
+                }
+            }).fold(String::new(), |acc, ref x| {
+                if acc.is_empty() {
+                    acc + &x
+                } else {
+                    acc + "&" + &x
+                }
+            });
+
+            if updated {
+                return Some(url[..Position::BeforeQuery].to_string() + &next);
+            } else if let Some(page) = offset(&url[..Position::BeforeQuery], inc_offset) {
+                return Some(page + query);
+            }
+        } else if let Some(path_segments) = url.path_segments() {
+            let next = path_segments
+                .rev() // check in reverse
+                .map(|segment| {
+                    if !updated {
+                        if let Ok(number) = segment.parse::<i32>() {
+                            updated = true;
+                            return String::from("/") + (number + inc_offset).to_string().as_str();
+                        }
+                    }
+                    
+                    String::from("/") + segment
+                })
+                .rev() // reverse again to normal state
+                .collect::<String>();
+
+            if updated {
+                return Some(url[..Position::BeforePath].to_string() + &next);
+            } else {
+                // TODO: Check for some edge cases with a regex or tokenizer, ie: example.com/page6 
+            }
+        }
+    }
+
+    None
 }

@@ -22,6 +22,8 @@
 use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
+use url::{Url, Position};
+use urls::{offset, get_filename};
 
 impl App {
     /// Open the given URL in the web view.
@@ -40,6 +42,57 @@ impl App {
     pub fn win_paste_url(&mut self) {
         if let Some(url) = self.get_url_from_clipboard() {
             self.open_in_new_window(&url);
+        }
+    }
+
+    /// Go up one directory in url
+    pub fn go_parent_directory(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            let mut parent = String::new();
+
+            // TODO: Do manually without use of get_filename
+            if let Some(filename) = get_filename(url) {
+                if filename.is_empty() {
+                    if let Ok(base_url) = Url::parse(url) {
+                        parent = base_url.join("../").unwrap().to_string();
+                    }
+                } else {
+                    parent = url[..url.len()-filename.len()].to_string();
+                }
+            }
+
+            if !parent.is_empty() {
+                self.open(&parent);
+            }
+        }
+    }
+
+    /// Go to the root directory or url hostname 
+    pub fn go_root_directory(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Ok(base_url) = Url::parse(url) {
+                let root = &base_url[..Position::BeforePath];
+
+                if !root.is_empty() {
+                    self.open(root);
+                }
+            }
+        }
+    }
+
+    pub fn url_increment(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Some(url) = offset(url, 1) {
+                self.open(&url);
+            }
+        }
+    }
+
+    pub fn url_decrement(&self) {
+        if let Some(ref url) = self.webview.widget().get_uri() {
+            if let Some(url) = offset(url, -1) {
+                self.open(&url);
+            }
         }
     }
 }
