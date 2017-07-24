@@ -513,7 +513,7 @@ impl App {
                 self.follow_link();
             },
             Forward => self.webview.widget().go_forward(),
-            GoParentDir => self.go_parent_directory(),
+            GoParentDir(parent_level) => self.go_parent_directory(parent_level),
             GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
             Hover => {
