@@ -23,7 +23,7 @@ use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
 use url::{Url, Position};
-use urls::{offset, get_filename};
+use urls::offset;
 
 impl App {
     /// Open the given URL in the web view.
@@ -48,21 +48,15 @@ impl App {
     /// Go up one directory in url.
     pub fn go_parent_directory(&self) {
         if let Some(ref url) = self.webview.widget().get_uri() {
-            let mut parent = String::new();
-
-            // TODO: Do manually without use of get_filename
-            if let Some(filename) = get_filename(url) {
-                if filename.is_empty() {
-                    if let Ok(base_url) = Url::parse(url) {
-                        parent = base_url.join("../").unwrap().to_string();
-                    }
-                } else {
-                    parent = url[..url.len()-filename.len()].to_string();
+            if let Ok(mut url) = Url::parse(url) {
+                match url.path_segments_mut() {
+                    Ok(mut segments) => {
+                        let _ = segments.pop_if_empty()
+                            .pop();
+                    },
+                    Err(_) => return,
                 }
-            }
-
-            if !parent.is_empty() {
-                self.open(&parent);
+                self.open(url.as_str());
             }
         }
     }
