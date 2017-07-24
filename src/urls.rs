@@ -70,7 +70,7 @@ pub fn is_url(input: &str) -> bool {
         input == "localhost"
 }
 
-/// Take url and increment the first number with offset    
+/// Take url and increment the first number with offset.
 pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
     if let Ok(url) = Url::parse(url) {
         let mut updated = false;
@@ -111,7 +111,7 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
                             return String::from("/") + (number + inc_offset).to_string().as_str();
                         }
                     }
-                    
+
                     String::from("/") + segment
                 })
                 .rev() // reverse again to normal state
@@ -120,7 +120,7 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
             if updated {
                 return Some(url[..Position::BeforePath].to_string() + &next);
             } else {
-                // TODO: Check for some edge cases with a regex or tokenizer, ie: example.com/page6 
+                // TODO: Check for some edge cases with a regex or tokenizer, ie: example.com/page6.
             }
         }
     }

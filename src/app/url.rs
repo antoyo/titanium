@@ -45,7 +45,7 @@ impl App {
         }
     }
 
-    /// Go up one directory in url
+    /// Go up one directory in url.
     pub fn go_parent_directory(&self) {
         if let Some(ref url) = self.webview.widget().get_uri() {
             let mut parent = String::new();
@@ -67,7 +67,7 @@ impl App {
         }
     }
 
-    /// Go to the root directory or url hostname 
+    /// Go to the root directory or url hostname.
     pub fn go_root_directory(&self) {
         if let Some(ref url) = self.webview.widget().get_uri() {
             if let Ok(base_url) = Url::parse(url) {
