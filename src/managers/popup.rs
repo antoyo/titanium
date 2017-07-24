@@ -25,7 +25,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use app::App;
-use config_dir::ConfigDir;
+use managers::ConfigDir;
 use errors::Result;
 use urls::get_base_url;
 

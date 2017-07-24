@@ -24,7 +24,7 @@
 use mg::Variables;
 use mg::DefaultConfig::{self, Dir, File};
 
-use config_dir::ConfigDir;
+use managers::ConfigDir;
 use super::App;
 
 impl App {

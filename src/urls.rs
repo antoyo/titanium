@@ -75,7 +75,7 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
     if let Ok(url) = Url::parse(url) {
         let mut updated = false;
 
-        if let Some(query) = url.query(){
+        if let Some(query) = url.query() {
             let pairs = url.query_pairs().into_owned();
 
             // ParseIntoOwned lacks DoubleEndedIterator for rev(), must be parsed left to right

@@ -58,10 +58,10 @@ use app::Msg::{
     SetPageId,
     ShowError,
 };
-use config_dir::ConfigDir;
+use managers::ConfigDir;
 use errors::Error;
 use self::Msg::*;
-use webview::WebView;
+use views::WebView;
 
 pub struct AppServer {
     stream: EventStream<app::Msg>,

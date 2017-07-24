@@ -25,7 +25,7 @@ use gdk::Display;
 use gtk::Clipboard;
 use url::Url;
 
-use app::App;
+use super::App;
 
 impl App {
     /// Get the URL from the clipboard if there is one.

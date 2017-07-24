@@ -264,23 +264,16 @@ extern crate webkit2gtk;
 extern crate xdg;
 
 mod app;
-mod bookmarks;
-mod clipboard;
+mod managers;
 mod commands;
 mod completers;
-mod config_dir;
-mod download;
-mod download_view;
-mod download_list_view;
 mod errors;
 mod file;
 mod message_server;
-mod pass_manager;
-mod popup_manager;
 mod settings;
 mod stylesheet;
 mod urls;
-mod webview;
+mod views;
 
 use std::env::args;
 use std::process;
