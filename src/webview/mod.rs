@@ -172,8 +172,8 @@ impl Widget for WebView {
         }) {
             close => Close,
             vexpand: true,
-            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window/*, relm TODO */) =>
-                return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window),
+            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window, relm) =>
+                return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window, &relm),
         }
     }
 }
@@ -215,10 +215,10 @@ impl WebView {
     }
 
     fn decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
-        open_in_new_window: &Rc<Cell<bool>>) -> bool
+        open_in_new_window: &Rc<Cell<bool>>, relm: &Relm<WebView>) -> bool
     {
         if *policy_decision_type == NavigationAction {
-            Self::handle_navigation_action(policy_decision, open_in_new_window)
+            Self::handle_navigation_action(policy_decision, open_in_new_window, relm)
         }
         else if *policy_decision_type == Response {
             Self::handle_response(policy_decision)
@@ -226,11 +226,6 @@ impl WebView {
         else {
             false
         }
-    }
-
-    /// Emit the new window event.
-    pub fn emit_new_window_event(&self, url: &str) {
-        self.model.relm.stream().emit(NewWindow(url.to_string()));
     }
 
     /// Get the find controller.
@@ -258,7 +253,9 @@ impl WebView {
     }
 
     /// Handle follow link in new window.
-    fn handle_navigation_action(policy_decision: &PolicyDecision, open_in_new_window: &Rc<Cell<bool>>) -> bool {
+    fn handle_navigation_action(policy_decision: &PolicyDecision, open_in_new_window: &Rc<Cell<bool>>,
+        relm: &Relm<WebView>) -> bool
+    {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
             if open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
@@ -267,7 +264,7 @@ impl WebView {
                 if let Some(url) = url {
                     policy_decision.ignore();
                     open_in_new_window.set(false);
-                    //self.emit_new_window_event(&url); // TODO
+                    relm.stream().emit(NewWindow(url.to_string()));
                     return true;
                 }
             }
