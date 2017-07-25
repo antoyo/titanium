@@ -118,7 +118,7 @@ impl Widget for DownloadView {
             last_update: SystemTime::now(),
             new_destination: None,
             original_destination: None,
-            progress: 1.0,
+            progress: 0.0,
             relm: relm.clone(),
             text: String::new(),
             to_open: false,
@@ -162,7 +162,6 @@ impl Widget for DownloadView {
         let percent = (self.model.progress * 100.0) as i32;
         let (downloaded_size, total_size) = get_data_sizes(&self.model.download);
         // TODO: show the speed (downloaded data over the last 5 seconds).
-        let mut updated = false;
         if percent == 100 {
             let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
             self.model.text = format!("{} {}%{}", self.model.filename, percent, total_size);
@@ -170,7 +169,7 @@ impl Widget for DownloadView {
         else if let Ok(duration) = self.model.last_update.elapsed() {
             // Update the text once per second.
             if duration.as_secs() >= 1 || !self.model.was_shown {
-                updated = true;
+                self.model.last_update = SystemTime::now();
                 let time_remaining = get_remaining_time(&self.model.download)
                     .map(|time| format!(", {}", time))
                     .unwrap_or_default();
@@ -179,9 +178,6 @@ impl Widget for DownloadView {
                     downloaded_size, total_size);
                 self.model.was_shown = true;
             }
-        }
-        if updated {
-            self.model.last_update = SystemTime::now();
         }
     }
 
@@ -219,6 +215,7 @@ fn add_byte_suffix(number: f64) -> String {
 fn get_data_sizes(download: &Download) -> (String, Option<String>) {
     let progress = download.get_estimated_progress();
     if progress == 0.0 {
+        // TODO: show the downloaded size when the progress is not available (slitaz.org/en/get).
         (add_byte_suffix(progress), None)
     }
     else {

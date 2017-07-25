@@ -90,7 +90,6 @@ pub enum Msg {
     AddStylesheets,
     AppError(String),
     Close,
-    DecidePolicy(PolicyDecision, PolicyDecisionType),
     EndSearch,
     InspectorClose,
     NewWindow(String),
@@ -139,8 +138,6 @@ impl Widget for WebView {
             AppError(_) => (), // To be listened by the user.
             // To be listened by the user.
             Close => (),
-            DecidePolicy(policy_decision, policy_decision_type) =>
-                self.decide_policy(policy_decision, policy_decision_type),
             EndSearch => handle_app_error!(self.finish_search()),
             InspectorClose => self.model.inspector_shown.set(false),
             // To be listened by the user.
@@ -175,9 +172,8 @@ impl Widget for WebView {
         }) {
             close => Close,
             vexpand: true,
-            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window) =>
-                return (DecidePolicy(policy_decision.clone(), policy_decision_type),
-                    WebView::inhibit_decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window)),
+            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window/*, relm TODO */) =>
+                return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window),
         }
     }
 }
@@ -218,27 +214,17 @@ impl WebView {
         Ok(())
     }
 
-    fn inhibit_decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
+    fn decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
         open_in_new_window: &Rc<Cell<bool>>) -> bool
     {
         if *policy_decision_type == NavigationAction {
-            WebView::inhibit_navigation_action(open_in_new_window, policy_decision)
+            Self::handle_navigation_action(policy_decision, open_in_new_window)
         }
         else if *policy_decision_type == Response {
-            WebView::inhibit_response(policy_decision)
+            Self::handle_response(policy_decision)
         }
         else {
             false
-        }
-    }
-
-    /// Handle the decide policy event.
-    fn decide_policy(&mut self, policy_decision: PolicyDecision, policy_decision_type: PolicyDecisionType) {
-        if policy_decision_type == NavigationAction {
-            self.handle_navigation_action(policy_decision.clone());
-        }
-        else if policy_decision_type == Response {
-            self.handle_response(policy_decision.clone());
         }
     }
 
@@ -271,52 +257,35 @@ impl WebView {
         }
     }
 
-    fn inhibit_navigation_action(open_in_new_window: &Rc<Cell<bool>>, policy_decision: &PolicyDecision) -> bool {
+    /// Handle follow link in new window.
+    fn handle_navigation_action(policy_decision: &PolicyDecision, open_in_new_window: &Rc<Cell<bool>>) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
             if open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());
-                return url.is_some();
-            }
-        }
-        false
-    }
-
-    /// Handle follow link in new window.
-    fn handle_navigation_action(&mut self, policy_decision: PolicyDecision) {
-        let policy_decision = policy_decision.clone();
-        if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
-            if self.model.open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
-                let url = policy_decision.get_request()
-                    .and_then(|request| request.get_uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
-                    self.model.open_in_new_window.set(false);
-                    self.emit_new_window_event(&url);
+                    open_in_new_window.set(false);
+                    //self.emit_new_window_event(&url); // TODO
+                    return true;
                 }
             }
         }
-    }
-
-    fn inhibit_response(policy_decision: &PolicyDecision) -> bool {
-        let policy_decision = policy_decision.clone();
-        if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
-            if !policy_decision.is_mime_type_supported() {
-                return true;
-            }
-        }
         false
     }
 
-    /// Download file whose mime type is not supported.
-    fn handle_response(&self, policy_decision: PolicyDecision) {
+    /// Download the file whose mime type is not supported:
+    /// This mean that when the webview cannot show a file, it will be downloaded.
+    fn handle_response(policy_decision: &PolicyDecision) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<ResponsePolicyDecision>() {
             if !policy_decision.is_mime_type_supported() {
                 policy_decision.download();
+                return true;
             }
         }
+        false
     }
 
     /// Create the context and initialize the web extension.
