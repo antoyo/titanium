@@ -112,6 +112,11 @@ version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "bitflags"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "byteorder"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,7 +433,7 @@ dependencies = [
 [[package]]
 name = "javascriptcore"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/javascriptcore-rs#0e78f68ce1297014f43e16f72033231a8aca62f5"
+source = "git+https://github.com/antoyo/javascriptcore-rs?branch=crate#0e78f68ce1297014f43e16f72033231a8aca62f5"
 dependencies = [
  "glib 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "javascriptcore-sys 0.1.0 (git+https://github.com/antoyo/javascriptcore-sys-rs)",
@@ -1021,7 +1026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2gtk"
 version = "0.1.0"
-source = "git+https://github.com/antoyo/webkit2gtk-rs?branch=crate#30853b026500ceaf2cb3b33662a3a5b402105906"
+source = "git+https://github.com/antoyo/webkit2gtk-rs?branch=crate#f04da9d8d66e393b6f38c66c7c9fd3098cbd487c"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1031,18 +1036,18 @@ dependencies = [
  "gobject-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "javascriptcore 0.1.0 (git+https://github.com/antoyo/javascriptcore-rs)",
+ "javascriptcore 0.1.0 (git+https://github.com/antoyo/javascriptcore-rs?branch=crate)",
  "libc 0.2.28 (registry+https://github.com/rust-lang/crates.io-index)",
- "webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-sys-rs?branch=crate)",
+ "webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-rs?branch=crate)",
 ]
 
 [[package]]
 name = "webkit2gtk-sys"
 version = "0.3.1"
-source = "git+https://github.com/antoyo/webkit2gtk-sys-rs?branch=crate#b07c15059adf76e9ff69fe381e37b39b0d1616a3"
+source = "git+https://github.com/antoyo/webkit2gtk-rs?branch=crate#f04da9d8d66e393b6f38c66c7c9fd3098cbd487c"
 dependencies = [
  "atk-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "bitflags 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-sys-rs 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-pixbuf-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1100,6 +1105,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4f67931368edf3a9a51d29886d245f1c3db2f1ef0dcc9e35ff70341b78c10d23"
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum bitflags 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1370e9fc2a6ae53aea8b7a5110edbd08836ed87c88736dfabccade1c2b44bff4"
+"checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum byteorder 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff81738b726f5d099632ceaffe7fb65b90212e8dce59d518729e7e8634032d3d"
 "checksum bytes 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8b24f16593f445422331a5eed46b72f7f171f910fead4f2ea8f17e727e9c5c14"
 "checksum c_vec 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6237ac5a4b1e81c213c24c6437964c61e646df910a914b4ab1487b46df20bd13"
@@ -1130,7 +1136,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum gumdrop_derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "83f41769b75c4876e34daf473e467ee6535772313db18f2573ad81f4a118d1cd"
 "checksum idna 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "014b298351066f1512874135335d62a789ffe78a9974f94b43ed5621951eaf7d"
 "checksum iovec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "29d062ee61fccdf25be172e70f34c9f6efc597e1fb8f6526e8437b2046ab26be"
-"checksum javascriptcore 0.1.0 (git+https://github.com/antoyo/javascriptcore-rs)" = "<none>"
+"checksum javascriptcore 0.1.0 (git+https://github.com/antoyo/javascriptcore-rs?branch=crate)" = "<none>"
 "checksum javascriptcore-sys 0.1.0 (git+https://github.com/antoyo/javascriptcore-sys-rs)" = "<none>"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3b37545ab726dd833ec6420aaba8231c5b320814b9029ad585555d2a03e94fbf"
@@ -1200,7 +1206,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum webkit2gtk 0.1.0 (git+https://github.com/antoyo/webkit2gtk-rs?branch=crate)" = "<none>"
-"checksum webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-sys-rs?branch=crate)" = "<none>"
+"checksum webkit2gtk-sys 0.3.1 (git+https://github.com/antoyo/webkit2gtk-rs?branch=crate)" = "<none>"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
 "checksum ws2_32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"

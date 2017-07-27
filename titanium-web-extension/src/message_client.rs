@@ -32,9 +32,7 @@ use tokio_io::io::WriteHalf;
 use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
 use webkit2gtk_webextension::{
     URIRequest,
-    URIRequestExt,
     WebPage,
-    WebPageExt,
 };
 
 use titanium_common::{ExtensionId, Message, PageId, PATH};

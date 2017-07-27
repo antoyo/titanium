@@ -24,15 +24,12 @@ use std::i32;
 
 use glib::object::Downcast;
 use webkit2gtk_webextension::{
-    DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
     DOMElement,
     DOMElementExt,
     DOMHTMLIFrameElement,
-    DOMHTMLIFrameElementExt,
     DOMNodeExt,
-    DOMNodeListExt,
 };
 
 use dom::{

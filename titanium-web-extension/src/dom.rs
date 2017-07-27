@@ -23,34 +23,26 @@ use glib::Cast;
 use regex::Regex;
 
 use webkit2gtk_webextension::{
-    DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
-    DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
     DOMEventTarget,
     DOMEventTargetExt,
     DOMHTMLButtonElement,
-    DOMHTMLButtonElementExt,
     DOMHTMLCollection,
     DOMHTMLCollectionExt,
     DOMHTMLElement,
     DOMHTMLFieldSetElement,
     DOMHTMLFieldSetElementExtManual,
     DOMHTMLInputElement,
-    DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
-    DOMHTMLSelectElementExt,
     DOMHTMLTextAreaElement,
-    DOMHTMLTextAreaElementExt,
     DOMMouseEvent,
     DOMMouseEventExt,
     DOMNodeExt,
     DOMNodeList,
-    DOMNodeListExt,
     WebPage,
-    WebPageExt,
 };
 
 macro_rules! return_if_disabled {

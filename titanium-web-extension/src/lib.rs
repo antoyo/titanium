@@ -153,7 +153,7 @@ use std::mem::forget;
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
-use webkit2gtk_webextension::{WebExtension, WebExtensionExt};
+use webkit2gtk_webextension::WebExtension;
 
 use message_client::MessageClient;
 use message_client::Msg::PageCreated;

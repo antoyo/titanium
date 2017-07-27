@@ -21,9 +21,7 @@
 
 use glib::Cast;
 use webkit2gtk_webextension::{
-    DOMCSSStyleDeclarationExt,
     DOMDocumentExt,
-    DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
     DOMNodeExt,

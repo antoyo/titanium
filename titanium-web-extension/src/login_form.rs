@@ -25,9 +25,7 @@ use webkit2gtk_webextension::{
     DOMDocumentExt,
     DOMElementExt,
     DOMHTMLFormElement,
-    DOMHTMLFormElementExt,
     DOMHTMLInputElement,
-    DOMHTMLInputElementExt,
     DOMNodeExt,
 };
 

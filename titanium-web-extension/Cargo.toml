@@ -42,7 +42,7 @@ version = "^0.1"
 
 [dependencies.webkit2gtk-webextension-sys]
 branch = "crate"
-git = "https://github.com/antoyo/webkit2gtk-webextension-sys-rs"
+git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
 version = "^0.2"
 
 [features]
