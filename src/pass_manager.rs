@@ -25,7 +25,7 @@ use password_store::PasswordStore;
 
 use app::APP_NAME;
 use errors::Result;
-use urls::base_url;
+use urls::host;
 
 /// A password manager is used to add, get and remove credentials.
 pub struct PasswordManager {
@@ -41,7 +41,7 @@ impl PasswordManager {
     /// Add a credential.
     /// Returns true if the credential was added.
     pub fn add(&self, url: &str, username: &str, password: &str) -> Result<()> {
-        if let Some(url) = base_url(url) {
+        if let Some(url) = host(url) {
             PasswordStore::insert(&path_username(&url, username), password)?;
         }
         else {
@@ -53,7 +53,7 @@ impl PasswordManager {
     /// Delete a password.
     /// Returns true if a credential was deleted.
     pub fn delete(&self, url: &str, username: &str) -> Result<()> {
-        if let Some(url) = base_url(url) {
+        if let Some(url) = host(url) {
             PasswordStore::remove(&path_username(&url, username))?;
         }
         else {
@@ -64,7 +64,7 @@ impl PasswordManager {
 
     /// Get the usernames for a `url`.
     pub fn get_usernames(&self, url: &str) -> Result<Vec<String>> {
-        if let Some(url) = base_url(url) {
+        if let Some(url) = host(url) {
             Ok(PasswordStore::get_usernames(&path(&url))?)
         }
         else {
@@ -74,7 +74,7 @@ impl PasswordManager {
 
     /// Get the password for a `url` and username.
     pub fn get_password(&self, url: &str, username: &str) -> Result<String> {
-        if let Some(url) = base_url(url) {
+        if let Some(url) = host(url) {
             Ok(PasswordStore::get(&path_username(&url, username))?)
         }
         else {

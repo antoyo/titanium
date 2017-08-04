@@ -30,6 +30,7 @@ nmap P win-paste-url
 nmap q quit
 nmap r reload
 nmap R reload-bypass-cache
+nmap si password-insert
 nmap sl password-load
 nmap sp password-save
 nmap su password-submit

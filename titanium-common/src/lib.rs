@@ -89,6 +89,8 @@ pub enum InnerMessage {
     /// Send the page ID to the application to connect the web extension with the right window.
     /// Answer to GetId.
     Id(ExtensionId, PageId),
+    /// Insert some text in the currently focused text field.
+    InsertText(String),
     /// Hide the hints.
     HideHints(),
     /// Write the username and password in the login form.

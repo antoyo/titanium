@@ -21,6 +21,7 @@
 
 use titanium_common::InnerMessage::{
     GetCredentials,
+    InsertText,
     LoadUsernamePass,
     SubmitLoginForm,
 };
@@ -41,6 +42,18 @@ impl App {
         /*Ok(true) => self.app.info("Password deleted"),
           Ok(false) => self.app.info("No password for the current URL"),
           Err(err) => self.show_error(err),*/
+        Ok(())
+    }
+
+    /// Insert a password in the focused text input.
+    pub fn insert_password(&mut self) -> Result<()> {
+        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        if !usernames.is_empty() {
+            // TODO: ask for which username to insert.
+            let username = &usernames[0];
+            let password = self.model.password_manager.get_password(&self.model.current_url, username)?;
+            self.server_send(InsertText(password));
+        }
         Ok(())
     }
 

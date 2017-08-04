@@ -127,6 +127,7 @@ impl Update for Executor {
                     GetCredentials() => self.send_credentials(),
                     GetScrollPercentage() => self.send_scroll_percentage(),
                     HideHints() => self.hide_hints(),
+                    InsertText(text) => self.insert_text(&text),
                     LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
                     ResetScrollElement() => self.model.scroll_element = None,
                     ScrollBottom() => self.scroll_bottom(),
@@ -318,6 +319,13 @@ impl Executor {
         self.model.last_hovered_element = Some(element.clone().upcast());
         mouse_over(&element.upcast());
         NoAction
+    }
+
+    fn insert_text(&self, text: &str) {
+        let document = get_document!(self);
+        let active_element = wtry_opt_no_ret!(document.get_active_element());
+        let element = wtry_no_show!(active_element.downcast::<DOMHTMLInputElement>());
+        element.set_value(text);
     }
 
     // Load the username and the password in the login form.

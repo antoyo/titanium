@@ -527,6 +527,7 @@ impl App {
             Normal => self.go_in_normal_mode(),
             Open(ref url) => self.open(url),
             PasswordDelete => handle_error!(self.delete_password()),
+            PasswordInsert => handle_error!(self.insert_password()),
             PasswordLoad => handle_error!(self.load_password()),
             PasswordSave => self.save_password(),
             PasswordSubmit => handle_error!(self.submit_login_form()),

@@ -74,6 +74,8 @@ pub enum AppCommand {
     Open(String),
     #[help(text="Delete the credentials for the current URL")]
     PasswordDelete,
+    #[help(text="Insert a password in the focused text input")]
+    PasswordInsert,
     #[help(text="Load the credentials in the login form")]
     PasswordLoad,
     #[help(text="Save the credentials from the login form")]

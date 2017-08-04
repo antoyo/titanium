@@ -63,6 +63,12 @@ pub fn get_filename(url: &str) -> Option<String> {
         .map(|string| string.into_owned())
 }
 
+pub fn host(url: &str) -> Option<String> {
+    Url::parse(url).ok().and_then(|parsed_url| {
+        parsed_url.host_str().map(|host| host.to_string())
+    })
+}
+
 /// Check if the input string looks like a URL.
 pub fn is_url(input: &str) -> bool {
     Url::parse(input).is_ok() || (Url::parse(&format!("http://{}", input)).is_ok() &&
