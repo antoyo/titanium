@@ -27,6 +27,7 @@ tempfile = "^2.1"
 tokio-io = "^0.1.1"
 tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
+webkit2gtk = "^0.1.0"
 xdg = "^2.0"
 
 [dependencies.fg-uds]
@@ -52,11 +53,6 @@ git = "https://github.com/antoyo/relm"
 
 [dependencies.titanium-common]
 path = "titanium-common"
-version = "^0.1"
-
-[dependencies.webkit2gtk]
-branch = "crate"
-git = "https://github.com/antoyo/webkit2gtk-rs"
 version = "^0.1"
 
 [dev-dependencies]

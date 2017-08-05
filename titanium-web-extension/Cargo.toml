@@ -9,14 +9,16 @@ glib = "^0.1.3"
 glib-sys = "^0.3.4"
 lazy_static = "^0.2.8"
 log = "^0.3"
+regex = "^0.2.2"
 serde = "^1.0.7"
 simplelog = "^0.4"
 syslog = "^3.2.0"
 tokio-io = "^0.1.1"
 tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
+webkit2gtk-webextension = "^0.1.0"
+webkit2gtk-webextension-sys = "^0.2.0"
 xdg = "^2.0"
-regex = "^0.2.2"
 
 [dependencies.fg-uds]
 git = "https://github.com/antoyo/fg-uds-rs"
@@ -34,16 +36,6 @@ git = "https://github.com/antoyo/relm"
 
 [dependencies.titanium-common]
 path = "../titanium-common"
-
-[dependencies.webkit2gtk-webextension]
-branch = "crate"
-git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
-version = "^0.1"
-
-[dependencies.webkit2gtk-webextension-sys]
-branch = "crate"
-git = "https://github.com/antoyo/webkit2gtk-webextension-rs"
-version = "^0.2"
 
 [features]
 default = ["webkit2gtk-webextension/v2_16"]

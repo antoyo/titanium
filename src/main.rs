@@ -20,13 +20,23 @@
  */
 
 /*
+ * TODO: add a command to also submit after inserting the password.
+ *
+ * TODO: ClickNextPage, change server_send() to a new method. Or perhaps better: make the match
+ * return the message and send it with server_send() after it.
+ * TODO: Add else branch (for logging) for the code of the first PR.
+ *
+ * TODO: might not require the syntax with (relm) if we emit the signal normally.
+ *
+ * TODO: add a kill command to close a webview without try_close().
+ *
+ * TODO: remove dependencies like tokio and error-chain.
+ *
  * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
  * javascript_can_close_windows when the window was opened by JS.
  *
  * FIXME: panic when download when there was windows already opened.
  * FIXME: web extension crashed with: "Ioctl() inappropré pour un périphérique (os error 25)"
- *
- * TODO: add a command to write a password into the focused text field.
  *
  * TODO: "extension id for page X does not exist".
  * The page ID is sent, but not received (no message received). Check that the message is really
@@ -115,6 +125,7 @@
  * property="og:article:tag"/> is a start).
  *
  * TODO: hint file input.
+ * TODO: find a way to avoid having hints on top of each other.
  * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
  * Vimperator simulates ctrl-click to work around this.
  *

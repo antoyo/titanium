@@ -187,7 +187,7 @@ impl WebView {
                 WebkitSerifFontFamily(ref value) =>
                     settings.set_serif_font_family(value),
                 WebkitUserAgent(ref value) =>
-                    settings.set_user_agent(Some(value)),
+                    settings.set_user_agent(Some(value.as_str())),
                 WebkitZoomTextOnly(value) =>
                     settings.set_zoom_text_only(value),
             }

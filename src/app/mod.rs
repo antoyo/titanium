@@ -78,7 +78,7 @@ use webkit2gtk::{
     HitTestResult,
     NavigationAction,
     WebContext,
-    WebViewExt,
+    WebViewExtManual,
 };
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
