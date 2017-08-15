@@ -5,7 +5,7 @@ description = "Keyboard-driven web browser"
 license = "MIT"
 name = "titanium"
 repository = "https://github.com/antoyo/titanium"
-version = "0.1.0"
+version = "0.1.1"
 
 [dependencies]
 cairo-rs = "^0.1.3"
