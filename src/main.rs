@@ -22,6 +22,8 @@
 /*
  * TODO: add a command to also submit after inserting the password.
  *
+ * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
+ *
  * TODO: ClickNextPage, change server_send() to a new method. Or perhaps better: make the match
  * return the message and send it with server_send() after it.
  * TODO: Add else branch (for logging) for the code of the first PR.
@@ -45,6 +47,7 @@
  *
  * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
+ * https://www.fstar-lang.org/tutorial/
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
  * FIXME: scroll percentage is all:

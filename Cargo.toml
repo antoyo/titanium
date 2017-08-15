@@ -6,7 +6,9 @@ version = "0.1.0"
 [dependencies]
 cairo-rs = "^0.1.3"
 error-chain = "^0.10.0"
+fg-uds = "^0.1.0"
 futures = "^0.1.14"
+futures-glib = "^0.1.0"
 gdk = "^0.5.3"
 glib = "^0.1.3"
 gtk = "^0.1.3"
@@ -14,11 +16,15 @@ gumdrop = "^0.2.0"
 gumdrop_derive = "^0.2.0"
 log = "^0.3"
 log-panics = "^1.1.0"
+mg = "^0.1.0"
 mg-settings = "^0.2.2"
 mg-settings-macros = "^0.2.1"
 number_prefix = "^0.2"
 open = "^1.1"
 password-store = "^0.1.1"
+relm = "^0.10.0"
+relm-attributes = "^0.10.0"
+relm-derive = "^0.10.0"
 rusqlite = "^0.7.3"
 simplelog = "^0.4"
 sysinfo = "^0.3.9"
@@ -29,27 +35,6 @@ tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
 webkit2gtk = "^0.1.0"
 xdg = "^2.0"
-
-[dependencies.fg-uds]
-git = "https://github.com/antoyo/fg-uds-rs"
-
-[dependencies.futures-glib]
-git = "https://github.com/antoyo/futures-glib-rs"
-
-[dependencies.mg]
-git = "https://github.com/antoyo/mg"
-
-[dependencies.relm]
-branch = "feature/futures-glib"
-git = "https://github.com/antoyo/relm"
-
-[dependencies.relm-attributes]
-branch = "feature/futures-glib"
-git = "https://github.com/antoyo/relm"
-
-[dependencies.relm-derive]
-branch = "feature/futures-glib"
-git = "https://github.com/antoyo/relm"
 
 [dependencies.titanium-common]
 path = "titanium-common"
