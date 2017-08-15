@@ -1,6 +1,10 @@
 [package]
 authors = ["Antoni Boucher <bouanto@zoho.com>"]
+categories = ["gui"]
+description = "Keyboard-driven web browser"
+license = "MIT"
 name = "titanium"
+repository = "https://github.com/antoyo/titanium"
 version = "0.1.0"
 
 [dependencies]
