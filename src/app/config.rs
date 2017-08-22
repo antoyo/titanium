@@ -23,6 +23,7 @@
 
 use mg::Variables;
 use mg::DefaultConfig::{self, Dir, File};
+use webkit2gtk::WebViewExt;
 
 use config_dir::ConfigDir;
 use super::App;

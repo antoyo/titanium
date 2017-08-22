@@ -21,7 +21,8 @@
 
 //! Handle copy/paste of URLs withing the application.
 
-use gtk::{Clipboard, WidgetExt};
+use gtk::{Clipboard, ClipboardExt, WidgetExt};
+use webkit2gtk::WebViewExt;
 
 use super::App;
 

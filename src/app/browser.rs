@@ -20,6 +20,7 @@
  */
 
 use mg::Info;
+use webkit2gtk::{CookieManagerExt, WebContextExt};
 
 use super::App;
 

@@ -31,11 +31,11 @@ use std::fs::{remove_file, rename};
 use std::time::SystemTime;
 
 use gtk;
-use gtk::WidgetExt;
+use gtk::{ProgressBarExt, WidgetExt};
 use number_prefix::{Prefixed, Standalone, binary_prefix};
 use relm::{Relm, Widget};
 use relm_attributes::widget;
-use webkit2gtk::Download;
+use webkit2gtk::{Download, DownloadExt, URIRequestExt};
 
 use urls;
 

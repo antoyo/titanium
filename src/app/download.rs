@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 
 use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
-use webkit2gtk::Download;
+use webkit2gtk::{Download, DownloadExt, WebContextExt};
 
 use INVALID_UTF8_ERROR;
 use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};

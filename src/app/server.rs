@@ -19,6 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use webkit2gtk::WebViewExt;
+
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 

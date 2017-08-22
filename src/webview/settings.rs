@@ -75,6 +75,12 @@ use settings::AppSettingsVariant::{
     WebkitZoomTextOnly,
 };
 use super::WebView;
+use webkit2gtk::{
+    CookieManagerExt,
+    SettingsExt,
+    WebContextExt,
+    WebViewExt,
+};
 
 impl WebView {
     /// Set the cookie accept policy.

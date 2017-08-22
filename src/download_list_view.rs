@@ -24,10 +24,22 @@ use std::time::Duration;
 
 use futures_glib::Timeout;
 use glib::Cast;
-use gtk::{self, Container, ContainerExt, IsA, SelectionMode, WidgetExt};
+use gtk::{
+    self,
+    Container,
+    ContainerExt,
+    FlowBoxExt,
+    IsA,
+    SelectionMode,
+    WidgetExt,
+};
 use relm::{Component, ContainerWidget, Relm, Widget};
 use relm_attributes::widget;
-use webkit2gtk::{Download, Error};
+use webkit2gtk::{
+    Download,
+    DownloadExt,
+    Error,
+};
 use webkit2gtk::DownloadError::CancelledByUser;
 
 use download_view::DownloadView;

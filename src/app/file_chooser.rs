@@ -28,7 +28,7 @@ use mg_settings::{
     SpecialCommand,
 };
 use relm::{EventStream, Update};
-use webkit2gtk::FileChooserRequest;
+use webkit2gtk::{FileChooserRequest, FileChooserRequestExt};
 
 use app::App;
 use app::dialog::show_blocking_file_input;

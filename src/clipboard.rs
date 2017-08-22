@@ -22,7 +22,7 @@
 //! Application clipboard utility functions.
 
 use gdk::Display;
-use gtk::Clipboard;
+use gtk::{Clipboard, ClipboardExt};
 use url::Url;
 
 use app::App;

@@ -76,8 +76,11 @@ use relm_attributes::widget;
 use webkit2gtk::{
     Download,
     HitTestResult,
+    HitTestResultExt,
     NavigationAction,
+    URIRequestExt,
     WebContext,
+    WebViewExt,
     WebViewExtManual,
 };
 use webkit2gtk::LoadEvent::{self, Finished, Started};

@@ -40,15 +40,19 @@ use glib::Cast;
 use relm_state::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
     DOMDocumentExt,
+    DOMDOMSelectionExt,
+    DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
     DOMHTMLElement,
     DOMHTMLElementExt,
     DOMHTMLInputElement,
+    DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
     DOMNodeExt,
     WebPage,
+    WebPageExt,
 };
 
 use titanium_common::{InnerMessage, PageId};

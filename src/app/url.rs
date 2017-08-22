@@ -19,6 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use webkit2gtk::WebViewExt;
+
 use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;

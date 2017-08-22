@@ -22,6 +22,7 @@
 //! Bookmark management in the application.
 
 use mg::{DeleteCompletionItem, Info, input};
+use webkit2gtk::WebViewExt;
 
 use app::App;
 use app::Msg::TagEdit;

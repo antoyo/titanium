@@ -51,7 +51,7 @@ impl PopupManager {
     /// Blacklist the specified url.
     pub fn blacklist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
-            self.blacklisted_urls.insert(url.to_string());
+            let _ = self.blacklisted_urls.insert(url.to_string());
             self.save_blacklist()
         }
         else {
@@ -110,7 +110,7 @@ impl PopupManager {
     /// Whitelist the specified url.
     pub fn whitelist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
-            self.whitelisted_urls.insert(url.to_string());
+            let _ = self.whitelisted_urls.insert(url.to_string());
             self.save_whitelist()
         }
         else {

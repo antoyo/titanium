@@ -42,20 +42,30 @@ use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
     self,
+    CookieManagerExt,
     CookiePersistentStorage,
     FindController,
+    FindControllerExt,
     FindOptions,
     NavigationPolicyDecision,
+    NavigationPolicyDecisionExt,
     PolicyDecision,
     PolicyDecisionExt,
     PrintOperation,
+    PrintOperationExt,
     ResponsePolicyDecision,
+    ResponsePolicyDecisionExt,
     TLSErrorsPolicy,
+    URIRequestExt,
     UserContentManager,
+    UserContentManagerExt,
     UserScript,
     UserStyleSheet,
     WebContext,
+    WebContextExt,
     WebInspector,
+    WebInspectorExt,
+    WebViewExt,
     FIND_OPTIONS_BACKWARDS,
     FIND_OPTIONS_CASE_INSENSITIVE,
     FIND_OPTIONS_WRAP_AROUND,
@@ -323,7 +333,7 @@ impl WebView {
     /// Save a screenshot of the web view.
     fn screenshot(&self, path: String) {
         let allocation = self.view.get_allocation();
-        let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height);
+        let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height).unwrap();
         let context = Context::new(&surface);
         self.view.draw(&context);
         let mut file = File::create(path).unwrap();
