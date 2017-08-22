@@ -36,18 +36,23 @@ use dom::{ElementIter, get_body, get_document};
 use executor::Executor;
 
 impl Executor {
-    /// Initialize the scroll element if needed.
+    /// Initialize the scroll element.
     pub fn init_scroll_element(&mut self) {
+        self.model.scroll_element = find_scrollable_element(&self.model.page);
+    }
+
+    /// Initialize the scroll element if needed.
+    fn init_scroll_element_if_needed(&mut self) {
         if self.model.scroll_element.is_none() {
             // FIXME: if the page is not scrollable, no scrollable element is found.
-            self.model.scroll_element = find_scrollable_element(&self.model.page);
+            self.init_scroll_element();
         }
     }
 
     /// Scroll the web page vertically by the specified amount of pixels.
     /// A negative value scroll towards to top.
     pub fn scroll_by(&mut self, pixels: i64) {
-        self.init_scroll_element();
+        self.init_scroll_element_if_needed();
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_top(element.get_scroll_top() + pixels);
     }
@@ -55,14 +60,14 @@ impl Executor {
     /// Scroll the web page horizontally by the specified amount of pixels.
     /// A negative value scroll towards left.
     pub fn scroll_by_x(&mut self, pixels: i64) {
-        self.init_scroll_element();
+        self.init_scroll_element_if_needed();
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_left(element.get_scroll_left() + pixels);
     }
 
     /// Scroll to the bottom of the web page.
     pub fn scroll_bottom(&mut self) {
-        self.init_scroll_element();
+        self.init_scroll_element_if_needed();
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_top(element.get_scroll_height());
     }
@@ -84,7 +89,7 @@ impl Executor {
 
     /// Scroll to the top of the web page.
     pub fn scroll_top(&mut self) {
-        self.init_scroll_element();
+        self.init_scroll_element_if_needed();
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_top(0);
     }

@@ -43,11 +43,6 @@ impl App {
         self.server_send(ActivateSelection());
     }
 
-    /// Emit the scrolled event.
-    pub fn emit_scrolled_event(&mut self) {
-        self.server_send(GetScrollPercentage());
-    }
-
     /// Send a key to the web process to process with the current hints.
     pub fn enter_hint_key(&mut self, key_char: char) {
         self.server_send(EnterHintKey(key_char));
@@ -82,11 +77,6 @@ impl App {
                 // TODO: show the warning in the UI?
                 warn!("Unexpected message received: {:?}", message),
         }
-    }
-
-    /// Reset the scroll element.
-    pub fn reset_scroll_element(&mut self) {
-        self.server_send(ResetScrollElement());
     }
 
     /// Scroll by the specified number of pixels.

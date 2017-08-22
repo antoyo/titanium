@@ -140,6 +140,7 @@ use webview::Msg::{
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const LEFT_BUTTON: u32 = 1;
+const INIT_SCROLL_TEXT: &str = "[top]";
 
 static MODES: Modes = &[
     ("f", "follow"),
@@ -198,7 +199,6 @@ pub enum Msg {
     CreateWindow(String),
     DecideDownloadDestination(Download, String),
     DownloadDestination(DialogResult, Download, String),
-    EmitScrolledEvent,
     Exit(bool),
     FileDialogSelection(Option<String>),
     HasActiveDownloads(bool),
@@ -244,6 +244,11 @@ impl Widget for App {
         self.create_variables();
     }
 
+    fn load_started(&mut self) {
+        self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
+        self.set_title();
+    }
+
     fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
         let popup_manager = create_popup_manager(&config_dir);
         Model {
@@ -264,7 +269,7 @@ impl Widget for App {
             password_manager: PasswordManager::new(),
             popup_manager,
             relm: relm.clone(),
-            scroll_text: "[top]".to_string(),
+            scroll_text: INIT_SCROLL_TEXT.to_string(),
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
             web_context,
@@ -315,7 +320,6 @@ impl Widget for App {
                 self.download_input(download, suggested_filename),
             DownloadDestination(destination, download, suggested_filename) =>
                 handle_error!(self.download_destination_chosen(destination, download, suggested_filename)),
-            EmitScrolledEvent => self.emit_scrolled_event(),
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
@@ -382,8 +386,6 @@ impl Widget for App {
                     button_release_event(_, event) with (has_hovered_link) =>
                         (ButtonRelease(event.clone()), App::inhibit_button_release(&has_hovered_link, event)),
                     create(_, action) => (Create(action.clone()), None),
-                    // Emit the scroll event whenever the view is drawn.
-                    draw(_, _) => (EmitScrolledEvent, Inhibit(false)),
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
                     resource_load_started(_, _, _) => LoadStarted,
@@ -659,11 +661,6 @@ impl App {
                 Ok(())
             };
         self.handle_error(result);
-    }
-
-    fn load_started(&mut self) {
-        self.set_title();
-        self.reset_scroll_element();
     }
 
     /// Handle the mouse target changed event of the webview to show the hovered URL and save it
