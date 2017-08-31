@@ -9,7 +9,6 @@ version = "0.1.1"
 
 [dependencies]
 cairo-rs = "^0.2.0"
-error-chain = "^0.10.0"
 fg-uds = "^0.1.0"
 futures = "^0.1.14"
 futures-glib = "^0.2.0"

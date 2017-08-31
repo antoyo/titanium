@@ -289,21 +289,21 @@ impl MessageServer {
                             if let Err(poll_error) = writer.poll_complete() {
                                 error = Some(poll_error.into());
                             }},
-                        Ok(AsyncSink::NotReady(_)) => error = Some("not ready to send to client".into()),
+                        Ok(AsyncSink::NotReady(_)) => error = Some(Error::new("not ready to send to client")),
                         Err(send_error) =>
-                            error = Some(format!("cannot send a message to the web process: {}", send_error).into()),
+                            error = Some(Error::from_string(format!("cannot send a message to the web process: {}", send_error))),
                     }
                 }
                 else {
-                    error = Some("message writer does not exist".into());
+                    error = Some(Error::new("message writer does not exist"));
                 }
             }
             else {
-                error = Some("app does not exist".into());
+                error = Some(Error::new("app does not exist"));
             }
         }
         else {
-            error = Some(format!("extension id for page {} does not exist", page_id).into());
+            error = Some(Error::from_string(format!("extension id for page {} does not exist", page_id)));
         }
         if let Some(error) = error {
             self.error(page_id, error);

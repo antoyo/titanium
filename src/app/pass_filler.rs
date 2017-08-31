@@ -41,7 +41,7 @@ impl App {
         }
         /*Ok(true) => self.app.info("Password deleted"),
           Ok(false) => self.app.info("No password for the current URL"),
-          Err(err) => self.show_error(err),*/
+          Err(err) => self.error(err.to_string()),*/
         Ok(())
     }
 
@@ -63,7 +63,7 @@ impl App {
     pub fn load_password(&mut self) -> Result<()> {
         /*Ok(true) => return Ok(true),
           Ok(false) => self.app.info("No password for the current URL"),
-          Err(err) => self.show_error(err),*/
+          Err(err) => self.error(err.to_string()),*/
         let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
         if !usernames.is_empty() {
             let username = &usernames[0];
@@ -85,7 +85,7 @@ impl App {
         self.model.password_manager.add(&self.model.current_url, username, password)
         /*Ok(true) => self.app.info("Password added"),
           Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
-          Err(err) => self.show_error(err),*/
+          Err(err) => self.error(err.to_string()),*/
     }
 
     /// Load the username and password in the login form and submit it.

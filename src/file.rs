@@ -24,7 +24,7 @@
 use std::thread;
 
 use INVALID_UTF8_ERROR;
-use errors::{ErrorKind, Result};
+use errors::{Error, Result};
 use open;
 use tempfile::NamedTempFileOptions;
 
@@ -43,9 +43,9 @@ pub fn gen_unique_filename(filename: &str) -> Result<String> {
         .create()?;
     let filename =
         file.path().file_name()
-            .ok_or_else(|| ErrorKind::Msg("generated file name has no file name".to_string()))?
+            .ok_or_else(|| Error::new("generated file name has no file name"))?
             .to_str()
-            .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
+            .ok_or_else(|| Error::new(INVALID_UTF8_ERROR))?
             .to_string();
     Ok(filename)
 }

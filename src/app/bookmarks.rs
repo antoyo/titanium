@@ -36,7 +36,7 @@ impl App {
             match self.model.bookmark_manager.add(url, title) {
                 Ok(true) => self.mg.emit(Info(message)),
                 Ok(false) => self.mg.emit(Info("The current page is already in the bookmarks".to_string())),
-                Err(err) => self.show_error(err),
+                Err(err) => self.error(&err.to_string()),
             }
         }
     }
@@ -47,7 +47,7 @@ impl App {
             match self.model.bookmark_manager.delete(&url) {
                 Ok(true) => self.mg.emit(Info(format!("Deleted bookmark: {}", url))),
                 Ok(false) => self.info_page_not_in_bookmarks(),
-                Err(err) => self.show_error(err),
+                Err(err) => self.error(&err.to_string()),
             }
         }
     }
@@ -74,7 +74,7 @@ impl App {
                 .filter(|tag| !tag.is_empty())
                 .collect();
             if let Err(err) = self.model.bookmark_manager.set_tags(&self.model.current_url, tags) {
-                self.show_error(err);
+                self.error(&err.to_string());
             }
         }
     }
@@ -89,7 +89,7 @@ impl App {
                     input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
                     default_answer, TagEdit);
                 },
-                Err(err) => self.show_error(err),
+                Err(err) => self.error(&err.to_string()),
             }
         }
         else {

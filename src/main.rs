@@ -32,7 +32,7 @@
  *
  * TODO: add a kill command to close a webview without try_close().
  *
- * TODO: remove dependencies like tokio and error-chain.
+ * TODO: remove dependencies like tokio.
  *
  * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
  * javascript_can_close_windows when the window was opened by JS.
@@ -234,8 +234,6 @@
 )]
 
 extern crate cairo;
-#[macro_use]
-extern crate error_chain;
 extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;
@@ -373,10 +371,6 @@ fn check_already_running(url: &[String]) -> bool {
         if process.pid != current_pid {
             if let Err(ref e) = send_url_to_existing_process(url) {
                 println!("error: {}", e);
-
-                for e in e.iter().skip(1) {
-                    println!("caused by: {}", e);
-                }
 
                 process::exit(1);
             }

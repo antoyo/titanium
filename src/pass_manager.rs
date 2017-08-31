@@ -24,7 +24,7 @@
 use password_store::PasswordStore;
 
 use app::APP_NAME;
-use errors::Result;
+use errors::{Error, Result};
 use urls::host;
 
 /// A password manager is used to add, get and remove credentials.
@@ -45,7 +45,7 @@ impl PasswordManager {
             PasswordStore::insert(&path_username(&url, username), password)?;
         }
         else {
-            bail!("Not adding the credentials for {}", url);
+            return Err(Error::from_string(format!("Not adding the credentials for {}", url)));
         }
         Ok(())
     }
@@ -57,7 +57,7 @@ impl PasswordManager {
             PasswordStore::remove(&path_username(&url, username))?;
         }
         else {
-            bail!("Not deleting the password for {}", url);
+            return Err(Error::from_string(format!("Not deleting the password for {}", url)));
         }
         Ok(())
     }
@@ -68,7 +68,7 @@ impl PasswordManager {
             Ok(PasswordStore::get_usernames(&path(&url))?)
         }
         else {
-            bail!("Cannot get the usernames for {}", url);
+            return Err(Error::from_string(format!("Cannot get the usernames for {}", url)));
         }
     }
 
@@ -78,7 +78,7 @@ impl PasswordManager {
             Ok(PasswordStore::get(&path_username(&url, username))?)
         }
         else {
-            bail!("Cannot get the password for {}", url);
+            return Err(Error::from_string(format!("Cannot get the password for {}", url)));
         }
     }
 }

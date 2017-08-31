@@ -29,7 +29,7 @@ use std::result;
 use rusqlite::Connection;
 use rusqlite::types::ToSql;
 
-use errors::{ErrorKind, Result};
+use errors::{Error, Result};
 
 thread_local! {
     static CONNECTION: RefCell<Option<Connection>> = RefCell::new(None);
@@ -194,7 +194,7 @@ impl BookmarkManager {
             WHERE name = $1
         ")?;
         let mut rows = statement.query(&[&tag.to_string()])?;
-        let row = rows.next().ok_or_else(|| ErrorKind::Msg("tag not found".to_string()))?;
+        let row = rows.next().ok_or_else(|| Error::from_string("tag not found".to_string()))?;
         let id = row.map(|row| row.get(0))?;
         Ok(id)
     }
