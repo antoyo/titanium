@@ -33,6 +33,7 @@ nmap R reload-bypass-cache
 nmap si password-insert
 nmap sl password-load
 nmap sp password-save
+nmap ss password-insert-submit
 nmap su password-submit
 nmap y copy-url
 nmap w :win-open

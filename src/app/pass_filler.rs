@@ -57,6 +57,13 @@ impl App {
         Ok(())
     }
 
+    /// Insert a password in the focused text input and submit.
+    pub fn insert_password_submit(&mut self) -> Result<()> {
+        self.insert_password()?;
+        self.server_send(SubmitLoginForm());
+        Ok(())
+    }
+
     /// Load the username and password in the login form.
     /// If multiple credentials exist, ask the user which one to use.
     /// Return true if a login form was filled.
