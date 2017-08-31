@@ -40,14 +40,10 @@
  * FIXME: panic when download when there was windows already opened.
  * FIXME: web extension crashed with: "Ioctl() inappropré pour un périphérique (os error 25)"
  *
- * TODO: "extension id for page X does not exist".
- * The page ID is sent, but not received (no message received). Check that the message is really
- * sent.
- * Connection refused (os error 111) might be why the message is not received (or actually sent).
- *
  * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
  * https://www.fstar-lang.org/tutorial/
+ * https://www.cnet.com/special-reports/mozilla-firefox-fights-back-against-google-chrome/
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
  * FIXME: scroll percentage is all:

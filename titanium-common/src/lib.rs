@@ -84,8 +84,6 @@ pub enum InnerMessage {
     FocusInput(),
     /// Ask for the credentials from the login form.
     GetCredentials(),
-    /// Ask for the scroll percentage of the web page.
-    GetScrollPercentage(),
     /// Send the page ID to the application to connect the web extension with the right window.
     /// Answer to GetId.
     Id(ExtensionId, PageId),
@@ -99,15 +97,13 @@ pub enum InnerMessage {
     /// This is used when starting a new titanium process to tell the existing process to open a
     /// new window.
     Open(Vec<String>),
-    /// Reset the scroll element to None.
-    ResetScrollElement(),
     /// Scroll to the bottom of the web page
     ScrollBottom(),
     /// Scroll vertically by the specified amount of pixels.
     ScrollBy(i64),
     /// Scroll horizontally by the specified amount of pixels.
     ScrollByX(i64),
-    /// Response of GetScrollPercentage.
+    /// Send the scroll percentage to the app.
     ScrollPercentage(Percentage),
     /// Scroll to the top of the web page.
     ScrollTop(),

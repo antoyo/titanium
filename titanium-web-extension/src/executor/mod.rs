@@ -33,10 +33,11 @@ macro_rules! get_document {
 
 mod scroll;
 
-use regex::Regex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
-use glib::Cast;
+use glib::{Cast, Closure};
+use regex::Regex;
 use relm_state::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
     DOMDocumentExt,
@@ -44,6 +45,7 @@ use webkit2gtk_webextension::{
     DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
+    DOMEventTargetExt,
     DOMHTMLElement,
     DOMHTMLElementExt,
     DOMHTMLInputElement,
@@ -95,8 +97,9 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    InitScrollElement,
+    DocumentLoaded,
     MessageRecv(InnerMessage),
+    Scroll,
     ServerSend(PageId, InnerMessage),
 }
 
@@ -119,7 +122,27 @@ impl Update for Executor {
 
     fn update(&mut self, message: Msg) {
         match message {
-            InitScrollElement => self.init_scroll_element(),
+            DocumentLoaded => {
+                self.init_scroll_element();
+                self.send_scroll_percentage();
+
+                let stream = self.model.relm.stream().clone();
+                let stream = Mutex::new(::send_cell::SendCell::new(stream));
+                let handler = Closure::new(move |_| {
+                    let stream = stream.lock().unwrap();
+                    stream.get().emit(Scroll);
+                    None
+                });
+
+                if self.model.scroll_element == get_body(&self.model.page).map(|el| el.upcast()) {
+                    let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+                    let _ = document.add_event_listener_with_closure("scroll", &handler, false);
+                }
+                else {
+                    let element = self.model.scroll_element.as_ref().unwrap();
+                    let _ = element.add_event_listener_with_closure("scroll", &handler, false);
+                }
+            },
             MessageRecv(msg) =>
                 match msg {
                     ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
@@ -129,11 +152,9 @@ impl Update for Executor {
                     EnterHintKey(key) => self.enter_hint_key(key),
                     FocusInput() => self.focus_input(),
                     GetCredentials() => self.send_credentials(),
-                    GetScrollPercentage() => self.send_scroll_percentage(),
                     HideHints() => self.hide_hints(),
                     InsertText(text) => self.insert_text(&text),
                     LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
-                    ResetScrollElement() => self.model.scroll_element = None,
                     ScrollBottom() => self.scroll_bottom(),
                     ScrollBy(pixels) => self.scroll_by(pixels),
                     ScrollByX(pixels) => self.scroll_by_x(pixels),
@@ -143,6 +164,7 @@ impl Update for Executor {
                     SubmitLoginForm() => self.submit_login_form(),
                     _ => warn!("Unexpected message received: {:?}", msg),
                 },
+            Scroll => self.send_scroll_percentage(),
             // To be listened by the user.
             ServerSend(_, _) => (),
         }
@@ -369,9 +391,6 @@ impl Executor {
     // Get the page scroll percentage.
     fn send_scroll_percentage(&mut self) {
         let percentage = self.scroll_percentage();
-        // TODO: only send the message if the percentage actually changed?
-        // TODO: even better: add an even handler for scrolling and only send a message when an
-        // actual scroll happened.
         self.send(ScrollPercentage(percentage));
     }
 
