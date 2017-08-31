@@ -99,7 +99,7 @@ use download_list_view::Msg::{
     ActiveDownloads,
     DownloadListError,
 };
-use errors::{self, Result};
+use errors::Result;
 use pass_manager::PasswordManager;
 use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
@@ -229,7 +229,7 @@ impl Widget for App {
 
         match App::bookmark_path(&self.model.config_dir) {
             Ok(bookmark_path) => handle_error!(self.model.bookmark_manager.connect(bookmark_path)),
-            Err(error) => self.show_error(error),
+            Err(error) => self.error(&error.to_string()),
         }
 
         handle_error!(self.clean_download_folder());
@@ -603,7 +603,7 @@ impl App {
     /// Show an error in the result is an error.
     fn handle_error(&self, error: Result<()>) {
         if let Err(error) = error {
-            self.show_error(error);
+            self.error(&error.to_string());
         }
     }
 
@@ -713,11 +713,6 @@ impl App {
             },
             _ => self.webview.emit(WebViewSettingChanged(setting)),
         }
-    }
-
-    /// Show an error.
-    pub fn show_error(&self, error: errors::Error) {
-        self.error(&error.to_string());
     }
 
     /// Show the zoom level in the status bar.

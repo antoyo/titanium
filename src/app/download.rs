@@ -39,7 +39,7 @@ use download_list_view::Msg::{
     DownloadDestination,
     DownloadOriginalDestination,
 };
-use errors::{ErrorKind, Result, ResultExt};
+use errors::{Error, Result};
 use file::gen_unique_filename;
 use super::App;
 
@@ -54,7 +54,7 @@ impl App {
                 path.to_path_buf()
             };
         let download_destination = download_path.to_str()
-            .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
+            .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
         let exists = download_path.exists() &&
             // Check that it is not the path chosen before (because the download is already started
             // at this point).
@@ -127,10 +127,9 @@ impl App {
             Shortcut(shortcut) => {
                 if shortcut == "download" {
                     let download_destination = gen_unique_filename(&suggested_filename)?;
-                    let temp_file = temp_dir(&self.model.config_dir, &download_destination)
-                        .chain_err(|| "faild to create temporary file for download")?;
+                    let temp_file = temp_dir(&self.model.config_dir, &download_destination)?;
                     let temp_file = temp_file.to_str()
-                        .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
+                        .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
                     let destination = format!("file://{}", temp_file);
                     self.download_list_view.emit(AddFileToOpen(download.clone()));
                     // DownloadDestination must be emitted after AddFileToOpen because this event
@@ -163,9 +162,9 @@ impl App {
 fn find_download_destination(suggested_filename: &str) -> Result<String> {
     fn next_path(counter: i32, dir: &str, path: &Path) -> Result<PathBuf> {
         let filename = path.file_stem().unwrap_or_default().to_str()
-            .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
+            .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
         let extension = path.extension().unwrap_or_default().to_str()
-            .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?;
+            .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
         Ok(Path::new(&format!("{}{}_{}.{}", dir, filename, counter, extension))
             .to_path_buf())
     }
@@ -184,7 +183,7 @@ fn find_download_destination(suggested_filename: &str) -> Result<String> {
         path = next_path(counter, &dir, default_path)?;
     }
     Ok(path.to_str()
-       .ok_or_else(|| ErrorKind::Msg(INVALID_UTF8_ERROR.to_string()))?
+       .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?
        .to_string())
 }
 

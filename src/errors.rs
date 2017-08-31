@@ -19,17 +19,76 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::fmt::{self, Display, Formatter};
 use std::io;
+use std::result;
 
 use password_store;
 use rusqlite;
 use tokio_serde_bincode;
 
-error_chain! {
-    foreign_links {
-        Bincode(tokio_serde_bincode::Error);
-        Io(io::Error);
-        Pass(password_store::Error);
-        Sqlite(rusqlite::Error);
+pub struct Error {
+    msg: String,
+}
+
+impl Error {
+    pub fn new(msg: &str) -> Self {
+        Error {
+            msg: msg.to_string(),
+        }
+    }
+
+    pub fn from_string(msg: String) -> Self {
+        Error {
+            msg,
+        }
     }
 }
+
+impl Display for Error {
+    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
+        write!(formatter, "{}", self.msg)
+    }
+}
+
+impl<'a> From<&'a str> for Error {
+    fn from(msg: &'a str) -> Self {
+        Error {
+            msg: msg.to_string(),
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<password_store::Error> for Error {
+    fn from(error: password_store::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<rusqlite::Error> for Error {
+    fn from(error: rusqlite::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<tokio_serde_bincode::Error> for Error {
+    fn from(error: tokio_serde_bincode::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+pub type Result<T> = result::Result<T, Error>;
