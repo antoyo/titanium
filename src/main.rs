@@ -20,8 +20,6 @@
  */
 
 /*
- * TODO: add a command to also submit after inserting the password.
- *
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
  *
  * TODO: ClickNextPage, change server_send() to a new method. Or perhaps better: make the match

@@ -76,6 +76,8 @@ pub enum AppCommand {
     PasswordDelete,
     #[help(text="Insert a password in the focused text input")]
     PasswordInsert,
+    #[help(text="Insert a password in the focused text input and submit the form")]
+    PasswordInsertSubmit,
     #[help(text="Load the credentials in the login form")]
     PasswordLoad,
     #[help(text="Save the credentials from the login form")]
