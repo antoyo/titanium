@@ -150,7 +150,6 @@ mod option_util;
 
 use std::mem::forget;
 
-use glib::Variant;
 use log::LogLevel::Error;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
@@ -165,7 +164,7 @@ web_extension_init!();
 pub const APP_NAME: &'static str = "titanium";
 
 /// Initialize the the logger and the message server.
-pub fn web_extension_initialize(extension: &WebExtension, _user_data: &Variant) {
+pub fn web_extension_initialize(extension: &WebExtension) {
     let config = Config {
         time: Some(Error),
         level: Some(Error),

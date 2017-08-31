@@ -23,7 +23,7 @@ syslog = "^3.2.0"
 tokio-io = "^0.1.1"
 tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
-webkit2gtk-webextension = "^0.2.0"
+webkit2gtk-webextension = "^0.3.0"
 webkit2gtk-webextension-sys = "^0.3.0"
 xdg = "^2.0"
 
