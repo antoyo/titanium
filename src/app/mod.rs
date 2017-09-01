@@ -493,7 +493,7 @@ impl App {
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
             ActivateSelection => self.activate_selection(),
-            Back => self.webview.widget().go_back(),
+            Back => self.history_back(),
             BackwardSearch(ref input) => {
                 self.webview.emit(SearchBackward(true));
                 self.webview.emit(PageSearch(input.clone()));
@@ -517,7 +517,7 @@ impl App {
                 self.set_mode("follow");
                 self.follow_link();
             },
-            Forward => self.webview.widget().go_forward(),
+            Forward => self.history_forward(),
             GoParentDir(parent_level) => self.go_parent_directory(parent_level),
             GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
@@ -636,6 +636,16 @@ impl App {
         else {
             self.set_title();
         }
+    }
+
+    fn history_back(&mut self) {
+        self.webview.widget().go_back();
+        self.server_send(InnerMessage::ResetScrollElement());
+    }
+
+    fn history_forward(&mut self) {
+        self.webview.widget().go_forward();
+        self.server_send(InnerMessage::ResetScrollElement());
     }
 
     fn inhibit_button_release(has_hovered_link: &Rc<Cell<bool>>, event: &EventButton) -> Inhibit {

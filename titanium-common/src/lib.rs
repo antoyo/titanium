@@ -97,6 +97,8 @@ pub enum InnerMessage {
     /// This is used when starting a new titanium process to tell the existing process to open a
     /// new window.
     Open(Vec<String>),
+    /// Set the scrolling element.
+    ResetScrollElement(),
     /// Scroll to the bottom of the web page
     ScrollBottom(),
     /// Scroll vertically by the specified amount of pixels.

@@ -155,6 +155,7 @@ impl Update for Executor {
                     HideHints() => self.hide_hints(),
                     InsertText(text) => self.insert_text(&text),
                     LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
+                    ResetScrollElement() => self.init_scroll_element(),
                     ScrollBottom() => self.scroll_bottom(),
                     ScrollBy(pixels) => self.scroll_by(pixels),
                     ScrollByX(pixels) => self.scroll_by_x(pixels),
