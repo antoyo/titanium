@@ -23,6 +23,7 @@ use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::result;
 
+use nix;
 use password_store;
 use rusqlite;
 use tokio_serde_bincode;
@@ -61,6 +62,14 @@ impl<'a> From<&'a str> for Error {
 
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<nix::Error> for Error {
+    fn from(error: nix::Error) -> Self {
         Error {
             msg: error.to_string(),
         }

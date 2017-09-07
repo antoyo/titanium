@@ -20,7 +20,13 @@
  */
 
 /*
+ * FIXME: seems slower when running as normal user (and faster as root), so perhaps the config slow
+ * it down.
+ *
+ * TODO: switch to relm-epoll, a crate that polls epoll from glib.
+ *
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
+ * FIXME: cannot download this link: https://link.springer.com/content/pdf/10.1007%2F978-3-540-78800-3_24.pdf
  *
  * TODO: ClickNextPage, change server_send() to a new method. Or perhaps better: make the match
  * return the message and send it with server_send() after it.
@@ -247,6 +253,7 @@ extern crate mg;
 extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
+extern crate nix;
 extern crate number_prefix;
 extern crate open;
 extern crate password_store;
@@ -257,7 +264,6 @@ extern crate relm_attributes;
 extern crate relm_derive;
 extern crate rusqlite;
 extern crate simplelog;
-extern crate sysinfo;
 extern crate syslog;
 #[cfg(test)]
 extern crate tempdir;
@@ -289,25 +295,14 @@ mod urls;
 mod webview;
 
 use std::env::args;
-use std::process;
 
-use fg_uds::UnixStream;
-use futures::{Future, Sink};
-use futures_glib::{Executor, MainContext};
 use gumdrop::Options;
 use log::LogLevel::Error;
 use simplelog::{Config, LogLevelFilter, TermLogger};
-use sysinfo::{System, SystemExt, get_current_pid};
 use syslog::Facility;
-use tokio_io::AsyncRead;
-use tokio_io::codec::length_delimited::FramedWrite;
-use tokio_serde_bincode::WriteBincode;
 
 use app::APP_NAME;
-use errors::Result;
 use message_server::create_message_server;
-use titanium_common::{Message, PATH};
-use titanium_common::InnerMessage::Open;
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
@@ -345,34 +340,11 @@ fn main() {
         println!("{}", Args::usage());
     }
     else {
-        if !check_already_running(&args.url) {
+        init_logging(args.log);
 
-            init_logging(args.log);
-
-            let _message_server = create_message_server(args.url, args.config);
-            gtk::main();
-        }
+        let _message_server = create_message_server(args.url, args.config);
+        gtk::main();
     }
-}
-
-fn check_already_running(url: &[String]) -> bool {
-    let mut system = System::new();
-    system.refresh_processes();
-
-    let current_pid = get_current_pid();
-
-    for process in system.get_process_by_name(APP_NAME) {
-        if process.pid != current_pid {
-            if let Err(ref e) = send_url_to_existing_process(url) {
-                println!("error: {}", e);
-
-                process::exit(1);
-            }
-            return true;
-        }
-    }
-
-    false
 }
 
 fn init_logging(log_to_term: bool) {
@@ -389,31 +361,4 @@ fn init_logging(log_to_term: bool) {
         syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
     }
     log_panics::init();
-}
-
-fn send_url_to_existing_process(url: &[String]) -> Result<()> {
-    let cx = MainContext::default(|cx| cx.clone());
-    let stream = UnixStream::connect(PATH, &cx);
-
-    let cx = MainContext::default(|cx| cx.clone());
-    let ex = Executor::new();
-    ex.attach(&cx);
-
-    let url = url.to_vec();
-    let tcp = stream.and_then(move |stream| {
-        let (_, writer) = stream.split();
-        let writer = WriteBincode::new(FramedWrite::new(writer));
-        let res = writer.send(Message(0, Open(url.to_vec())));
-        res
-    });
-    let tcp = tcp.and_then(|_| {
-        gtk::main_quit();
-        Ok(())
-    });
-
-    ex.spawn(tcp.map_err(|_| ()));
-
-    gtk::main();
-
-    Ok(())
 }

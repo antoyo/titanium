@@ -25,6 +25,7 @@ use std::io;
 use fg_uds::{UnixStream, UnixStreamConnect};
 use futures::{AsyncSink, Sink};
 use futures_glib::MainContext;
+use nix;
 use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
 use tokio_io::AsyncRead;
 use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
@@ -151,9 +152,9 @@ impl UpdateNew for MessageClient {
 }
 
 impl MessageClient {
-    pub fn new() -> io::Result<EventStream<<Self as Update>::Msg>> {
+    pub fn new() -> nix::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
-        let stream = UnixStream::connect(PATH, &cx);
+        let stream = UnixStream::connect_abstract(PATH, &cx)?;
         Ok(execute::<MessageClient>(stream))
     }
 

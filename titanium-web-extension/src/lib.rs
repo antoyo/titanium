@@ -40,6 +40,7 @@ extern crate futures_glib;
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
+extern crate nix;
 extern crate simplelog;
 #[macro_use]
 extern crate relm_state;

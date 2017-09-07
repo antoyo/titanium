@@ -22,13 +22,11 @@
 //! Message server interface.
 
 use std::collections::HashMap;
-use std::fs::remove_file;
-use std::io;
 use std::process;
 
 use fg_uds::{UnixListener, UnixStream};
-use futures::{AsyncSink, Sink};
-use futures_glib::MainContext;
+use futures::{AsyncSink, Future, Sink};
+use futures_glib::{Executor, MainContext};
 use gtk::{
     self,
     ButtonsType,
@@ -38,6 +36,7 @@ use gtk::{
     MessageType,
     Window,
 };
+use nix;
 use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
 use tokio_io::AsyncRead;
 use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
@@ -45,8 +44,7 @@ use tokio_io::io::WriteHalf;
 use tokio_serde_bincode::{ReadBincode, WriteBincode};
 use webkit2gtk::WebContext;
 
-use titanium_common::PATH;
-use titanium_common::{ExtensionId, InnerMessage, Message, PageId};
+use titanium_common::{ExtensionId, InnerMessage, Message, PageId, PATH};
 use titanium_common::InnerMessage::{Id, Open};
 
 use app::{self, App};
@@ -59,7 +57,7 @@ use app::Msg::{
     ShowError,
 };
 use config_dir::ConfigDir;
-use errors::Error;
+use errors::{Error, Result};
 use self::Msg::*;
 use webview::WebView;
 
@@ -189,16 +187,26 @@ impl UpdateNew for MessageServer {
 }
 
 impl MessageServer {
-    pub fn new(url: Vec<String>, config_dir: Option<String>) -> io::Result<EventStream<<Self as Update>::Msg>> {
+    pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
         // TODO: should be removed on Drop instead (or the connection close should remove it
         // automatically?).
-        // TODO: should open in the existing process if it already exists.
-        // If no other titanium process can be found, delete it.
-        // NOTE: Don't check for errors on remove_file() since it does not matter if the file does
-        // not exist.
-        let _ = remove_file(PATH);
-        let listener = UnixListener::bind(PATH, &cx)?;
+        let listener =
+            match UnixListener::bind_abstract(PATH, &cx) {
+                Err(nix::Error::Sys(nix::Errno::EADDRINUSE)) => {
+                    // A titanium process is already running, so we send the URL to this process so
+                    // that it can open a new window.
+                    if let Err(ref e) = send_url_to_existing_process(&url) {
+                        println!("error: {}", e);
+
+                        process::exit(1);
+                    }
+
+                    process::exit(0);
+                },
+                Err(error) => return Err(error.into()),
+                Ok(listener) => listener,
+            };
         Ok(execute::<MessageServer>((listener, url, config_dir)))
     }
 
@@ -330,4 +338,31 @@ fn dialog_and_exit(message: &str) -> ! {
     let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close, &message);
     let _ = dialog.run();
     process::exit(1);
+}
+
+fn send_url_to_existing_process(url: &[String]) -> Result<()> {
+    let cx = MainContext::default(|cx| cx.clone());
+    let stream = UnixStream::connect_abstract(PATH, &cx)?;
+
+    let cx = MainContext::default(|cx| cx.clone());
+    let ex = Executor::new();
+    ex.attach(&cx);
+
+    let url = url.to_vec();
+    let tcp = stream.and_then(move |stream| {
+        let (_, writer) = stream.split();
+        let writer = WriteBincode::new(FramedWrite::new(writer));
+        let res = writer.send(Message(0, Open(url.to_vec())));
+        res
+    });
+    let tcp = tcp.and_then(|_| {
+        gtk::main_quit();
+        Ok(())
+    });
+
+    ex.spawn(tcp.map_err(|_| ()));
+
+    gtk::main();
+
+    Ok(())
 }

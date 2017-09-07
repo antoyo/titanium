@@ -36,7 +36,7 @@ extern crate serde_derive;
 
 // TODO: put in the home directory.
 /// The path to the unix domain socket.
-pub const PATH: &str = "/tmp/titanium";
+pub const PATH: &[u8] = b"titanium-server";
 
 #[doc(hidden)]
 pub type ExtensionId = u64;
