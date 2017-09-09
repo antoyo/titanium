@@ -114,6 +114,11 @@ pub struct Pos {
     pub y: i64,
 }
 
+/// Trigger a click event on the element.
+pub fn click(element: &DOMElement, ctrl_key: bool) {
+    mouse_event("click", element, ctrl_key);
+}
+
 /// Get the body element of the web page.
 pub fn get_body(page: &WebPage) -> Option<DOMHTMLElement> {
     page.get_dom_document().and_then(|document|
@@ -128,7 +133,7 @@ pub fn get_document(page: &WebPage) -> Option<DOMElement> {
     )
 }
 
-/// Get the position of an element relative to the screen.
+/// Get the position of an element relative to the window.
 fn get_offset(element: &DOMElement) -> Pos {
     let document = element.get_owner_document();
     let mut top = 0;
@@ -136,8 +141,8 @@ fn get_offset(element: &DOMElement) -> Pos {
     let mut element = Some(element.clone());
     let mut in_body = false;
     while let Some(el) = element {
-        left += el.get_offset_left() as i64 - el.get_scroll_left();
-        top += el.get_offset_top() as i64 - el.get_scroll_top();
+        left += el.get_offset_left() as i64 - el.get_scroll_left() + el.get_client_left() as i64;
+        top += el.get_offset_top() as i64 - el.get_scroll_top() + el.get_client_top() as i64;
         element = el.get_offset_parent();
         if el.get_tag_name() == Some("BODY".to_string()) {
             in_body = true;
@@ -292,7 +297,7 @@ pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
 
 /// Trigger a mouse down event on the element.
 pub fn mouse_down(element: &DOMElement) {
-    mouse_event("mousedown", element);
+    mouse_event("mousedown", element, false);
 }
 
 /* TODO: delete.
@@ -302,26 +307,26 @@ pub fn mouse_enter(element: &DOMElement) {
 }*/
 
 /// Trigger a mouse event on the element.
-pub fn mouse_event(event_name: &str, element: &DOMElement) {
+pub fn mouse_event(event_name: &str, element: &DOMElement, ctrl_key: bool) {
     let event = wtry_opt_no_ret!(element.get_owner_document()
         .and_then(|document| document.create_event("MouseEvents").ok()));
     let window = wtry_opt_no_ret!(element.get_owner_document()
         .and_then(|document| document.get_default_view()));
     let event = wtry_no_show!(event.downcast::<DOMMouseEvent>());
     // TODO: use the previously hovered element for the last parameter.
-    event.init_mouse_event(event_name, true, true, &window, 0, 0, 0, 0, 0, false, false, false, false, 0, element);
+    event.init_mouse_event(event_name, true, true, &window, 0, 0, 0, 0, 0, ctrl_key, false, false, false, 0, element);
     let element: DOMEventTarget = element.clone().upcast();
     wtry!(element.dispatch_event(&event));
 }
 
 /// Trigger a mouse out event on the element.
 pub fn mouse_out(element: &DOMElement) {
-    mouse_event("mouseout", element);
+    mouse_event("mouseout", element, false);
 }
 
 /// Trigger a mouse over event on the element.
 pub fn mouse_over(element: &DOMElement) {
-    mouse_event("mouseover", element);
+    mouse_event("mouseover", element, false);
 }
 
 /// Show an element.

@@ -268,6 +268,11 @@ impl WebView {
     {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
+            /*
+             * This uses a hack:
+             * when setting ctrlkey to true for the click JS event, this handle_navigation_action()
+             * method is called, while it is not called when it is false.
+             */
             if open_in_new_window.get() && policy_decision.get_navigation_type() == LinkClicked {
                 let url = policy_decision.get_request()
                     .and_then(|request| request.get_uri());

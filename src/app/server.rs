@@ -35,7 +35,8 @@ impl App {
     pub fn activate_hint(&mut self) {
         self.focus_webview();
         let mode = self.model.follow_mode.to_string();
-        self.server_send(ActivateHint(mode));
+        let ctrl_key = self.model.open_in_new_window;
+        self.server_send(ActivateHint(mode, ctrl_key));
     }
 
     /// Activate the link in the selection

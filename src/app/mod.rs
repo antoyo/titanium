@@ -47,8 +47,13 @@ use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
-use gdk::{EventButton, EventKey, Rectangle, CONTROL_MASK};
-use gtk::{self, Inhibit, OrientableExt, WidgetExt};
+use gdk::{EventKey, Rectangle};
+use gtk::{
+    self,
+    Inhibit,
+    OrientableExt,
+    WidgetExt,
+};
 use gtk::Orientation::Vertical;
 use mg::{
     AppClose,
@@ -139,7 +144,6 @@ use webview::Msg::{
 };
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
-const LEFT_BUTTON: u32 = 1;
 const INIT_SCROLL_TEXT: &str = "[top]";
 
 static MODES: Modes = &[
@@ -172,13 +176,12 @@ pub struct Model {
     default_search_engine: Option<String>,
     follow_mode: FollowMode,
     has_active_downloads: bool,
-    has_hovered_link: Rc<Cell<bool>>,
     hint_chars: String,
     home_page: Option<String>,
-    hovered_link: Option<String>,
     in_follow_mode: Rc<Cell<bool>>,
     init_url: Option<String>,
     mode: String,
+    open_in_new_window: bool,
     password_manager: PasswordManager,
     popup_manager: Option<PopupManager>,
     relm: Relm<App>,
@@ -192,7 +195,6 @@ pub struct Model {
 pub enum Msg {
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
-    ButtonRelease(EventButton),
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
@@ -259,13 +261,12 @@ impl Widget for App {
             default_search_engine: None,
             follow_mode: FollowMode::Click,
             has_active_downloads: false,
-            has_hovered_link: Rc::new(Cell::new(false)),
             hint_chars: "hjklasdfgyuiopqwertnmzxcvb".to_string(),
             home_page: None,
-            hovered_link: None,
             in_follow_mode: Rc::new(Cell::new(false)),
             init_url,
             mode: "normal".to_string(),
+            open_in_new_window: false,
             password_manager: PasswordManager::new(),
             popup_manager,
             relm: relm.clone(),
@@ -312,7 +313,6 @@ impl Widget for App {
                 self.model.mode = mode
             },
             AppSettingChanged(setting) => self.setting_changed(setting),
-            ButtonRelease(event) => self.handle_button_release(event),
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
@@ -383,8 +383,6 @@ impl Widget for App {
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
-                    button_release_event(_, event) with (has_hovered_link) =>
-                        (ButtonRelease(event.clone()), App::inhibit_button_release(&has_hovered_link, event)),
                     create(_, action) => (Create(action.clone()), None),
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
@@ -446,6 +444,14 @@ impl App {
         self.webview.widget().grab_focus();
     }
 
+    fn follow(&mut self) {
+        self.model.follow_mode = FollowMode::Click;
+        self.model.open_in_new_window = false;
+        self.webview.emit(SetOpenInNewWindow(false));
+        self.set_mode("follow");
+        self.follow_link();
+    }
+
     /// Get the size of the webview.
     fn get_webview_allocation(&self) -> Rectangle {
         self.webview.widget().get_allocation()
@@ -480,15 +486,6 @@ impl App {
         self.set_mode("normal");
     }
 
-    /// Handle the button release event to open in new window when using Ctrl-click.
-    fn handle_button_release(&mut self, event: EventButton) {
-        if event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) {
-            if let Some(url) = self.model.hovered_link.clone() {
-                self.open_in_new_window(&url);
-            }
-        }
-    }
-
     /// Handle the command.
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
@@ -510,23 +507,12 @@ impl App {
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
             FinishSearch => self.webview.emit(PageFinishSearch),
             FocusInput => self.focus_input(),
-            Follow => {
-                // TODO: move that into a method.
-                self.model.follow_mode = FollowMode::Click;
-                self.webview.emit(SetOpenInNewWindow(false));
-                self.set_mode("follow");
-                self.follow_link();
-            },
+            Follow => self.follow(),
             Forward => self.history_forward(),
             GoParentDir(parent_level) => self.go_parent_directory(parent_level),
             GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
-            Hover => {
-                // TODO: move that into a method.
-                self.model.follow_mode = FollowMode::Hover;
-                self.set_mode("follow");
-                self.follow_link();
-            },
+            Hover => self.hover(),
             Insert => self.go_in_insert_mode(),
             Inspector => self.webview.emit(ShowInspector),
             Normal => self.go_in_normal_mode(),
@@ -563,13 +549,7 @@ impl App {
             Stop => self.webview.widget().stop_loading(),
             UrlIncrement => self.url_increment(),
             UrlDecrement => self.url_decrement(),
-            WinFollow => {
-                // TODO: move that into a function.
-                self.model.follow_mode = FollowMode::Click;
-                self.webview.emit(SetOpenInNewWindow(true));
-                self.set_mode("follow");
-                self.follow_link();
-            },
+            WinFollow => self.win_follow(),
             WinOpen(ref url) => self.open_in_new_window(url),
             WinPasteUrl => self.win_paste_url(),
             ZoomIn => self.zoom_in(),
@@ -648,10 +628,10 @@ impl App {
         self.server_send(InnerMessage::ResetScrollElement());
     }
 
-    fn inhibit_button_release(has_hovered_link: &Rc<Cell<bool>>, event: &EventButton) -> Inhibit {
-        let inhibit = event.get_button() == LEFT_BUTTON && event.get_state().contains(CONTROL_MASK) &&
-            has_hovered_link.get();
-        Inhibit(inhibit)
+    fn hover(&mut self) {
+        self.model.follow_mode = FollowMode::Hover;
+        self.set_mode("follow");
+        self.follow_link();
     }
 
     fn inhibit_key_press(in_follow_mode: &Rc<Cell<bool>>) -> Inhibit {
@@ -678,8 +658,6 @@ impl App {
     /// for use when using Ctrl-click.
     fn mouse_target_changed(&mut self, hit_test_result: HitTestResult) {
         let link = hit_test_result.get_link_uri();
-        self.model.hovered_link = link.clone();
-        self.model.has_hovered_link.set(link.is_some());
         {
             let text = link.unwrap_or_else(String::new);
             self.mg.emit(Message(text));
@@ -733,6 +711,14 @@ impl App {
     /// Handle the web process crashed event.
     fn web_process_crashed(&mut self) {
         self.error("The web process crashed.");
+    }
+
+    fn win_follow(&mut self) {
+        self.model.follow_mode = FollowMode::Click;
+        self.model.open_in_new_window = true;
+        self.webview.emit(SetOpenInNewWindow(true));
+        self.set_mode("follow");
+        self.follow_link();
     }
 
     /// Zoom in.

@@ -64,7 +64,7 @@ pub enum InnerMessage {
     /// Response to ActivateHint.
     ActivateAction(Action),
     /// Activate the selected hint according to the specified follow mode.
-    ActivateHint(String),
+    ActivateHint(String, bool),
     /// Click on the link in the selection.
     ActivateSelection(),
     /// Response to EnterHintKey.

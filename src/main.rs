@@ -20,8 +20,14 @@
  */
 
 /*
+ * TODO: private browsing.
+ *
+ * TODO: hide hovered link when the text entry is shown?
+ *
+ * FIXME: angular form needs the typing action to be done in order to submit: https://grafana.int.adgear.com/
+ *
  * FIXME: seems slower when running as normal user (and faster as root), so perhaps the config slow
- * it down.
+ * it down. Looks like it is slowed down by the hard drive.
  *
  * TODO: switch to relm-epoll, a crate that polls epoll from glib.
  *
@@ -66,8 +72,6 @@
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
  *
- * TODO: figure out why ErrorKind::Msg() is needed (cannot use "string".into() sometimes).
- *
  * FIXME: on http://ticki.github.io/blog/how-lz4-works/, clicking on the other article links at the
  * bottom redirect to a blank page.
  *
@@ -84,11 +88,12 @@
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
- * TODO: use tokio-process to communicate with pass?
+ * TODO: use asynchronous communication with pass?
  *
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * TODO: add tests for the scrolling element.
  *
+ * TODO: cli argument for the abstract namespace of the unix domain socket.
  * TODO: cli argument for minimal log level.
  * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
  * FIXME: negative zoom level.
@@ -96,18 +101,18 @@
  * FIXME: scrolling goes too far when zoomed in.
  * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
  * TODO: modal dialog for authentication.
+ *
  * TODO: add a --redirect option or redirect command to bypass the adblocker.
- * TODO: show an error when a page is blocked by the adblocker.
+ * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
+ *
+ * TODO: show an error for request blocked by host blocker (instead of a white page).
  * TODO: block cookie banner.
- * FIXME: google is very slow.
- * FIXME: the browser (opened with window-new) is closed when the parent process is closed (mutt).
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
  *
  * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
  * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
  * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
- * FIXME: cookies are not synced between windows (cookies not reloaded in existing windows: use a thread and/or catch_unwind()).
  * FIXME: hitting the 's' key on https://developer.github.com/ scroll to the search bar.
  * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
  * TODO: auto-detect static bars at the bottom/top of webpages to scroll less when one is present.
@@ -122,8 +127,6 @@
  *
  * TODO: hint file input.
  * TODO: find a way to avoid having hints on top of each other.
- * FIXME: open in new tab does not work in Github (https://github.com/rust-lang/rust/pull/37128).
- * Vimperator simulates ctrl-click to work around this.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
@@ -131,18 +134,15 @@
  * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
  *
- * TODO: handle the errors instead of unwrap().
  * TODO: #[default(value)] attribute for settings.
  *
- * TODO: show an error for request blocked by host blocker (instead of a white page).
- * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
  * FIXME: ctrl-/ should not trigger the mapping for /.
  * TODO: allow using Backspace to remove the last hint character.
  * TODO: hide HTML in title/bookmarks?
  * FIXME: the window sometimes does not hide when quitting: it hides when a new window is shown.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
- * FIXME: sometimes does not go to insert mode after focusing first input.
+ * FIXME: sometimes does not go to insert mode after focusing first input (youtube.com).
  * TODO: generate the default files from the code (for instance, from default settings) instead of
  * copying predefined files.
  * TODO: shortcut to open the selected (searched) word.
@@ -166,7 +166,6 @@
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
- * TODO: private browsing.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
  * TODO: do not search for the empty string, only disable the current search to allow continuing
  * the search on another page.
@@ -179,8 +178,6 @@
  * TODO: plugin to block modal JavaScript dialog (https://www.sitepoint.com/community/t/ie-hover-trigger/69968).
  * TODO: plugin to prevent a menu bar in a website to appear from scrolling up (ou keep fixed elements at the top)
  * (example: https://www.fastcoexist.com/3027876/millennials-dont-care-about-owning-cars-and-car-makers-cant-figure-out-why).
- * FIXME: trigger a GTK+ event to activate hints (this will fix clicking on a link hidden by
- * another element).
  * FIXME: popup not blocked on bnc.ca.
  * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
@@ -207,9 +204,6 @@
  * time, or perhaps just using a blocking input for popups will do it).
  *
  * TODO: add tests.
- *
- * FIXME: webview hides when resizing the screen (seems related to the web extension, or when the
- * page is not yet loaded, error: WebKitWebProcess: cairo-ft-font.c :669 : _cairo_ft_unscaled_font_lock_face:  l'assertion « !unscaled->from_face » a échoué.).
  */
 
 //! Titanium is a webkit2 keyboard-driven web browser.

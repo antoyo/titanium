@@ -73,6 +73,7 @@ use dom::{
     is_hidden,
     is_text_input,
     mouse_down,
+    click,
     mouse_out,
     mouse_over,
     match_pattern,
@@ -145,7 +146,7 @@ impl Update for Executor {
             },
             MessageRecv(msg) =>
                 match msg {
-                    ActivateHint(follow_mode) => self.activate_hint(&follow_mode),
+                    ActivateHint(follow_mode, ctrl_key) => self.activate_hint(&follow_mode, ctrl_key),
                     ActivateSelection() => self.activate_selection(),
                     ClickNextPage() => self.click_next_page(),
                     ClickPrevPage() => self.click_prev_page(),
@@ -182,15 +183,7 @@ impl UpdateNew for Executor {
 
 impl Executor {
     // Activate (click, focus, hover) the selected hint.
-    fn activate_hint(&mut self, follow_mode: &str) {
-        let follow =
-            if follow_mode == "hover" {
-                Executor::hover
-            }
-            else {
-                Executor::click
-            };
-
+    fn activate_hint(&mut self, follow_mode: &str, ctrl_key: bool) {
         let element = self.model.hint_map.get(&self.model.hint_keys)
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         match element {
@@ -198,7 +191,13 @@ impl Executor {
                 self.hide_hints();
                 self.model.hint_map.clear();
                 self.model.hint_keys.clear();
-                let action = follow(self, element);
+                let action =
+                    if follow_mode == "hover" {
+                        self.hover(element)
+                    }
+                    else {
+                        self.click(element, ctrl_key)
+                    };
                 self.send(ActivateAction(action));
             },
             None => self.send(ActivateAction(NoAction)),
@@ -219,40 +218,44 @@ impl Executor {
         }
     }
 
-    fn click(&mut self, element: DOMHTMLElement) -> Action {
+    fn click(&mut self, element: DOMHTMLElement, ctrl_key: bool) -> Action {
         if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
             let input_type = input_element.get_input_type().unwrap_or_default();
             match input_type.as_ref() {
-                "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => element.click(),
+                "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => {
+                    click(&element.upcast(), ctrl_key);
+                    NoAction
+                },
                 // FIXME: file and color not opening.
-                "color" => (),
+                "color" => NoAction,
                 "file" => {
                     self.model.activated_file_input = Some(input_element);
-                    return FileInput;
+                    FileInput
                 },
                 _ => {
                     element.focus();
-                    return GoInInsertMode;
+                    GoInInsertMode
                 },
             }
         }
         else if element.is::<DOMHTMLTextAreaElement>() {
             element.focus();
-            return GoInInsertMode;
+            GoInInsertMode
         }
         else if element.is::<DOMHTMLSelectElement>() {
             if element.get_attribute("multiple").is_some() {
                 element.focus();
-                return GoInInsertMode;
+                GoInInsertMode
             }
             else {
                 mouse_down(&element.upcast());
+                NoAction
             }
         }
         else {
-            element.click();
+            click(&element.upcast(), ctrl_key);
+            NoAction
         }
-        NoAction
     }
 
     fn click_next_page(&mut self) {
@@ -292,6 +295,7 @@ impl Executor {
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         // If no element is found, hide the unrelevant hints.
         if element.is_some() {
+            // TODO: perhaps it'd involve less message if we remove the ActivateHint message.
             self.send(ClickHintElement());
         }
         else {
