@@ -54,7 +54,7 @@ impl App {
                 match url.path_segments_mut() {
                     Ok(mut segments) => {
                         for _ in 0..parent_level {
-                            let _ = segments.pop_if_empty()
+                            segments.pop_if_empty()
                                 .pop();
                         }
                     },

@@ -91,7 +91,7 @@ impl App {
                     if download_web_view == webview {
                         let stream = stream.clone();
                         let list_stream = list_stream.clone();
-                        let _ = download.connect_decide_destination(move |download, suggested_filename| {
+                        download.connect_decide_destination(move |download, suggested_filename| {
                             if let Ok(destination) = find_download_destination(suggested_filename) {
                                 download.set_destination(&format!("file://{}", destination));
                                 stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));

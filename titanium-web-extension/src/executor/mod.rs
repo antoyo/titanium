@@ -136,11 +136,11 @@ impl Update for Executor {
 
                 if self.model.scroll_element == get_body(&self.model.page).map(|el| el.upcast()) {
                     let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
-                    let _ = document.add_event_listener_with_closure("scroll", &handler, false);
+                    document.add_event_listener_with_closure("scroll", &handler, false);
                 }
                 else {
                     let element = self.model.scroll_element.as_ref().unwrap();
-                    let _ = element.add_event_listener_with_closure("scroll", &handler, false);
+                    element.add_event_listener_with_closure("scroll", &handler, false);
                 }
             },
             MessageRecv(msg) =>

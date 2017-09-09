@@ -34,7 +34,7 @@ impl App {
             if self.model.default_search_engine.is_none() {
                 self.model.default_search_engine = Some(keyword.clone());
             }
-            let _ = self.model.search_engines.insert(keyword, args[1].to_string());
+            self.model.search_engines.insert(keyword, args[1].to_string());
         }
         else {
             self.error(&format!("search-engine: expecting 2 arguments, got {} arguments", args.len()));

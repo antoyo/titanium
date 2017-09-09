@@ -73,7 +73,7 @@ impl Widget for DownloadView {
     fn cancel(&mut self) {
         if self.model.finished {
             if let Some(ref destination) = self.model.original_destination {
-                let _ = remove_file(destination);
+                remove_file(destination);
             }
         }
         else {

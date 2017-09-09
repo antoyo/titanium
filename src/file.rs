@@ -52,7 +52,7 @@ pub fn gen_unique_filename(filename: &str) -> Result<String> {
 
 /// Open a file in a new process.
 pub fn open(url: String) {
-    let _ = thread::spawn(move ||
+    thread::spawn(move ||
         open::that(url).ok()
     );
 }

@@ -127,7 +127,7 @@ impl Update for MessageClient {
                 connect_stream!(page, connect_document_loaded(_), executor, DocumentLoaded);
                 connect_stream!(executor@ServerSend(page_id, ref msg),
                     self.model.relm.stream(), Send(page_id, msg.clone()));
-                let _ = self.model.executors.insert(page_id, executor);
+                self.model.executors.insert(page_id, executor);
 
                 let extension_id = self.model.extension_id.unwrap();
                 if self.model.writer.is_some() {

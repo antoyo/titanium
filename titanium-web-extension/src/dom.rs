@@ -327,7 +327,7 @@ pub fn mouse_over(element: &DOMElement) {
 /// Show an element.
 pub fn show(element: &DOMElement) {
     let style = wtry_opt_no_ret!(element.get_style());
-    let _ = wtry!(style.remove_property("display"));
+    wtry!(style.remove_property("display"));
 }
 
 /// Lookup dom elements by tag and regex

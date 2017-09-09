@@ -131,7 +131,7 @@ impl DownloadListView {
         connect!(download_view@Remove, self.model.relm, DelayedRemove(down.clone()));
 
         // It is necessary to keep the download views because they are connected to events.
-        let _ = self.model.download_views.insert(download, download_view);
+        self.model.download_views.insert(download, download_view);
     }
 
     /// Add a file to be opened when its download finish.

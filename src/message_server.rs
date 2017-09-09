@@ -153,7 +153,7 @@ impl Update for MessageServer {
             AppPageId(stream, page_id) => {
                 // FIXME: the writer is inserted too many times. It should be only once per web
                 // extension, not once per page.
-                let _ = self.model.apps.insert(page_id, AppServer::new(stream));
+                self.model.apps.insert(page_id, AppServer::new(stream));
                 if let Some((extension_id, writer_counter)) = self.model.app_extensions.remove(&page_id) {
                     self.connect_app_and_extension(extension_id, page_id, writer_counter);
                 }
@@ -162,7 +162,7 @@ impl Update for MessageServer {
                 let (reader, writer) = stream.split();
                 let reader = ReadBincode::new(FramedRead::new(reader));
                 let writer = WriteBincode::new(FramedWrite::new(writer));
-                let _ = self.model.writers.insert(self.model.writer_counter, writer);
+                self.model.writers.insert(self.model.writer_counter, writer);
                 let counter = self.model.writer_counter;
                 self.model.writer_counter += 1;
                 self.model.relm.connect_exec(reader, move |msg| MsgRecv(counter, msg),
@@ -224,7 +224,7 @@ impl MessageServer {
     fn connect_app_and_extension(&mut self, extension_id: ExtensionId, page_id: PageId, writer_counter: usize) {
         if let Some(ref mut app) = self.model.apps.get_mut(&page_id) {
             trace!("Inserting page id {} in extension_page", page_id);
-            let _ = self.model.extension_page.insert(page_id, extension_id);
+            self.model.extension_page.insert(page_id, extension_id);
             if let Some(writer) = self.model.writers.remove(&writer_counter) {
                 app.writer = Some(writer);
             }
@@ -248,11 +248,11 @@ impl MessageServer {
                 self.connect_app_and_extension(extension_id, page_id, writer_counter);
             }
             else {
-                let _ = self.model.app_extensions.insert(page_id, (extension_id, writer_counter));
+                self.model.app_extensions.insert(page_id, (extension_id, writer_counter));
             }
         }
         else if let Open(urls) = msg {
-            let _ = self.model.writers.remove(&writer_counter);
+            self.model.writers.remove(&writer_counter);
             if urls.is_empty() {
                 self.add_app(None);
             }
@@ -274,9 +274,9 @@ impl MessageServer {
         self.model.app_count -= 1;
         if let Some(extension_id) = self.model.extension_page.get(&page_id).cloned() {
             if page_id != extension_id {
-                let _ = self.model.apps.remove(&page_id);
+                self.model.apps.remove(&page_id);
                 trace!("Removing page id {} in extension_page", page_id);
-                let _ = self.model.extension_page.remove(&page_id);
+                self.model.extension_page.remove(&page_id);
             }
             // TODO: remove the apps with extension ID? It seems web extensions are not recreated.
             // Is it because the webview is not destroyed?
@@ -336,7 +336,7 @@ fn dialog_and_exit(message: &str) -> ! {
     let window: Option<&Window> = None;
     let message = format!("Fatal error: {}", message);
     let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close, &message);
-    let _ = dialog.run();
+    dialog.run();
     process::exit(1);
 }
 

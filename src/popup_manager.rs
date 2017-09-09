@@ -51,7 +51,7 @@ impl PopupManager {
     /// Blacklist the specified url.
     pub fn blacklist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
-            let _ = self.blacklisted_urls.insert(url.to_string());
+            self.blacklisted_urls.insert(url.to_string());
             self.save_blacklist()
         }
         else {
@@ -81,7 +81,7 @@ impl PopupManager {
     fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>> {
         let mut file = File::open(path)?;
         let mut content = String::new();
-        let _ = file.read_to_string(&mut content)?;
+        file.read_to_string(&mut content)?;
         let set = content.lines()
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string()).collect();
@@ -110,7 +110,7 @@ impl PopupManager {
     /// Whitelist the specified url.
     pub fn whitelist(&mut self, url: &str) -> Result<()> {
         if let Some(url) = get_base_url(url) {
-            let _ = self.whitelisted_urls.insert(url.to_string());
+            self.whitelisted_urls.insert(url.to_string());
             self.save_whitelist()
         }
         else {

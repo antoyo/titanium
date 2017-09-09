@@ -78,7 +78,7 @@ impl Hints {
     /// Returns the text of that hint.
     fn add(&mut self, element: &DOMElement) -> String {
         let hint = self.generate();
-        let _ = self.hints.insert(hint.clone(), element.clone());
+        self.hints.insert(hint.clone(), element.clone());
         hint
     }
 

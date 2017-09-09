@@ -197,7 +197,7 @@ impl WebView {
             for filename in read_dir(script_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
-                let _ = file.read_to_string(&mut content)?;
+                file.read_to_string(&mut content)?;
                 // TODO: support whitelist as a comment in the script.
                 let script = UserScript::new(&content, AllFrames, End, &[], &[]);
                 content_manager.add_script(&script);
@@ -214,7 +214,7 @@ impl WebView {
             for filename in read_dir(stylesheets_path)? {
                 let mut file = File::open(filename?.path())?;
                 let mut content = String::new();
-                let _ = file.read_to_string(&mut content)?;
+                file.read_to_string(&mut content)?;
                 let (stylesheet, stylesheet_whitelist) = get_stylesheet_and_whitelist(&content);
                 let whitelist: Vec<_> = stylesheet_whitelist.iter().map(|url| url.as_ref()).collect();
                 let stylesheet = UserStyleSheet::new(&stylesheet, AllFrames, User, &whitelist, &[]);
@@ -327,7 +327,7 @@ impl WebView {
         let print_operation = PrintOperation::new(&self.view);
         let window = self.view.get_toplevel()
             .and_then(|toplevel| toplevel.downcast::<Window>().ok());
-        let _ = print_operation.run_dialog(window.as_ref());
+        print_operation.run_dialog(window.as_ref());
     }
 
     /// Save a screenshot of the web view.
