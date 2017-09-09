@@ -41,26 +41,19 @@
  * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
  * javascript_can_close_windows when the window was opened by JS.
  *
- * FIXME: panic when download when there was windows already opened.
- * FIXME: web extension crashed with: "Ioctl() inappropré pour un périphérique (os error 25)"
- *
  * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
  * https://www.fstar-lang.org/tutorial/
  * https://www.cnet.com/special-reports/mozilla-firefox-fights-back-against-google-chrome/
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
- * FIXME: scroll percentage is all:
- * https://github.com/rust-lang/rust/issues/23742
+ * FIXME: scroll percentage is all on some pages.
  *
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
  *
  * TODO: save the current URLs of every window in case of a crash.
  * TODO: command to restore the last closed window.
- *
- * FIXME: cannot delete bookmarks with Ctrl-D in auto-completion.
- * FIXME: gi goes to the second input on many sites including duckduckgo and wikipedia.
  *
  * TODO: add command (;f) to change the active element.
  *
