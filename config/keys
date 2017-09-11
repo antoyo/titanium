@@ -63,8 +63,10 @@ cmap <A-d> entry-delete-next-word
 cmap <A-f> entry-next-word
 cmap <C-a> entry-smart-home
 cmap <C-b> entry-previous-char
+cmap <C-c> entry-copy
 cmap <C-d> entry-delete-next-char
-cmap <C-x> delete-entry
 cmap <C-e> entry-end
 cmap <C-f> entry-next-char
+cmap <C-v> entry-paste
 cmap <C-w> entry-delete-previous-word
+cmap <C-x> entry-cut
