@@ -148,7 +148,6 @@ const INIT_SCROLL_TEXT: &str = "[top]";
 
 static MODES: Modes = &[
     ("f", "follow"),
-    ("i", "insert"),
 ];
 
 #[derive(Clone, Copy)]
