@@ -14,9 +14,9 @@ dependencies = [
  "libxdo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log-panics 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings-macros 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings-macros 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "number_prefix 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "open 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -202,9 +202,6 @@ dependencies = [
 name = "error-chain"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "backtrace 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "fg-uds"
@@ -573,17 +570,16 @@ dependencies = [
 
 [[package]]
 name = "mg"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-glib 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-attributes 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -592,16 +588,15 @@ dependencies = [
 
 [[package]]
 name = "mg-settings"
-version = "0.2.2"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings-macros 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings-macros 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "mg-settings-macros"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1183,9 +1178,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum matches 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "100aabe6b8ff4e4a7e32c1c13523379802df0772b82466207ac25b013f193376"
 "checksum memchr 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1dbccc0e46f1ea47b9f17e6d67c5a96bd27030519c519c9c91327e31275a47b4"
 "checksum metadeps 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "73b122901b3a675fac8cecf68dcb2f0d3036193bc861d1ac0e1c337f7d5254c2"
-"checksum mg 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "3ed1fb02c7f2475ec5dc8c24649435895876ff0c0aaf5741dd3fa9806d6e5bc8"
-"checksum mg-settings 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "fef34d175104f1710a830f41dafe2e20011767399b0a26993a5b31019a20b7d9"
-"checksum mg-settings-macros 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "392aab43ae898b89247af33f64580db816663922dd5b2d1e60c57e95d18a7198"
+"checksum mg 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bbffe850f4188f483013d728d60b3787dc2545d595bae5ea0d66a47c624bbe6b"
+"checksum mg-settings 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "05fe0969b78f4fc591893168a27fe9e1d6409f566e32327334d5ee0f67066ed8"
+"checksum mg-settings-macros 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5f0a3a0554001d5014b6de6da1271c543e9095b24791670c7ddecbaeb40eac61"
 "checksum net2 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "3a80f842784ef6c9a958b68b7516bc7e35883c614004dd94959a4dca1b716c09"
 "checksum nix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a2c5afeb0198ec7be8569d666644b574345aad2e95a53baf3a532da3e0f3fb32"
 "checksum num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "99843c856d68d8b4313b03a17e33c4bb42ae8f6610ea81b28abe076ac721b9b0"
