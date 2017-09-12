@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: download hint.
+ * TODO: copy link hint.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: support marks.
  *
@@ -52,7 +54,6 @@
  * https://www.cnet.com/special-reports/mozilla-firefox-fights-back-against-google-chrome/
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
- * FIXME: scroll percentage is all on some pages.
  *
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.

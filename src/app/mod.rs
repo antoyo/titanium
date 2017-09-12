@@ -205,7 +205,6 @@ pub enum Msg {
     HasActiveDownloads(bool),
     KeyPress(EventKey),
     LoadChanged(LoadEvent),
-    LoadStarted,
     MessageRecv(InnerMessage),
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
@@ -243,11 +242,6 @@ impl Widget for App {
         self.connect_dialog_events();
         self.connect_download_events();
         self.create_variables();
-    }
-
-    fn load_started(&mut self) {
-        self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
-        self.set_title();
     }
 
     fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
@@ -324,7 +318,6 @@ impl Widget for App {
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
             KeyPress(event_key) => self.handle_key_press(event_key),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
-            LoadStarted => self.load_started(),
             MessageRecv(message) => self.message_recv(message),
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
             // To be listened by the user.
@@ -385,7 +378,6 @@ impl Widget for App {
                     create(_, action) => (Create(action.clone()), None),
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
-                    resource_load_started(_, _, _) => LoadStarted,
                     title_changed() => TitleChanged,
                     uri_changed() => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
@@ -599,6 +591,7 @@ impl App {
     /// Go back to normal mode.
     fn handle_load_changed(&mut self, load_event: LoadEvent) {
         if load_event == Started {
+            self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
             self.webview.emit(EndSearch);
             self.webview.emit(AddStylesheets);
             self.webview.emit(AddScripts);

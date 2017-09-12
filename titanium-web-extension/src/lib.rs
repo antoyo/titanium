@@ -177,9 +177,7 @@ pub fn web_extension_initialize(extension: &WebExtension) {
         println!("Cannot initialize the logger: {}", error);
     }
 
-    trace!("Before MessageClient::new()");
     let client = wtry!(MessageClient::new());
-    trace!("After MessageClient::new()");
 
     connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
 
