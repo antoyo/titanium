@@ -259,31 +259,31 @@ impl Executor {
     }
 
     fn click_next_page(&mut self) {
-        let document = self.model.page.get_dom_document();
         let regex = Regex::new(r"(?i:next|forward|older|more|›|»)|(?:<.+>)>(?:<.+>)").unwrap();
 
-        if let Some(document) = document {
-            if let Some(link) = match_pattern(&document, "a", regex) {
-                let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
-                element.click();
-            } else {
-                // TODO: Check if url (not text) is *very* similar to our current one
-                // example.com/page/4 => example.com/page/5
-            }
+        let document = get_document!(self);
+        if let Some(link) = match_pattern(&document, "a", regex) {
+            let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
+            element.click();
+        }
+        else {
+            // TODO: Check if url (not text) is *very* similar to our current one
+            // example.com/page/4 => example.com/page/5
+            warn!("No next link found");
         }
     }
 
     fn click_prev_page(&mut self) {
-        let document = self.model.page.get_dom_document();
         let regex = Regex::new(r"(?i:prev(ious)|back|newer|less|«|‹)|(?:<.+>)<(?:<.+>)").unwrap();
 
-        if let Some(document) = document {
-            if let Some(link) = match_pattern(&document, "a", regex) {
-                let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
-                element.click();
-            } else {
-                // TODO: See above
-            }
+        let document = get_document!(self);
+        if let Some(link) = match_pattern(&document, "a", regex) {
+            let element = wtry_no_show!(link.clone().downcast::<DOMHTMLElement>());
+            element.click();
+        }
+        else {
+            // TODO: See above
+            warn!("No previous link found");
         }
     }
 

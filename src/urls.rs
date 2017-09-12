@@ -38,11 +38,13 @@ pub fn get_base_url(url: &str) -> Option<String> {
 
 /// Get the filename from the URL.
 pub fn get_filename(url: &str) -> Option<String> {
-    let parsed_url = Url::parse(url).unwrap(); // TODO: convert to option instead of unwrap().
-    parsed_url.path_segments()
-        .and_then(|segments| segments.last())
-        .and_then(|filename| percent_decode(filename.as_bytes()).decode_utf8().ok())
-        .map(|string| string.into_owned())
+    Url::parse(url).ok()
+        .and_then(|parsed_url|
+              parsed_url.path_segments()
+                  .and_then(|segments| segments.last())
+                  .and_then(|filename| percent_decode(filename.as_bytes()).decode_utf8().ok())
+                  .map(|string| string.into_owned())
+        )
 }
 
 pub fn host(url: &str) -> Option<String> {
@@ -70,26 +72,31 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
             let next = pairs.map(|(lhs, rhs)| {
                 if updated {
                     lhs + "=" + &rhs
-                } else if let Ok(number) = rhs.parse::<i32>() {
+                }
+                else if let Ok(number) = rhs.parse::<i32>() {
                     updated = true;
                     lhs + "=" + (number + inc_offset).to_string().as_str()
-                } else {
+                }
+                else {
                     lhs + "=" + &rhs
                 }
             }).fold(String::new(), |acc, ref x| {
                 if acc.is_empty() {
                     acc + &x
-                } else {
+                }
+                else {
                     acc + "&" + &x
                 }
             });
 
             if updated {
                 return Some(url[..Position::BeforeQuery].to_string() + &next);
-            } else if let Some(page) = offset(&url[..Position::BeforeQuery], inc_offset) {
+            }
+            else if let Some(page) = offset(&url[..Position::BeforeQuery], inc_offset) {
                 return Some(page + query);
             }
-        } else if let Some(path_segments) = url.path_segments() {
+        }
+        else if let Some(path_segments) = url.path_segments() {
             let next = path_segments
                 .rev() // check in reverse
                 .map(|segment| {
@@ -107,7 +114,8 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
 
             if updated {
                 return Some(url[..Position::BeforePath].to_string() + &next);
-            } else {
+            }
+            else {
                 // TODO: Check for some edge cases with a regex or tokenizer, ie: example.com/page6.
             }
         }

@@ -20,6 +20,9 @@
  */
 
 /*
+ * TODO: automatically detach the inspector when it is opened with "Inspect element".
+ * TODO: support marks.
+ *
  * TODO: private browsing.
  *
  * TODO: hide hovered link when the text entry is shown?
@@ -33,10 +36,6 @@
  *
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
  * FIXME: cannot download this link: https://link.springer.com/content/pdf/10.1007%2F978-3-540-78800-3_24.pdf
- *
- * TODO: ClickNextPage, change server_send() to a new method. Or perhaps better: make the match
- * return the message and send it with server_send() after it.
- * TODO: Add else branch (for logging) for the code of the first PR.
  *
  * TODO: might not require the syntax with (relm) if we emit the signal normally.
  *
@@ -155,7 +154,6 @@
  * TODO: add a passthrough mode.
  * TODO: add help text for commands and settings.
  * TODO: handle network errors.
- * TODO: support marks.
  * TODO: show a star next to the url of a bookmarked site.
  * TODO: find a way to recover accidently removed bookmarks (shortcut to read bookmarks from a
  * stack of removed bookmarks? another shortcut which is harder to do C-S-d?).
@@ -187,7 +185,6 @@
  * TODO: option to disable the adblocker.
  * TODO: block ads coming from websocket.
  * TODO: create a whitelist-based adblocker.
- * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: hide the hints when activating a hint.
  * TODO: in command and input mode, put the messages into a queue.

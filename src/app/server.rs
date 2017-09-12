@@ -44,6 +44,16 @@ impl App {
         self.server_send(ActivateSelection());
     }
 
+    /// Click on the link to go to the next page.
+    pub fn click_next_page(&mut self) {
+        self.server_send(ClickNextPage());
+    }
+
+    /// Click on the link to go to the previous page.
+    pub fn click_prev_page(&mut self) {
+        self.server_send(ClickPrevPage())
+    }
+
     /// Send a key to the web process to process with the current hints.
     pub fn enter_hint_key(&mut self, key_char: char) {
         self.server_send(EnterHintKey(key_char));
