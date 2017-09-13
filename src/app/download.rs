@@ -26,7 +26,12 @@ use std::path::{Path, PathBuf};
 
 use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
-use webkit2gtk::{Download, DownloadExt, WebContextExt};
+use webkit2gtk::{
+    Download,
+    DownloadExt,
+    WebContextExt,
+    WebViewExt,
+};
 
 use INVALID_UTF8_ERROR;
 use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};
@@ -142,6 +147,10 @@ impl App {
             },
         }
         Ok(())
+    }
+
+    pub fn download_link(&self, url: &str) {
+        self.webview.widget().download_uri(url);
     }
 
     pub fn overwrite_download(&self, download: Download, download_destination: String, overwrite: bool) {

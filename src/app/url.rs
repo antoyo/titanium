@@ -21,6 +21,8 @@
 
 use webkit2gtk::WebViewExt;
 
+use titanium_common::FollowMode;
+
 use app::App;
 use app::Msg::CreateWindow;
 use webview::Msg::PageOpen;
@@ -76,6 +78,13 @@ impl App {
                 }
             }
         }
+    }
+
+    /// Enter follow mode to save the source of an URL from a link.
+    pub fn save_link(&mut self) {
+        self.model.follow_mode = FollowMode::Download;
+        self.set_mode("follow");
+        self.follow_link();
     }
 
     pub fn url_increment(&self) {

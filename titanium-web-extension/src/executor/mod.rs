@@ -57,9 +57,11 @@ use webkit2gtk_webextension::{
     WebPageExt,
 };
 
-use titanium_common::{InnerMessage, PageId};
+use titanium_common::{FollowMode, InnerMessage, PageId};
 use titanium_common::Action::{
     self,
+    CopyLink,
+    DownloadLink,
     FileInput,
     GoInInsertMode,
     NoAction,
@@ -69,6 +71,7 @@ use titanium_common::InnerMessage::*;
 use dom::{
     NodeIter,
     get_body,
+    get_href,
     is_enabled,
     is_hidden,
     is_text_input,
@@ -146,7 +149,7 @@ impl Update for Executor {
             },
             MessageRecv(msg) =>
                 match msg {
-                    ActivateHint(follow_mode, ctrl_key) => self.activate_hint(&follow_mode, ctrl_key),
+                    ActivateHint(follow_mode, ctrl_key) => self.activate_hint(follow_mode, ctrl_key),
                     ActivateSelection() => self.activate_selection(),
                     ClickNextPage() => self.click_next_page(),
                     ClickPrevPage() => self.click_prev_page(),
@@ -183,7 +186,7 @@ impl UpdateNew for Executor {
 
 impl Executor {
     // Activate (click, focus, hover) the selected hint.
-    fn activate_hint(&mut self, follow_mode: &str, ctrl_key: bool) {
+    fn activate_hint(&mut self, follow_mode: FollowMode, ctrl_key: bool) {
         let element = self.model.hint_map.get(&self.model.hint_keys)
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         match element {
@@ -192,11 +195,11 @@ impl Executor {
                 self.model.hint_map.clear();
                 self.model.hint_keys.clear();
                 let action =
-                    if follow_mode == "hover" {
-                        self.hover(element)
-                    }
-                    else {
-                        self.click(element, ctrl_key)
+                    match follow_mode {
+                        FollowMode::Click => self.click(element, ctrl_key),
+                        FollowMode::CopyLink => self.copy_link(element),
+                        FollowMode::Download => self.download_link(element),
+                        FollowMode::Hover => self.hover(element),
                     };
                 self.send(ActivateAction(action));
             },
@@ -258,6 +261,11 @@ impl Executor {
         }
     }
 
+    fn copy_link(&self, element: DOMHTMLElement) -> Action {
+        let href = unwrap_opt_or_ret!(get_href(&element), NoAction);
+        CopyLink(href)
+    }
+
     fn click_next_page(&mut self) {
         let regex = Regex::new(r"(?i:next|forward|older|more|›|»)|(?:<.+>)>(?:<.+>)").unwrap();
 
@@ -285,6 +293,11 @@ impl Executor {
             // TODO: See above
             warn!("No previous link found");
         }
+    }
+
+    fn download_link(&self, element: DOMHTMLElement) -> Action {
+        let href = unwrap_opt_or_ret!(get_href(&element), NoAction);
+        DownloadLink(href)
     }
 
     // Handle the key press event for the hint mode.

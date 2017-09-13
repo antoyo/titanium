@@ -34,8 +34,8 @@ impl App {
     /// Activate the selected hint.
     pub fn activate_hint(&mut self) {
         self.focus_webview();
-        let mode = self.model.follow_mode.to_string();
         let ctrl_key = self.model.open_in_new_window;
+        let mode = self.model.follow_mode;
         self.server_send(ActivateHint(mode, ctrl_key));
     }
 

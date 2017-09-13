@@ -40,6 +40,8 @@ pub enum AppCommand {
     #[help(text="Try to click link to the previous page if it exists")]
     ClickPrevPage,
     #[completion(hidden)]
+    CopyLinkUrl,
+    #[completion(hidden)]
     CopyUrl,
     #[help(text="Delete all the cookies")]
     DeleteAllCookies,
@@ -94,6 +96,8 @@ pub enum AppCommand {
     Reload,
     #[help(text="Reload the current page without using the cache")]
     ReloadBypassCache,
+    #[completion(hidden)]
+    SaveLink,
     #[completion(hidden)]
     SearchEngine(String),
     #[completion(hidden)]

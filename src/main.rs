@@ -20,9 +20,6 @@
  */
 
 /*
- * TODO: download hint.
- * TODO: copy link hint.
- * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: support marks.
  *
  * TODO: private browsing.

@@ -44,7 +44,6 @@ mod url;
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle};
@@ -91,7 +90,7 @@ use webkit2gtk::{
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
 
-use titanium_common::{InnerMessage, PageId};
+use titanium_common::{FollowMode, InnerMessage, PageId};
 use titanium_common::Percentage::{self, All, Percent};
 
 use bookmarks::BookmarkManager;
@@ -149,23 +148,6 @@ const INIT_SCROLL_TEXT: &str = "[top]";
 static MODES: Modes = &[
     ("f", "follow"),
 ];
-
-#[derive(Clone, Copy)]
-pub enum FollowMode {
-    Click,
-    Hover,
-}
-
-impl Display for FollowMode {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        let string =
-            match *self {
-                FollowMode::Click => "click",
-                FollowMode::Hover => "hover",
-            };
-        write!(formatter, "{}", string)
-    }
-}
 
 pub struct Model {
     bookmark_manager: BookmarkManager,
@@ -492,7 +474,8 @@ impl App {
             ClearCache => self.clear_cache(),
             ClickNextPage => self.click_next_page(),
             ClickPrevPage => self.click_prev_page(),
-            CopyUrl => self.copy_url(),
+            CopyLinkUrl => self.copy_link_url(),
+            CopyUrl => self.copy_current_url(),
             DeleteAllCookies => self.delete_all_cookies(),
             DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
@@ -519,6 +502,7 @@ impl App {
             Quit => self.try_quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
+            SaveLink => self.save_link(),
             Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
             ScrollBottom => self.scroll_bottom(),
             ScrollDown => self.scroll_down_page(),
