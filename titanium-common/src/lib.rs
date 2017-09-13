@@ -43,14 +43,28 @@ pub type ExtensionId = u64;
 pub type PageId = u64;
 
 /// Action that should be executed from the UI process.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Action {
+    /// Copy the specified link in the clipboard.
+    CopyLink(String),
     /// Show the file input.
     FileInput,
     /// Go in insert mode.
     GoInInsertMode,
     /// No action.
     NoAction,
+}
+
+/// The mode for the follow mode.
+/// This indicates the action that will be taken after an hint is selected.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum FollowMode {
+    /// The link will be clicked.
+    Click,
+    /// The URL of the link will be copied.
+    CopyLink,
+    /// The cursor will move over the link.
+    Hover,
 }
 
 /// Message with the associated window/page id.
@@ -64,7 +78,7 @@ pub enum InnerMessage {
     /// Response to ActivateHint.
     ActivateAction(Action),
     /// Activate the selected hint according to the specified follow mode.
-    ActivateHint(String, bool),
+    ActivateHint(FollowMode, bool),
     /// Click on the link in the selection.
     ActivateSelection(),
     /// Response to EnterHintKey.

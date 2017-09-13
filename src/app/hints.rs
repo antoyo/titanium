@@ -27,11 +27,18 @@ use gdk::EventKey;
 
 use super::App;
 
-use titanium_common::Action::{self, FileInput, GoInInsertMode, NoAction};
+use titanium_common::Action::{
+    self,
+    CopyLink,
+    FileInput,
+    GoInInsertMode,
+    NoAction,
+};
 
 impl App {
     pub fn activate_action(&mut self, action: Action) {
         match action {
+            CopyLink(url) => self.copy_link(&url),
             FileInput => self.show_file_input(),
             GoInInsertMode => self.go_in_insert_mode(),
             NoAction => (),

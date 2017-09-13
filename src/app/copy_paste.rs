@@ -24,24 +24,38 @@
 use gtk::{Clipboard, ClipboardExt, WidgetExt};
 use webkit2gtk::WebViewExt;
 
+use titanium_common::FollowMode;
+
 use super::App;
 
 impl App {
-    /// Copy the URL in the system clipboard.
-    pub fn copy_url(&self) {
+    /// Copy the specified url to the clipboard.
+    pub fn copy_link(&self, url: &str) {
         let clipboard = self.webview.widget().get_display()
             .and_then(|display| Clipboard::get_default(&display));
         if let Some(clipboard) = clipboard {
-            if let Some(url) = self.webview.widget().get_uri() {
-                clipboard.set_text(&url);
-                self.info(format!("Copied URL to clipboard: {}", url));
-            }
-            else {
-                self.error("No URL to copy");
-            }
+            clipboard.set_text(url);
+            self.info(format!("Copied URL to clipboard: {}", url));
         }
         else {
             self.error("Cannot get the system clipboard");
+        }
+    }
+
+    /// Enter follow mod to copy the URL from a link to the system clipboard.
+    pub fn copy_link_url(&mut self) {
+        self.model.follow_mode = FollowMode::CopyLink;
+        self.set_mode("follow");
+        self.follow_link();
+    }
+
+    /// Copy the current webview URL in the system clipboard.
+    pub fn copy_current_url(&self) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            self.copy_link(&url);
+        }
+        else {
+            self.error("No URL to copy");
         }
     }
 

@@ -40,6 +40,8 @@ pub enum AppCommand {
     #[help(text="Try to click link to the previous page if it exists")]
     ClickPrevPage,
     #[completion(hidden)]
+    CopyLinkUrl,
+    #[completion(hidden)]
     CopyUrl,
     #[help(text="Delete all the cookies")]
     DeleteAllCookies,

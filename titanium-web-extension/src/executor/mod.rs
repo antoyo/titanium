@@ -46,6 +46,8 @@ use webkit2gtk_webextension::{
     DOMElement,
     DOMElementExt,
     DOMEventTargetExt,
+    DOMHTMLAnchorElement,
+    DOMHTMLAnchorElementExt,
     DOMHTMLElement,
     DOMHTMLElementExt,
     DOMHTMLInputElement,
@@ -57,9 +59,10 @@ use webkit2gtk_webextension::{
     WebPageExt,
 };
 
-use titanium_common::{InnerMessage, PageId};
+use titanium_common::{FollowMode, InnerMessage, PageId};
 use titanium_common::Action::{
     self,
+    CopyLink,
     FileInput,
     GoInInsertMode,
     NoAction,
@@ -146,7 +149,7 @@ impl Update for Executor {
             },
             MessageRecv(msg) =>
                 match msg {
-                    ActivateHint(follow_mode, ctrl_key) => self.activate_hint(&follow_mode, ctrl_key),
+                    ActivateHint(follow_mode, ctrl_key) => self.activate_hint(follow_mode, ctrl_key),
                     ActivateSelection() => self.activate_selection(),
                     ClickNextPage() => self.click_next_page(),
                     ClickPrevPage() => self.click_prev_page(),
@@ -183,7 +186,7 @@ impl UpdateNew for Executor {
 
 impl Executor {
     // Activate (click, focus, hover) the selected hint.
-    fn activate_hint(&mut self, follow_mode: &str, ctrl_key: bool) {
+    fn activate_hint(&mut self, follow_mode: FollowMode, ctrl_key: bool) {
         let element = self.model.hint_map.get(&self.model.hint_keys)
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         match element {
@@ -192,11 +195,10 @@ impl Executor {
                 self.model.hint_map.clear();
                 self.model.hint_keys.clear();
                 let action =
-                    if follow_mode == "hover" {
-                        self.hover(element)
-                    }
-                    else {
-                        self.click(element, ctrl_key)
+                    match follow_mode {
+                        FollowMode::Click => self.click(element, ctrl_key),
+                        FollowMode::CopyLink => self.copy_link(element),
+                        FollowMode::Hover => self.hover(element),
                     };
                 self.send(ActivateAction(action));
             },
@@ -254,6 +256,16 @@ impl Executor {
         }
         else {
             click(&element.upcast(), ctrl_key);
+            NoAction
+        }
+    }
+
+    fn copy_link(&self, element: DOMHTMLElement) -> Action {
+        if let Ok(input_element) = element.clone().downcast::<DOMHTMLAnchorElement>() {
+            let href = unwrap_opt_or_ret!(input_element.get_href(), NoAction);
+            CopyLink(href)
+        }
+        else {
             NoAction
         }
     }
