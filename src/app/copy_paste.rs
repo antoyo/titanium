@@ -42,7 +42,7 @@ impl App {
         }
     }
 
-    /// Enter follow mod to copy the URL from a link to the system clipboard.
+    /// Enter follow mode to copy the URL from a link to the system clipboard.
     pub fn copy_link_url(&mut self) {
         self.model.follow_mode = FollowMode::CopyLink;
         self.set_mode("follow");

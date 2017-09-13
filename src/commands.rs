@@ -97,6 +97,8 @@ pub enum AppCommand {
     #[help(text="Reload the current page without using the cache")]
     ReloadBypassCache,
     #[completion(hidden)]
+    SaveLink,
+    #[completion(hidden)]
     SearchEngine(String),
     #[completion(hidden)]
     Screenshot(String),

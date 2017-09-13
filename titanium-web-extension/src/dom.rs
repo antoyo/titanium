@@ -31,6 +31,8 @@ use webkit2gtk_webextension::{
     DOMElementExt,
     DOMEventTarget,
     DOMEventTargetExt,
+    DOMHTMLAnchorElement,
+    DOMHTMLAnchorElementExt,
     DOMHTMLButtonElement,
     DOMHTMLButtonElementExt,
     DOMHTMLCollection,
@@ -131,6 +133,16 @@ pub fn get_document(page: &WebPage) -> Option<DOMElement> {
     page.get_dom_document().and_then(|document|
         document.get_document_element()
     )
+}
+
+/// Get the href attribute of an anchor element.
+pub fn get_href(element: &DOMHTMLElement) -> Option<String> {
+    if let Ok(input_element) = element.clone().downcast::<DOMHTMLAnchorElement>() {
+        input_element.get_href()
+    }
+    else {
+        None
+    }
 }
 
 /// Get the position of an element relative to the window.

@@ -46,8 +46,6 @@ use webkit2gtk_webextension::{
     DOMElement,
     DOMElementExt,
     DOMEventTargetExt,
-    DOMHTMLAnchorElement,
-    DOMHTMLAnchorElementExt,
     DOMHTMLElement,
     DOMHTMLElementExt,
     DOMHTMLInputElement,
@@ -63,6 +61,7 @@ use titanium_common::{FollowMode, InnerMessage, PageId};
 use titanium_common::Action::{
     self,
     CopyLink,
+    DownloadLink,
     FileInput,
     GoInInsertMode,
     NoAction,
@@ -72,6 +71,7 @@ use titanium_common::InnerMessage::*;
 use dom::{
     NodeIter,
     get_body,
+    get_href,
     is_enabled,
     is_hidden,
     is_text_input,
@@ -198,6 +198,7 @@ impl Executor {
                     match follow_mode {
                         FollowMode::Click => self.click(element, ctrl_key),
                         FollowMode::CopyLink => self.copy_link(element),
+                        FollowMode::Download => self.download_link(element),
                         FollowMode::Hover => self.hover(element),
                     };
                 self.send(ActivateAction(action));
@@ -261,13 +262,8 @@ impl Executor {
     }
 
     fn copy_link(&self, element: DOMHTMLElement) -> Action {
-        if let Ok(input_element) = element.clone().downcast::<DOMHTMLAnchorElement>() {
-            let href = unwrap_opt_or_ret!(input_element.get_href(), NoAction);
-            CopyLink(href)
-        }
-        else {
-            NoAction
-        }
+        let href = unwrap_opt_or_ret!(get_href(&element), NoAction);
+        CopyLink(href)
     }
 
     fn click_next_page(&mut self) {
@@ -297,6 +293,11 @@ impl Executor {
             // TODO: See above
             warn!("No previous link found");
         }
+    }
+
+    fn download_link(&self, element: DOMHTMLElement) -> Action {
+        let href = unwrap_opt_or_ret!(get_href(&element), NoAction);
+        DownloadLink(href)
     }
 
     // Handle the key press event for the hint mode.

@@ -20,7 +20,7 @@
  */
 
 /*
- * TODO: hint to download and inspect.
+ * TODO: hint to inspect.
  * TODO: automatically detach the inspector when it is opened with "Inspect element".
  * TODO: support marks.
  *

@@ -46,6 +46,7 @@ nmap <C-t> bookmark-edit-tags
 nmap <Enter> activate-selection
 nmap <Esc> finish-search
 nmap ;h hover
+nmap ;s save-link
 nmap ;y copy-link-url
 nmap [[ click-prev-page
 nmap ]] click-next-page

@@ -47,6 +47,8 @@ pub type PageId = u64;
 pub enum Action {
     /// Copy the specified link in the clipboard.
     CopyLink(String),
+    /// Download the specified destination.
+    DownloadLink(String),
     /// Show the file input.
     FileInput,
     /// Go in insert mode.
@@ -63,6 +65,8 @@ pub enum FollowMode {
     Click,
     /// The URL of the link will be copied.
     CopyLink,
+    /// The source of the link will be downloaded.
+    Download,
     /// The cursor will move over the link.
     Hover,
 }

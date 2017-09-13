@@ -510,6 +510,7 @@ impl App {
             Quit => self.try_quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
+            SaveLink => self.save_link(),
             Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
             ScrollBottom => self.scroll_bottom(),
             ScrollDown => self.scroll_down_page(),
