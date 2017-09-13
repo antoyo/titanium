@@ -128,6 +128,13 @@ impl Widget for WebView {
         // Send the page id later when the event connection in the app is made.
         self.model.relm.stream().emit(SendPageId);
         trace!("New web view with page id {}", self.view.get_page_id());
+
+        if let Some(inspector) = self.view.get_inspector() {
+            let inspector_shown = self.model.inspector_shown.clone();
+            connect!(self.model.relm, inspector, connect_attach(inspector),
+                return WebView::handle_inspector_attach(&inspector_shown, inspector));
+            connect!(inspector, connect_closed(_), self.model.relm, InspectorClose);
+        }
     }
 
     fn model(relm: &Relm<Self>, (config_dir, context): (ConfigDir, WebContext)) -> Model {
@@ -251,6 +258,7 @@ impl WebView {
         Ok(())
     }
 
+    /// Detach the web inspector when it is requested to be opened.
     fn handle_inspector_attach(inspector_shown: &Rc<Cell<bool>>, inspector: &WebInspector) -> bool {
         if !inspector_shown.get() {
             inspector_shown.set(true);
@@ -397,10 +405,6 @@ impl WebView {
     /// Show the web inspector.
     fn show_inspector(&self) {
         if let Some(inspector) = self.view.get_inspector() {
-            let inspector_shown = self.model.inspector_shown.clone();
-            connect!(self.model.relm, inspector, connect_attach(inspector),
-                return WebView::handle_inspector_attach(&inspector_shown, inspector));
-            connect!(inspector, connect_closed(_), self.model.relm, InspectorClose);
             inspector.show();
         }
     }
