@@ -21,6 +21,7 @@ dependencies = [
  "number_prefix 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "open 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "password-store 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "percent-encoding 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-attributes 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-derive 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -22,6 +22,7 @@
 use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::result;
+use std::str::Utf8Error;
 
 use nix;
 use password_store;
@@ -86,6 +87,14 @@ impl From<password_store::Error> for Error {
 
 impl From<rusqlite::Error> for Error {
     fn from(error: rusqlite::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<Utf8Error> for Error {
+    fn from(error: Utf8Error) -> Self {
         Error {
             msg: error.to_string(),
         }

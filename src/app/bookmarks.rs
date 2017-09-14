@@ -56,7 +56,7 @@ impl App {
     pub fn delete_selected_bookmark(&self) {
         let mut command = self.model.command_text.split_whitespace();
         match command.next() {
-            Some("open") | Some("win-open") =>
+            Some("open") | Some("win-open") | Some("private-win-open") =>
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
                     if let Err(err) = self.model.bookmark_manager.delete(url) {

@@ -20,6 +20,12 @@
  */
 
 /*
+ * TODO: automatically add new settings in the config files (kind of insertion sort, splitted by
+ * the command?).
+ *
+ * TODO: should the private context be cleaned up when all the private windows are closed?
+ * TODO: should there be a new private context every time the command private-win-open is issued?
+ *
  * TODO: ResetMarks.
  *
  * TODO: hide hovered link when the text entry is shown? (Or show the hovered URL instead of the
@@ -242,6 +248,7 @@ extern crate nix;
 extern crate number_prefix;
 extern crate open;
 extern crate password_store;
+extern crate percent_encoding;
 #[macro_use]
 extern crate relm;
 extern crate relm_attributes;

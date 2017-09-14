@@ -352,6 +352,7 @@ impl Widget for App {
                 "file" => Box::new(FileCompleter::new()),
                 "open" => Box::new(BookmarkCompleter::new("open")),
                 "win-open" => Box::new(BookmarkCompleter::new("win-open")),
+                "private-win-open" => Box::new(BookmarkCompleter::new("private-win-open")),
             },
             DarkTheme: true,
             Title: self.model.title.clone(),
