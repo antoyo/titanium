@@ -75,6 +75,12 @@ impl AppServer {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Privacy {
+    Normal,
+    Private,
+}
+
 pub struct MessageServer {
     model: Model,
 }
@@ -86,6 +92,7 @@ pub struct Model {
     config_dir: ConfigDir,
     extension_page: HashMap<PageId, ExtensionId>,
     listener: Option<UnixListener>,
+    private_web_context: WebContext,
     relm: Relm<MessageServer>,
     // TODO: save the widgets somewhere allowing to remove them when its window is closed.
     wins: Vec<Component<App>>,
@@ -102,7 +109,7 @@ pub enum Msg {
     ClientConnect(UnixStream),
     MsgRecv(usize, Message),
     MsgError(Error),
-    NewApp(Option<String>),
+    NewApp(Option<String>, Privacy),
     RemoveApp(PageId),
     Send(PageId, InnerMessage),
 }
@@ -114,13 +121,13 @@ impl Update for MessageServer {
 
     fn model(relm: &Relm<Self>, (listener, urls, config): (UnixListener, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
-        let web_context = WebView::initialize_web_extension(&config_dir);
+        let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
-            relm.stream().emit(NewApp(None));
+            relm.stream().emit(NewApp(None, Privacy::Normal));
         }
         else {
             for url in urls {
-                relm.stream().emit(NewApp(Some(url)));
+                relm.stream().emit(NewApp(Some(url), Privacy::Normal));
             }
         }
         Model {
@@ -130,6 +137,7 @@ impl Update for MessageServer {
             config_dir,
             extension_page: HashMap::new(),
             listener: Some(listener),
+            private_web_context,
             relm: relm.clone(),
             wins: vec![],
             web_context,
@@ -171,7 +179,7 @@ impl Update for MessageServer {
             // To be listened by the app.
             MsgError(_) => (),
             MsgRecv(writer_counter, Message(page_id, message)) => self.msg_recv(writer_counter, page_id, message),
-            NewApp(url) => self.add_app(url),
+            NewApp(url, privacy) => self.add_app(url, privacy),
             RemoveApp(page_id) => self.remove_app(page_id),
             Send(page_id, message) => self.send(page_id, message),
         }
@@ -210,13 +218,20 @@ impl MessageServer {
         Ok(execute::<MessageServer>((listener, url, config_dir)))
     }
 
-    fn add_app(&mut self, url: Option<String>) {
+    fn add_app(&mut self, url: Option<String>, privacy: Privacy) {
         self.model.app_count += 1;
-        let app = init::<App>((url, self.model.config_dir.clone(), self.model.web_context.clone())).unwrap(); // TODO: remove unwrap().
+        let web_context =
+            if privacy == Privacy::Private {
+                self.model.private_web_context.clone()
+            }
+            else {
+                self.model.web_context.clone()
+            };
+        let app = init::<App>((url, self.model.config_dir.clone(), web_context)).unwrap(); // TODO: remove unwrap().
         let app_stream = app.stream().clone();
         connect!(app@SetPageId(page_id), self.model.relm, AppPageId(app_stream.clone(), page_id));
         connect!(app@ServerSend(page_id, ref message), self.model.relm, Send(page_id, message.clone()));
-        connect!(app@CreateWindow(ref url), self.model.relm, NewApp(Some(url.clone())));
+        connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
         connect!(app@Remove(page_id), self.model.relm, RemoveApp(page_id));
         self.model.wins.push(app);
     }
@@ -254,11 +269,11 @@ impl MessageServer {
         else if let Open(urls) = msg {
             self.model.writers.remove(&writer_counter);
             if urls.is_empty() {
-                self.add_app(None);
+                self.add_app(None, Privacy::Normal);
             }
             else {
                 for url in urls {
-                    self.add_app(Some(url));
+                    self.add_app(Some(url), Privacy::Normal);
                 }
             }
         }

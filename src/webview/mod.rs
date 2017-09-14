@@ -309,13 +309,12 @@ impl WebView {
     }
 
     /// Create the context and initialize the web extension.
-    pub fn initialize_web_extension(config_dir: &ConfigDir) -> WebContext {
-        let context = WebContext::get_default().unwrap();
-        set_context_ext_dir(&context);
+    pub fn initialize_web_extension(config_dir: &ConfigDir) -> (WebContext, WebContext) {
+        let private_context = WebContext::new_ephemeral();
+        setup_context(&private_context);
 
-        context.set_process_model(MultipleSecondaryProcesses);
-        context.set_web_process_count_limit(4);
-        context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
+        let context = WebContext::get_default().unwrap();
+        setup_context(&context);
 
         if let Ok(cookie_path) = config_dir.data_file("cookies") {
             let cookie_manager = context.get_cookie_manager().unwrap();
@@ -326,7 +325,7 @@ impl WebView {
             // TODO: warn.
         }
 
-        context
+        (context, private_context)
     }
 
     /// Open the specified URL.
@@ -451,4 +450,12 @@ fn set_context_ext_dir(context: &WebContext) {
 #[cfg(debug_assertions)]
 fn set_context_ext_dir(context: &WebContext) {
     context.set_web_extensions_directory("titanium-web-extension/target/debug");
+}
+
+fn setup_context(context: &WebContext) {
+    set_context_ext_dir(&context);
+
+    context.set_process_model(MultipleSecondaryProcesses);
+    context.set_web_process_count_limit(4);
+    context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
 }

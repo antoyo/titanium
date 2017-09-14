@@ -35,6 +35,8 @@ nmap sl password-load
 nmap sp password-save
 nmap ss password-insert-submit
 nmap su password-submit
+nmap v :private-win-open
+nmap V :private-win-open <url>
 nmap y copy-url
 nmap w :win-open
 nmap W :win-open <url>

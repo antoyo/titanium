@@ -94,6 +94,8 @@ pub enum AppCommand {
     PasteUrl,
     #[help(text="Print the current page")]
     Print,
+    #[help(text="Open an URL in a new private window")]
+    PrivateWinOpen(String),
     #[help(text="Quit the application")]
     Quit,
     #[help(text="Reload the current page")]

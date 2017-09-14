@@ -104,6 +104,7 @@ use download_list_view::Msg::{
     DownloadListError,
 };
 use errors::Result;
+use message_server::Privacy;
 use pass_manager::PasswordManager;
 use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
@@ -179,7 +180,7 @@ pub enum Msg {
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
-    CreateWindow(String),
+    CreateWindow(String, Privacy),
     DecideDownloadDestination(Download, String),
     DownloadDestination(DialogResult, Download, String),
     Exit(bool),
@@ -252,22 +253,33 @@ impl Widget for App {
         }
     }
 
+    fn private_text(&self) -> &'static str {
+        if self.webview.widget().is_ephemeral() {
+            "[PV] "
+        }
+        else {
+            ""
+        }
+    }
+
     /// Set the title of the window as the progress and the web page title.
     fn set_title(&mut self) {
+        let private = self.private_text();
         let progress = (self.webview.widget().get_estimated_load_progress() * 100.0) as i32;
         if progress == 100 {
             self.set_title_without_progress();
         }
         else {
             let title = self.get_title();
-            self.model.title = format!("[{}%] {}{}", progress, title, APP_NAME);
+            self.model.title = format!("[{}%]{} {}{}", progress, private, title, APP_NAME);
         }
     }
 
     /// Set the title of the window as the web page title or url.
     fn set_title_without_progress(&mut self) {
+        let private = self.private_text();
         let title = self.get_title();
-        self.model.title = format!("{}{}", title, APP_NAME);
+        self.model.title = format!("{}{}{}", private, title, APP_NAME);
     }
 
     /// Show the scroll percentage.
@@ -303,7 +315,7 @@ impl Widget for App {
             MessageRecv(message) => self.message_recv(message),
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
             // To be listened by the user.
-            CreateWindow(_) => (),
+            CreateWindow(_, _) => (),
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
@@ -512,6 +524,7 @@ impl App {
             PasswordSubmit => handle_error!(self.submit_login_form()),
             PasteUrl => self.paste_url(),
             Print => self.webview.emit(PagePrint),
+            PrivateWinOpen(ref url) => self.open_in_new_window(url, Privacy::Private),
             Quit => self.try_quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
@@ -538,7 +551,7 @@ impl App {
             UrlIncrement => self.url_increment(),
             UrlDecrement => self.url_decrement(),
             WinFollow => self.win_follow(),
-            WinOpen(ref url) => self.open_in_new_window(url),
+            WinOpen(ref url) => self.open_in_new_window(url, Privacy::Normal),
             WinPasteUrl => self.win_paste_url(),
             ZoomIn => self.zoom_in(),
             ZoomNormal => self.zoom_normal(),
@@ -563,7 +576,7 @@ impl App {
                         return;
                     }
                 }
-                self.open_in_new_window(&url);
+                self.open_in_new_window(&url, Privacy::Normal);
             }
         }
     }

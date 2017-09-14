@@ -25,6 +25,7 @@ use titanium_common::FollowMode;
 
 use app::App;
 use app::Msg::CreateWindow;
+use message_server::Privacy;
 use webview::Msg::PageOpen;
 use url::{Url, Position};
 use urls::offset;
@@ -37,15 +38,22 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    pub fn open_in_new_window(&mut self, url: &str) {
+    pub fn open_in_new_window(&mut self, url: &str, privacy: Privacy) {
+        let privacy =
+            if self.webview.widget().is_ephemeral() {
+                Privacy::Private
+            }
+            else {
+                privacy
+            };
         let url = self.transform_url(url);
-        self.model.relm.stream().emit(CreateWindow(url));
+        self.model.relm.stream().emit(CreateWindow(url, privacy));
     }
 
     /// Open in a new window the url from the system clipboard.
     pub fn win_paste_url(&mut self) {
         if let Some(url) = self.get_url_from_clipboard() {
-            self.open_in_new_window(&url);
+            self.open_in_new_window(&url, Privacy::Normal);
         }
     }
 

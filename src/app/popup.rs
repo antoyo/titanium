@@ -23,9 +23,10 @@
 
 use mg::{Warning, question};
 
-use urls::get_base_url;
+use message_server::Privacy;
 use app::App;
 use app::Msg::PopupDecision;
+use urls::get_base_url;
 
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
@@ -54,10 +55,10 @@ impl App {
     pub fn handle_answer(&mut self, answer: Option<&str>, url: &str) {
         match answer {
             Some("a") => {
-                self.open_in_new_window(url);
+                self.open_in_new_window(url, Privacy::Normal);
                 self.whitelist_popup(url);
             },
-            Some("y") => self.open_in_new_window(url),
+            Some("y") => self.open_in_new_window(url, Privacy::Normal),
             Some("e") => self.blacklist_popup(url),
             _ => (),
         }
@@ -85,7 +86,7 @@ impl App {
                 }
             }
             if open {
-                self.open_in_new_window(url);
+                self.open_in_new_window(url, Privacy::Normal);
             }
         }
         else {

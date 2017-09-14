@@ -31,8 +31,6 @@
  * TODO: webkit_web_view_get_main_resource() to get source code
  * TODO: Hint to navigate to elements with an ID.
  *
- * TODO: private browsing.
- *
  * FIXME: angular form needs the typing action to be done in order to submit: https://grafana.int.adgear.com/
  *
  * FIXME: seems slower when running as normal user (and faster as root), so perhaps the config slow
