@@ -26,6 +26,7 @@ use std::path::{Path, PathBuf};
 
 use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
+use relm::EventStream;
 use webkit2gtk::{
     Download,
     DownloadExt,
@@ -34,9 +35,11 @@ use webkit2gtk::{
 };
 
 use INVALID_UTF8_ERROR;
+use app;
 use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};
 use config_dir::ConfigDir;
 use download::download_dir;
+use download_list_view;
 use download_list_view::Msg::{
     Add,
     AddFileToOpen,
@@ -94,19 +97,7 @@ impl App {
             connect!(context, connect_download_started(_, download), self.download_list_view, {
                 if let Some(download_web_view) = download.get_web_view() {
                     if download_web_view == webview {
-                        let stream = stream.clone();
-                        let list_stream = list_stream.clone();
-                        download.connect_decide_destination(move |download, suggested_filename| {
-                            if let Ok(destination) = find_download_destination(suggested_filename) {
-                                download.set_destination(&format!("file://{}", destination));
-                                stream.emit(DecideDownloadDestination(download.clone(), suggested_filename.to_string()));
-                                list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
-                                true
-                            }
-                            else {
-                                false
-                            }
-                        });
+                        Self::handle_decide_destination(&stream, &list_stream, download);
                         Some(Add(download.clone()))
                     }
                     else {
@@ -151,6 +142,30 @@ impl App {
 
     pub fn download_link(&self, url: &str) {
         self.webview.widget().download_uri(url);
+    }
+
+    fn handle_decide_destination(stream: &EventStream<app::Msg>, list_stream: &EventStream<download_list_view::Msg>,
+        download: &Download)
+    {
+        let stream = stream.clone();
+        let list_stream = list_stream.clone();
+        download.connect_decide_destination(move |download, suggested_filename| {
+            // Some suggested file name are actually a path, so only take the last part of it.
+            let path = Path::new(suggested_filename);
+            let new_filename = path.file_name()
+                .and_then(|filename| filename.to_str())
+                .unwrap_or(suggested_filename);
+            trace!("Decide download destination, suggested filename: {}", suggested_filename);
+            if let Ok(destination) = find_download_destination(new_filename) {
+                download.set_destination(&format!("file://{}", destination));
+                stream.emit(DecideDownloadDestination(download.clone(), new_filename.to_string()));
+                list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                true
+            }
+            else {
+                false
+            }
+        });
     }
 
     pub fn overwrite_download(&self, download: Download, download_destination: String, overwrite: bool) {

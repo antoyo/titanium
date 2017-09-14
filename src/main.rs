@@ -20,7 +20,10 @@
  */
 
 /*
- * TODO: support marks.
+ * TODO: support marks (message Mark saves a mark in a HashMap<char, u8> in the web extension and GoToLastMark).
+ *
+ * TODO: webkit_web_view_get_main_resource() to get source code
+ * TODO: Hint to navigate to elements with an ID.
  *
  * TODO: private browsing.
  *
@@ -34,7 +37,6 @@
  * TODO: switch to relm-epoll, a crate that polls epoll from glib.
  *
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
- * FIXME: cannot download this link: https://link.springer.com/content/pdf/10.1007%2F978-3-540-78800-3_24.pdf
  *
  * TODO: might not require the syntax with (relm) if we emit the signal normally.
  *
