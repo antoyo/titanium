@@ -95,9 +95,9 @@ impl App {
         self.server_send(ScrollBy(pixels as i64));
     }
 
-    /// Scroll to the bottom of the page.
-    pub fn scroll_bottom(&mut self) {
-        self.server_send(ScrollBottom());
+    /// Scroll to the specified percent of the page.
+    pub fn scroll_to(&mut self, percent: Option<u32>) {
+        self.server_send(ScrollToPercent(percent.unwrap_or(100)));
     }
 
     /// Scroll down by one line.

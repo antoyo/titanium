@@ -50,7 +50,8 @@ impl App {
     }
 
     /// Go up one directory in url.
-    pub fn go_parent_directory(&self, parent_level: u32) {
+    pub fn go_parent_directory(&self, parent_level: Option<u32>) {
+        let parent_level = parent_level.unwrap_or(1);
         if let Some(ref url) = self.webview.widget().get_uri() {
             if let Ok(mut url) = Url::parse(url) {
                 match url.path_segments_mut() {

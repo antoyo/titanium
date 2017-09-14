@@ -65,13 +65,6 @@ impl Executor {
         element.set_scroll_left(element.get_scroll_left() + pixels);
     }
 
-    /// Scroll to the bottom of the web page.
-    pub fn scroll_bottom(&mut self) {
-        self.init_scroll_element_if_needed();
-        let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
-        element.set_scroll_top(element.get_scroll_height());
-    }
-
     /// Get the current vertical scroll position of the web page as a percentage.
     pub fn scroll_percentage(&mut self) -> Percentage {
         let default = All;
@@ -83,7 +76,7 @@ impl Executor {
             default
         }
         else {
-            Percent((element.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0) as i64)
+            Percent((element.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0).round() as i64)
         }
     }
 
@@ -92,6 +85,17 @@ impl Executor {
         self.init_scroll_element_if_needed();
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_top(0);
+    }
+
+    /// Scroll to the specified percent of the web page.
+    pub fn scroll_to_percent(&mut self, percent: u32) {
+        self.init_scroll_element_if_needed();
+        let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
+        let document = wtry_opt_no_ret!(get_document(&self.model.page));
+        let height = document.get_client_height() as i64;
+        let scroll_height = document.get_scroll_height();
+        let scroll_height = (percent as i64) * (scroll_height - height) / 100;
+        element.set_scroll_top(scroll_height);
     }
 }
 

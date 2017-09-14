@@ -15,7 +15,7 @@ nmap gu go-parent-dir
 nmap gU go-root-dir
 nmap g- url-decrement
 nmap g+ url-increment
-nmap G scroll-bottom
+nmap G scroll-to
 nmap h scroll-left
 nmap i insert
 nmap j scroll-down-line

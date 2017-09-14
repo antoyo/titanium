@@ -59,7 +59,7 @@ pub enum AppCommand {
     Forward,
     #[count]
     #[help(text="Go up one directory in url")]
-    GoParentDir(u32),
+    GoParentDir(Option<u32>),
     #[help(text="Go to root directory of url")]
     GoRootDir,
     #[completion(hidden)]
@@ -102,8 +102,9 @@ pub enum AppCommand {
     SearchEngine(String),
     #[completion(hidden)]
     Screenshot(String),
+    #[count]
     #[completion(hidden)]
-    ScrollBottom,
+    ScrollTo(Option<u32>),
     #[completion(hidden)]
     ScrollDown,
     #[completion(hidden)]

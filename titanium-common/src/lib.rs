@@ -116,8 +116,6 @@ pub enum InnerMessage {
     Open(Vec<String>),
     /// Set the scrolling element.
     ResetScrollElement(),
-    /// Scroll to the bottom of the web page
-    ScrollBottom(),
     /// Scroll vertically by the specified amount of pixels.
     ScrollBy(i64),
     /// Scroll horizontally by the specified amount of pixels.
@@ -126,6 +124,8 @@ pub enum InnerMessage {
     ScrollPercentage(Percentage),
     /// Scroll to the top of the web page.
     ScrollTop(),
+    /// Scroll to the speficied percentage of the web page
+    ScrollToPercent(u32),
     /// Set the selected file on a file input.
     SelectFile(String),
     /// Show the hints over the elements.
