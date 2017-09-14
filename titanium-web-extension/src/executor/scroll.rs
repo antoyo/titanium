@@ -30,6 +30,7 @@ use webkit2gtk_webextension::{
     WebPage,
 };
 
+use titanium_common::LAST_MARK;
 use titanium_common::Percentage::{self, All, Percent};
 
 use dom::{ElementIter, get_body, get_document};
@@ -83,6 +84,7 @@ impl Executor {
     /// Scroll to the top of the web page.
     pub fn scroll_top(&mut self) {
         self.init_scroll_element_if_needed();
+        self.add_mark(LAST_MARK);
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         element.set_scroll_top(0);
     }
@@ -90,6 +92,7 @@ impl Executor {
     /// Scroll to the specified percent of the web page.
     pub fn scroll_to_percent(&mut self, percent: u32) {
         self.init_scroll_element_if_needed();
+        self.add_mark(LAST_MARK);
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         let document = wtry_opt_no_ret!(get_document(&self.model.page));
         let height = document.get_client_height() as i64;

@@ -20,14 +20,18 @@
  */
 
 /*
- * TODO: support marks (message Mark saves a mark in a HashMap<char, u8> in the web extension and GoToLastMark).
+ * TODO: ResetMarks.
+ *
+ * TODO: hide hovered link when the text entry is shown? (Or show the hovered URL instead of the
+ * current URL?)
+ * TODO: bigger text entry than URL label.
+ *
+ * FIXME: should not silently fail when an included file is missing.
  *
  * TODO: webkit_web_view_get_main_resource() to get source code
  * TODO: Hint to navigate to elements with an ID.
  *
  * TODO: private browsing.
- *
- * TODO: hide hovered link when the text entry is shown?
  *
  * FIXME: angular form needs the typing action to be done in order to submit: https://grafana.int.adgear.com/
  *

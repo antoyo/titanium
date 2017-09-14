@@ -33,6 +33,9 @@
 #[macro_use]
 extern crate serde_derive;
 
+/// The mark that goes to the last position after a jump.
+pub const LAST_MARK: u8 = b'\'';
+
 // TODO: put in the home directory.
 /// The path to the unix domain socket.
 pub const PATH: &[u8] = b"titanium-server";
@@ -101,19 +104,25 @@ pub enum InnerMessage {
     FocusInput(),
     /// Ask for the credentials from the login form.
     GetCredentials(),
+    /// Go to the specified mark.
+    GoToMark(u8),
+    /// Hide the hints.
+    HideHints(),
     /// Send the page ID to the application to connect the web extension with the right window.
     /// Answer to GetId.
     Id(ExtensionId, PageId),
     /// Insert some text in the currently focused text field.
     InsertText(String),
-    /// Hide the hints.
-    HideHints(),
     /// Write the username and password in the login form.
     LoadUsernamePass(String, String),
+    /// Add a new mark at the current position.
+    Mark(u8),
     /// Open the given URL.
     /// This is used when starting a new titanium process to tell the existing process to open a
     /// new window.
     Open(Vec<String>),
+    /// Reset the marks.
+    ResetMarks(),
     /// Set the scrolling element.
     ResetScrollElement(),
     /// Scroll vertically by the specified amount of pixels.

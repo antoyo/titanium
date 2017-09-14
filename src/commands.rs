@@ -57,6 +57,8 @@ pub enum AppCommand {
     Follow,
     #[help(text="Go forward in the history")]
     Forward,
+    #[completion(hidden)]
+    GoMark(String),
     #[count]
     #[help(text="Go up one directory in url")]
     GoParentDir(Option<u32>),
@@ -70,6 +72,8 @@ pub enum AppCommand {
     Insert,
     #[help(text="Open the web inspector")]
     Inspector,
+    #[completion(hidden)]
+    Mark(String),
     #[completion(hidden)]
     Normal,
     #[help(text="Open an URL")]

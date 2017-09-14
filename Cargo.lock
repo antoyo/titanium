@@ -14,8 +14,8 @@ dependencies = [
  "libxdo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log-panics 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mg-settings-macros 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "number_prefix 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -76,7 +76,7 @@ name = "backtrace-sys"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gcc 0.3.53 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.30 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "gcc"
-version = "0.3.53"
+version = "0.3.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -570,7 +570,7 @@ dependencies = [
 
 [[package]]
 name = "mg"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "futures 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -579,7 +579,7 @@ dependencies = [
  "glib 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "mg-settings 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mg-settings 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-attributes 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "mg-settings"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "mg-settings-macros 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1144,7 +1144,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum fg-uds 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "def944d97e93d45fca59e336cd74b1521003f5d92dd0eeb534c4a99ddd4516b3"
 "checksum futures 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "a82bdc62350ca9d7974c760e9665102fc9d740992a528c2254aa930e53b783c4"
 "checksum futures-glib 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "88cb28266971196bf62d1144737efeb88ecc4e30bf005bbe00835915bfbddc41"
-"checksum gcc 0.3.53 (registry+https://github.com/rust-lang/crates.io-index)" = "e8310f7e9c890398b0e80e301c4f474e9918d2b27fca8f48486ca775fa9ffc5a"
+"checksum gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)" = "5e33ec290da0d127825013597dbdfc28bee4964690c7ce1166cbc2a7bd08b1bb"
 "checksum gdk 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f30018ecbbb1e6f1d59c4024ec08675850744b799abc5420be0629ac9ba0abd2"
 "checksum gdk-pixbuf 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "caf05dab73febcc6e90abaff8f24cfe1cf1bd2222cd648ddfe337bf3b994489f"
 "checksum gdk-pixbuf-sys 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "85eb441420653b33e5a29d13227ea34995383e65bf4f33b16492ec95e44a8996"
@@ -1178,8 +1178,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum matches 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "100aabe6b8ff4e4a7e32c1c13523379802df0772b82466207ac25b013f193376"
 "checksum memchr 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1dbccc0e46f1ea47b9f17e6d67c5a96bd27030519c519c9c91327e31275a47b4"
 "checksum metadeps 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "73b122901b3a675fac8cecf68dcb2f0d3036193bc861d1ac0e1c337f7d5254c2"
-"checksum mg 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e7f2967aeb755f25bb4f31675c363878a9acdf07b74131960a68f225de3e0233"
-"checksum mg-settings 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cbd7a61a20ab5f98fc45dd874150f5b49464a08f089de9b4c9ebbf51a4f88520"
+"checksum mg 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "723e1f6f000ad8d0d2a95459e3fe8638d7d67f50ebedf2dfc8456e0043849f04"
+"checksum mg-settings 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "af9344a36991cb2719c3ddf960f5e73d2f82cf2d6e65ef886466730bb94daa6c"
 "checksum mg-settings-macros 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5ded15f573fa5ca83fd7b550420f25f8baf9f77ba68e1076d52671b9c10fb378"
 "checksum net2 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "3a80f842784ef6c9a958b68b7516bc7e35883c614004dd94959a4dca1b716c09"
 "checksum nix 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a2c5afeb0198ec7be8569d666644b574345aad2e95a53baf3a532da3e0f3fb32"

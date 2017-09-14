@@ -90,7 +90,7 @@ use webkit2gtk::{
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
 
-use titanium_common::{FollowMode, InnerMessage, PageId};
+use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
 use titanium_common::Percentage::{self, All, Percent};
 
 use bookmarks::BookmarkManager;
@@ -384,6 +384,12 @@ impl Widget for App {
 }
 
 impl App {
+    fn add_mark(&mut self, mark: &str) {
+        let mark = mark_from_str(mark);
+        self.server_send(InnerMessage::Mark(mark));
+        self.mg.emit(Info(format!("Added mark {}", mark as char)));
+    }
+
     fn adjust_in_follow_mode(&mut self, mode: &str) {
         self.model.in_follow_mode.set(mode == "follow");
     }
@@ -459,6 +465,11 @@ impl App {
         self.set_mode("normal");
     }
 
+    fn go_to_mark(&mut self, mark: &str) {
+        let mark = mark_from_str(mark);
+        self.server_send(InnerMessage::GoToMark(mark));
+    }
+
     /// Handle the command.
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
@@ -483,12 +494,14 @@ impl App {
             FocusInput => self.focus_input(),
             Follow => self.follow(),
             Forward => self.history_forward(),
+            GoMark(ref mark) => self.go_to_mark(mark),
             GoParentDir(parent_level) => self.go_parent_directory(parent_level),
             GoRootDir => self.go_root_directory(),
             HideHints => self.hide_hints(),
             Hover => self.hover(),
             Insert => self.go_in_insert_mode(),
             Inspector => self.webview.emit(ShowInspector),
+            Mark(ref mark) => self.add_mark(mark),
             Normal => self.go_in_normal_mode(),
             Open(ref url) => self.open(url),
             PasswordDelete => handle_error!(self.delete_password()),
@@ -711,4 +724,11 @@ impl App {
     fn zoom_out(&self) {
         self.webview.emit(PageZoomOut);
     }
+}
+
+fn mark_from_str(mark: &str) -> u8 {
+    mark.as_bytes().get(0)
+            .cloned()
+            .unwrap_or(LAST_MARK)
+
 }

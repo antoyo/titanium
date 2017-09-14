@@ -31,6 +31,7 @@ macro_rules! get_document {
     }};
 }
 
+mod marks;
 mod scroll;
 
 use std::collections::HashMap;
@@ -94,6 +95,7 @@ pub struct Model {
     hint_keys: String,
     hint_map: HashMap<String, DOMElement>,
     last_hovered_element: Option<DOMElement>,
+    marks: HashMap<u8, u32>, // Byte to percent.
     page: WebPage,
     relm: Relm<Executor>,
     scroll_element: Option<DOMElement>,
@@ -118,6 +120,7 @@ impl Update for Executor {
             hint_keys: String::new(),
             hint_map: HashMap::new(),
             last_hovered_element: None,
+            marks: HashMap::new(),
             page,
             relm: relm.clone(),
             scroll_element: None,
@@ -156,9 +159,12 @@ impl Update for Executor {
                     EnterHintKey(key) => self.enter_hint_key(key),
                     FocusInput() => self.focus_input(),
                     GetCredentials() => self.send_credentials(),
+                    GoToMark(mark) => self.go_to_mark(mark),
                     HideHints() => self.hide_hints(),
                     InsertText(text) => self.insert_text(&text),
                     LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
+                    Mark(char) => self.add_mark(char),
+                    ResetMarks() => self.reset_marks(),
                     ResetScrollElement() => self.init_scroll_element(),
                     ScrollBy(pixels) => self.scroll_by(pixels),
                     ScrollByX(pixels) => self.scroll_by_x(pixels),

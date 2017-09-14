@@ -1,5 +1,6 @@
 include keys
 include webkit
+include marks
 
 set home-page = https://duckduckgo.com/
 
