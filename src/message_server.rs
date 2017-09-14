@@ -44,7 +44,7 @@ use tokio_io::io::WriteHalf;
 use tokio_serde_bincode::{ReadBincode, WriteBincode};
 use webkit2gtk::WebContext;
 
-use titanium_common::{ExtensionId, InnerMessage, Message, PageId, PATH};
+use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
 use titanium_common::InnerMessage::{Id, Open};
 
 use app::{self, App};
@@ -200,7 +200,7 @@ impl MessageServer {
         // TODO: should be removed on Drop instead (or the connection close should remove it
         // automatically?).
         let listener =
-            match UnixListener::bind_abstract(PATH, &cx) {
+            match UnixListener::bind_abstract(SOCKET_NAME, &cx) {
                 Err(nix::Error::Sys(nix::Errno::EADDRINUSE)) => {
                     // A titanium process is already running, so we send the URL to this process so
                     // that it can open a new window.
@@ -357,7 +357,7 @@ fn dialog_and_exit(message: &str) -> ! {
 
 fn send_url_to_existing_process(url: &[String]) -> Result<()> {
     let cx = MainContext::default(|cx| cx.clone());
-    let stream = UnixStream::connect_abstract(PATH, &cx)?;
+    let stream = UnixStream::connect_abstract(SOCKET_NAME, &cx)?;
 
     let cx = MainContext::default(|cx| cx.clone());
     let ex = Executor::new();

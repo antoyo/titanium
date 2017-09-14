@@ -56,7 +56,7 @@ nmap ]] click-next-page
 fmap <Esc> hide-hints
 imap <Esc> normal
 
-cmap <C-r> delete-selected-bookmark
+cmap <C-D> delete-selected-bookmark
 cmap <C-n> complete-next
 cmap <C-p> complete-previous
 

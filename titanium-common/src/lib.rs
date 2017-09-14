@@ -36,9 +36,12 @@ extern crate serde_derive;
 /// The mark that goes to the last position after a jump.
 pub const LAST_MARK: u8 = b'\'';
 
-// TODO: put in the home directory.
-/// The path to the unix domain socket.
-pub const PATH: &[u8] = b"titanium-server";
+/// The abstract name to the unix domain socket.
+#[cfg(not(debug_assertions))]
+pub const SOCKET_NAME: &[u8] = b"titanium-server";
+/// A different name is used in debug mode for easier debugging.
+#[cfg(debug_assertions)]
+pub const SOCKET_NAME: &[u8] = b"titanium-server-debug";
 
 #[doc(hidden)]
 pub type ExtensionId = u64;

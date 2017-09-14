@@ -38,7 +38,7 @@ use webkit2gtk_webextension::{
     WebPageExt,
 };
 
-use titanium_common::{ExtensionId, Message, PageId, PATH};
+use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 
@@ -154,7 +154,7 @@ impl UpdateNew for MessageClient {
 impl MessageClient {
     pub fn new() -> nix::Result<EventStream<<Self as Update>::Msg>> {
         let cx = MainContext::default(|cx| cx.clone());
-        let stream = UnixStream::connect_abstract(PATH, &cx)?;
+        let stream = UnixStream::connect_abstract(SOCKET_NAME, &cx)?;
         Ok(execute::<MessageClient>(stream))
     }
 
