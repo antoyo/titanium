@@ -59,7 +59,9 @@ impl App {
             Some("open") | Some("win-open") =>
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
-                    self.model.bookmark_manager.delete(url);
+                    if let Err(err) = self.model.bookmark_manager.delete(url) {
+                        self.error(&err.to_string());
+                    }
                     self.mg.emit(DeleteCompletionItem);
                 },
             _ => (),
