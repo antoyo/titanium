@@ -20,6 +20,65 @@
  */
 
 /*
+ * TODO: save mark when focusing the first input.
+ *
+ * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
+ * error (test with https://www.pcwebshop.co.uk/)
+ *
+ * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc: http://www.scala-lang.org/api/current/).
+ *
+ * FIXME: sometimes, the page load percentage stays shown after the load is finished.
+ *
+ * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
+ *
+ * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
+ *
+ * FIXME: hitting the 's' key on https://developer.github.com/ scroll to the search bar.
+ *
+ * TODO: show an error when there are no hints.
+ *
+ * TODO: handle network errors.
+ * TODO: show an error for request blocked by host blocker (instead of a white page).
+ *
+ * TODO: ask confirmation before submitting again the same form.
+ *
+ * TODO: do not consider right-click open in new window as a popup.
+ *
+ * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
+ * time, or perhaps just using a blocking input for popups will do it).
+ * TODO: in command and input mode, put the messages into a queue.
+ *
+ * TODO: command to update adblocker hosts file.
+ * TODO: option to disable the adblocker.
+ *
+ * TODO: remove the title bar of the inspector (window decorated property).
+ *
+ * TODO: do not search for the empty string, only disable the current search to allow continuing
+ * the search on another page.
+ *
+ * TODO: unselect text when focusing a field.
+ * TODO: support CTRL-Z in input elements.
+ *
+ * FIXME: ctrl-/ should not trigger the mapping for /.
+ *
+ * TODO: allow using Backspace to remove the last hint character.
+ *
+ * TODO: hide HTML in title/bookmarks?
+ *
+ * TODO: message when search fails (and when it wraps to the start/end).
+ *
+ * TODO: show source.
+ *
+ * FIXME: scrolling hides the info message.
+ * FIXME: scrolling goes too far when zoomed in.
+ * FIXME: negative zoom level.
+ *
+ * TODO: modal dialog for authentication.
+ *
+ * TODO: add a command to delete history, …
+ *
+ * TODO: command to restore the last closed window.
+ *
  * TODO: rename the quit command to close.
  * TODO: add a close-all command?
  *
@@ -67,15 +126,8 @@
  * order.
  *
  * TODO: save the current URLs of every window in case of a crash.
- * TODO: command to restore the last closed window.
  *
  * TODO: add command (;f) to change the active element.
- *
- * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
- * error (test with https://www.pcwebshop.co.uk/)
- *
- * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc: http://www.scala-lang.org/api/current/).
- * FIXME: sometimes, the page load percentage stays shown after the load is finished.
  *
  * TODO: remove unwrap() and expect() in dependencies (relm, mg).
  * TODO: remove every unwrap().
@@ -85,13 +137,11 @@
  *
  * TODO: attempt to migrate to gecko.
  *
- * FIXME: file download should not navigate to a new page (see duckduckgo.com, because it uses a
- * redirection, this was working fine before).
- *
- * FIXME Error on exit: Io(Error { repr: Custom(Custom { kind: Other, error: Error { domain: 1537, code: 8, message: "Connexion ré-initialisée par le correspondant" } }) })
+ * FIXME: Error on exit: Io(Error { repr: Custom(Custom { kind: Other, error: Error { domain: 1537, code: 8, message: "Connexion ré-initialisée par le correspondant" } }) })
+ * FIXME: Error on exit: Error sending IPC message: Relais brisé (pipe)
  *
  * TODO: method called by message should not take ownership of values.
- * TODO: add documentation for every method.
+ * TODO: add documentation for non-obvious code.
  * TODO: refactor to remove every use of callbacks in relm widgets.
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
@@ -103,17 +153,10 @@
  *
  * TODO: cli argument for the abstract namespace of the unix domain socket.
  * TODO: cli argument for minimal log level.
- * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
- * FIXME: negative zoom level.
- * FIXME: scrolling hides the info message.
- * FIXME: scrolling goes too far when zoomed in.
- * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
- * TODO: modal dialog for authentication.
  *
  * TODO: add a --redirect option or redirect command to bypass the adblocker.
  * TODO: add a command to do the redirections to avoid being blocked by the ad blocker.
  *
- * TODO: show an error for request blocked by host blocker (instead of a white page).
  * TODO: block cookie banner.
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
  *
@@ -121,7 +164,6 @@
  * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
  * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
- * FIXME: hitting the 's' key on https://developer.github.com/ scroll to the search bar.
  * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
  * TODO: auto-detect static bars at the bottom/top of webpages to scroll less when one is present.
  *
@@ -139,14 +181,10 @@
  * TODO: check if an extension process crashing causes issues in other extension process.
  * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
- * TODO: show an error when there are no hints.
  * FIXME: show hints for element with click event.
  *
  * TODO: #[default(value)] attribute for settings.
  *
- * FIXME: ctrl-/ should not trigger the mapping for /.
- * TODO: allow using Backspace to remove the last hint character.
- * TODO: hide HTML in title/bookmarks?
  * FIXME: the window sometimes does not hide when quitting: it hides when a new window is shown.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
@@ -154,30 +192,19 @@
  * TODO: generate the default files from the code (for instance, from default settings) instead of
  * copying predefined files.
  * TODO: shortcut to open the selected (searched) word.
- * TODO: support CTRL-Z in input elements.
  * TODO: allow paste from selection clipboard (if the other is empty or with another shortcut?).
- * TODO: message when search fails (and when it wraps to the start/end).
  * TODO: hide the scrollbars?
  * FIXME: select dropdown can open in the other screen (webkit2gtk bug, move the cursor before clicking?).
- * TODO: unselect text when focusing a field.
  * TODO: add a passthrough mode.
  * TODO: add help text for commands and settings.
- * TODO: handle network errors.
  * TODO: show a star next to the url of a bookmarked site.
- * TODO: find a way to recover accidently removed bookmarks (shortcut to read bookmarks from a
- * stack of removed bookmarks? another shortcut which is harder to do C-S-d?).
  * TODO: warn when adding a bookmarks that has the same URL as another one, except with(out) a /.
- * TODO: preferred languages.
  * TODO: store cache.
- * TODO: add a command to delete history, …
  * TODO: NoScript.
  * TODO: open textarea in text editor.
  * TODO: add option to use light theme variant instead of dark variant.
  * TODO: soft scrolling (to avoid flickering for fixed elements, set_enable_smooth_scrolling).
- * TODO: do not search for the empty string, only disable the current search to allow continuing
- * the search on another page.
  * FIXME: do not show (or move) hints hidden by another element (branch button on GitHub).
- * TODO: show source.
  * TODO: prevent videos from autoplaying.
  * TODO: copier plugin (word, line, sentense, block, links…).
  * TODO: separate config options in section (like webkit.enable-java instead of webkit-enable-java).
@@ -186,18 +213,12 @@
  * TODO: plugin to prevent a menu bar in a website to appear from scrolling up (ou keep fixed elements at the top)
  * (example: https://www.fastcoexist.com/3027876/millennials-dont-care-about-owning-cars-and-car-makers-cant-figure-out-why).
  * FIXME: popup not blocked on bnc.ca.
- * TODO: do not consider right-click open in new window as a popup.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
  *
  * TODO: Rust-based plugin architecture (based on webkit web extensions).
- * TODO: command to update adblocker hosts file.
- * TODO: option to disable the adblocker.
  * TODO: block ads coming from websocket.
  * TODO: create a whitelist-based adblocker.
- * TODO: remove the title bar of the inspector (window decorated property).
  * TODO: hide the hints when activating a hint.
- * TODO: in command and input mode, put the messages into a queue.
- * TODO: ask confirmation before submitting again the same form.
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element (disable insert mode when focus is lost).
@@ -205,8 +226,6 @@
  * directory), check that the input file exists.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
  * starting a download when the page is still loading).
- * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
- * time, or perhaps just using a blocking input for popups will do it).
  *
  * TODO: add tests.
  */

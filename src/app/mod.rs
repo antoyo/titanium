@@ -46,7 +46,7 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gdk::{EventKey, Rectangle};
+use gdk::{EventKey, Rectangle, RGBA};
 use gtk::{
     self,
     Inhibit,
@@ -57,6 +57,7 @@ use gtk::Orientation::Vertical;
 use mg::{
     AppClose,
     CloseWin,
+    Color,
     Completers,
     CompletionViewChange,
     CustomCommand,
@@ -165,6 +166,7 @@ pub struct Model {
     mode: String,
     open_in_new_window: bool,
     password_manager: PasswordManager,
+    overridden_color: Option<RGBA>,
     popup_manager: Option<PopupManager>,
     relm: Relm<App>,
     scroll_text: String,
@@ -199,6 +201,7 @@ pub enum Msg {
     ShowZoom(i32),
     TagEdit(Option<String>),
     TitleChanged,
+    TlsError,
     TryClose,
     UriChanged,
     WebProcessCrashed,
@@ -244,6 +247,7 @@ impl Widget for App {
             mode: "normal".to_string(),
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
+            overridden_color: None,
             popup_manager,
             relm: relm.clone(),
             scroll_text: INIT_SCROLL_TEXT.to_string(),
@@ -293,6 +297,11 @@ impl Widget for App {
             };
     }
 
+    fn tls_error(&mut self) {
+        self.model.overridden_color = Some(RGBA::red());
+        // TODO: reset to None when loading a new URI.
+    }
+
     fn update(&mut self, event: Msg) {
         match event {
             AppSetMode(mode) => {
@@ -329,6 +338,7 @@ impl Widget for App {
             ShowZoom(level) => self.show_zoom(level),
             TagEdit(tags) => self.set_tags(tags),
             TitleChanged => self.set_title(),
+            TlsError => self.tls_error(),
             TryClose => self.try_quit(),
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
@@ -372,8 +382,9 @@ impl Widget for App {
                     ZoomChange(level) => ShowZoom(level),
                     create(_, action) => (Create(action.clone()), None),
                     load_changed(_, load_event) => LoadChanged(load_event),
+                    load_failed_with_tls_errors(_, _, _, _) => (TlsError, false),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
-                    title_changed() => TitleChanged,
+                    property_title_notify(_) => TitleChanged,
                     uri_changed() => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
                 },
@@ -383,6 +394,7 @@ impl Widget for App {
                 Text: self.model.scroll_text.clone(),
             },
             StatusBarItem {
+                Color: self.model.overridden_color.clone(),
                 Text: self.model.current_url.clone(),
             },
             AppClose => TryClose,
