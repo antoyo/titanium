@@ -514,6 +514,7 @@ impl App {
             Hover => self.hover(),
             Insert => self.go_in_insert_mode(),
             Inspector => self.webview.emit(ShowInspector),
+            KillWin => self.close_webview(),
             Mark(ref mark) => self.add_mark(mark),
             Normal => self.go_in_normal_mode(),
             Open(ref url) => self.open(url),

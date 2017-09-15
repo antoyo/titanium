@@ -20,6 +20,9 @@
  */
 
 /*
+ * TODO: rename the quit command to close.
+ * TODO: add a close-all command?
+ *
  * TODO: automatically add new settings in the config files (kind of insertion sort, splitted by
  * the command?).
  *
@@ -47,8 +50,6 @@
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
  *
  * TODO: might not require the syntax with (relm) if we emit the signal normally.
- *
- * TODO: add a kill command to close a webview without try_close().
  *
  * TODO: remove dependencies like tokio.
  *

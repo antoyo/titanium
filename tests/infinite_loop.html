@@ -1,0 +1,17 @@
+<html>
+    <body>
+        <button id="block">Block</button>
+
+        <script>
+let button = document.querySelector("#block");
+button.addEventListener("click", function() {
+    while(true) {
+    }
+}, false);
+
+window.onbeforeunload = function(){
+    return 'Are you sure you want to leave?';
+};
+        </script>
+    </body>
+</html>

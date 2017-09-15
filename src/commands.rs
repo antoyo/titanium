@@ -72,6 +72,8 @@ pub enum AppCommand {
     Insert,
     #[help(text="Open the web inspector")]
     Inspector,
+    #[help(text="Kill the webview without confirmation")]
+    KillWin,
     #[completion(hidden)]
     Mark(String),
     #[completion(hidden)]
