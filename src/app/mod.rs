@@ -451,8 +451,16 @@ impl App {
 
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
-        let title = self.webview.widget().get_title()
-            .or_else(|| self.webview.widget().get_uri())
+        let webview = self.webview.widget();
+        let title = webview.get_title()
+            .and_then(|title|
+                if title.is_empty() {
+                    None
+                }
+                else {
+                    Some(title)
+                })
+            .or_else(|| webview.get_uri())
             .unwrap_or_default();
         if title.is_empty() {
             String::new()

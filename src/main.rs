@@ -201,7 +201,6 @@
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element (disable insert mode when focus is lost).
- * TODO: show URL in title when the title is not available.
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try
