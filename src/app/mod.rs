@@ -86,7 +86,6 @@ use webkit2gtk::{
     URIRequestExt,
     WebContext,
     WebViewExt,
-    WebViewExtManual,
 };
 use webkit2gtk::LoadEvent::{self, Finished, Started};
 use webkit2gtk::NavigationType::Other;
@@ -146,6 +145,8 @@ use webview::Msg::{
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const INIT_SCROLL_TEXT: &str = "[top]";
+const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
+const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
 
 static MODES: Modes = &[
     ("f", "follow"),
@@ -188,6 +189,7 @@ pub enum Msg {
     Exit(bool),
     FileDialogSelection(Option<String>),
     HasActiveDownloads(bool),
+    InsecureContent,
     KeyPress(EventKey),
     LoadChanged(LoadEvent),
     MessageRecv(InnerMessage),
@@ -201,7 +203,6 @@ pub enum Msg {
     ShowZoom(i32),
     TagEdit(Option<String>),
     TitleChanged,
-    TlsError,
     TryClose,
     UriChanged,
     WebProcessCrashed,
@@ -210,6 +211,40 @@ pub enum Msg {
 
 #[widget]
 impl Widget for App {
+    /// Handle the load_changed event.
+    /// Show the URL.
+    /// Set the window title.
+    /// Go back to normal mode.
+    fn handle_load_changed(&mut self, load_event: LoadEvent) {
+        if load_event == Started {
+            self.model.overridden_color = None;
+            self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
+            self.webview.emit(EndSearch);
+            self.webview.emit(AddStylesheets);
+            self.webview.emit(AddScripts);
+
+            // Check to mode to avoid going back to normal mode if the user is in command mode.
+            if self.model.mode == "insert" || self.model.mode == "follow" {
+                self.go_in_normal_mode();
+            }
+        }
+        else {
+            if let Some((_, cert_flags)) = self.webview.widget().get_tls_info() {
+                // If there's a certificate error, show the URL in red.
+                if !cert_flags.is_empty() {
+                    self.model.overridden_color = Some(RED);
+                }
+            }
+        }
+
+        if load_event == Finished {
+            self.set_title_without_progress();
+        }
+        else {
+            self.set_title();
+        }
+    }
+
     fn init_view(&mut self) {
         handle_error!(self.model.bookmark_manager.create_tables());
 
@@ -228,6 +263,13 @@ impl Widget for App {
         self.connect_dialog_events();
         self.connect_download_events();
         self.create_variables();
+    }
+
+    fn insecure_content_detected(&mut self) {
+        // Only show the URL in yellow if there's not already a certificate error.
+        if self.model.overridden_color.is_none() {
+            self.model.overridden_color = Some(YELLOW);
+        }
     }
 
     fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
@@ -254,15 +296,6 @@ impl Widget for App {
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
             web_context,
-        }
-    }
-
-    fn private_text(&self) -> &'static str {
-        if self.webview.widget().is_ephemeral() {
-            "[PV] "
-        }
-        else {
-            ""
         }
     }
 
@@ -297,11 +330,6 @@ impl Widget for App {
             };
     }
 
-    fn tls_error(&mut self) {
-        self.model.overridden_color = Some(RGBA::red());
-        // TODO: reset to None when loading a new URI.
-    }
-
     fn update(&mut self, event: Msg) {
         match event {
             AppSetMode(mode) => {
@@ -319,6 +347,7 @@ impl Widget for App {
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
+            InsecureContent => self.insecure_content_detected(),
             KeyPress(event_key) => self.handle_key_press(event_key),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
             MessageRecv(message) => self.message_recv(message),
@@ -338,7 +367,6 @@ impl Widget for App {
             ShowZoom(level) => self.show_zoom(level),
             TagEdit(tags) => self.set_tags(tags),
             TitleChanged => self.set_title(),
-            TlsError => self.tls_error(),
             TryClose => self.try_quit(),
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
@@ -381,11 +409,11 @@ impl Widget for App {
                     WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
                     create(_, action) => (Create(action.clone()), None),
+                    insecure_content_detected(_, _) => InsecureContent,
                     load_changed(_, load_event) => LoadChanged(load_event),
-                    load_failed_with_tls_errors(_, _, _, _) => (TlsError, false),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
                     property_title_notify(_) => TitleChanged,
-                    uri_changed() => UriChanged,
+                    property_uri_notify(_) => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
                 },
             },
@@ -617,31 +645,6 @@ impl App {
         }
     }
 
-    /// Handle the load_changed event.
-    /// Show the URL.
-    /// Set the window title.
-    /// Go back to normal mode.
-    fn handle_load_changed(&mut self, load_event: LoadEvent) {
-        if load_event == Started {
-            self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
-            self.webview.emit(EndSearch);
-            self.webview.emit(AddStylesheets);
-            self.webview.emit(AddScripts);
-
-            // Check to mode to avoid going back to normal mode if the user is in command mode.
-            if self.model.mode == "insert" || self.model.mode == "follow" {
-                self.go_in_normal_mode();
-            }
-        }
-
-        if load_event == Finished {
-            self.set_title_without_progress();
-        }
-        else {
-            self.set_title();
-        }
-    }
-
     fn history_back(&mut self) {
         self.webview.widget().go_back();
         self.server_send(InnerMessage::ResetScrollElement());
@@ -688,21 +691,12 @@ impl App {
         }
     }
 
-    fn set_mode(&mut self, mode: &'static str) {
-        self.adjust_in_follow_mode(mode);
-        self.mg.emit(SetMode(mode));
-    }
-
-    /// Try to close the web view and quit the application.
-    fn try_quit(&self) {
-        // Ask for a confirmation before quitting the application when there are active
-        // downloads.
-        if self.model.has_active_downloads {
-            let msg = "There are active downloads. Do you want to quit?".to_string();
-            yes_no_question(&self.mg, &self.model.relm, msg, Exit)
+    fn private_text(&self) -> &'static str {
+        if self.webview.widget().is_ephemeral() {
+            "[PV] "
         }
         else {
-            self.quit(true);
+            ""
         }
     }
 
@@ -712,6 +706,11 @@ impl App {
         if can_quit {
             self.webview.widget().try_close();
         }
+    }
+
+    fn set_mode(&mut self, mode: &'static str) {
+        self.adjust_in_follow_mode(mode);
+        self.mg.emit(SetMode(mode));
     }
 
     fn setting_changed(&mut self, setting: AppSettingsVariant) {
@@ -730,6 +729,19 @@ impl App {
     /// Show the zoom level in the status bar.
     fn show_zoom(&self, level: i32) {
         self.info(format!("Zoom level: {}%", level));
+    }
+
+    /// Try to close the web view and quit the application.
+    fn try_quit(&self) {
+        // Ask for a confirmation before quitting the application when there are active
+        // downloads.
+        if self.model.has_active_downloads {
+            let msg = "There are active downloads. Do you want to quit?".to_string();
+            yes_no_question(&self.mg, &self.model.relm, msg, Exit)
+        }
+        else {
+            self.quit(true);
+        }
     }
 
     /// Handle the web process crashed event.

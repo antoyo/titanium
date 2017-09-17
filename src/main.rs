@@ -20,6 +20,11 @@
  */
 
 /*
+ * FIXME: scroll stop working after back on http://agendadulibre.qc.ca/
+ *
+ * TODO: set user agent.
+ * TODO: may need to enable fullscript API (in config) to allow real fullscreen.
+ *
  * TODO: save mark when focusing the first input.
  *
  * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
@@ -83,7 +88,7 @@
  * TODO: add a close-all command?
  *
  * TODO: automatically add new settings in the config files (kind of insertion sort, splitted by
- * the command?).
+ * the command? Detect whether a keymap was changed. What about those that were deleted?).
  *
  * TODO: should the private context be cleaned up when all the private windows are closed?
  * TODO: should there be a new private context every time the command private-win-open is issued?
@@ -146,6 +151,7 @@
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
+ * TODO: check if calling pass can block other windows.
  * TODO: use asynchronous communication with pass?
  *
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
