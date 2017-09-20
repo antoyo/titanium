@@ -65,6 +65,7 @@ cmap <C-p> complete-previous
 cmap <A-b> entry-previous-word
 cmap <A-d> entry-delete-next-word
 cmap <A-f> entry-next-word
+cmap <S-Insert> entry-paste-selection
 cmap <C-a> entry-smart-home
 cmap <C-b> entry-previous-char
 cmap <C-c> entry-copy
