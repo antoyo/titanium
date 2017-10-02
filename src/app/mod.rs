@@ -67,6 +67,7 @@ use mg::{
     Info,
     Message,
     Mg,
+    Mode,
     ModeChanged,
     Modes,
     SetMode,
@@ -149,7 +150,8 @@ const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
 const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
 
 static MODES: Modes = &[
-    ("f", "follow"),
+    Mode { name: "follow", prefix: "f", show_count: false },
+    Mode { name: "insert", prefix: "i", show_count: false },
 ];
 
 pub struct Model {
