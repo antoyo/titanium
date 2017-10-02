@@ -38,18 +38,12 @@
  *
  * TODO: set user agent.
  * TODO: may need to enable fullscreen API (in config) to allow real fullscreen.
+ * Most probably needs to hide the status bar in the signal enter_fullscreen.
  *
  * TODO: save mark when focusing the first input.
  * TODO: save current scroll position in ' register before starting a search.
  *
  * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc: http://www.scala-lang.org/api/current/).
- *
- * FIXME: sometimes, the page load percentage stays shown after the load is finished.
- * To reproduce the issue of the percentage stuck at 10%:
- ** on this page: https://github.com/antoyo/titanium/issues
- ** click on an issue
- ** go back in the history
- * the percentage should be shown.
  *
  * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
  *

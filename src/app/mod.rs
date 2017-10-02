@@ -88,7 +88,7 @@ use webkit2gtk::{
     WebContext,
     WebViewExt,
 };
-use webkit2gtk::LoadEvent::{self, Finished, Started};
+use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
 
 use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
@@ -237,13 +237,6 @@ impl Widget for App {
                     self.model.overridden_color = Some(RED);
                 }
             }
-        }
-
-        if load_event == Finished {
-            self.set_title_without_progress();
-        }
-        else {
-            self.set_title();
         }
     }
 
@@ -414,6 +407,7 @@ impl Widget for App {
                     insecure_content_detected(_, _) => InsecureContent,
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
+                    property_estimated_load_progress_notify(_) => TitleChanged,
                     property_title_notify(_) => TitleChanged,
                     property_uri_notify(_) => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
