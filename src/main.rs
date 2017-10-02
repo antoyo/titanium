@@ -20,21 +20,36 @@
  */
 
 /*
- * FIXME: scroll stop working after back on http://agendadulibre.qc.ca/
+ * FIXME: web extension panics with newer webkit2gtk-webextension crate.
+ *
+ * FIXME: Links not working on https://tecnocode.co.uk/2014/03/27/what-is-gmaincontext/ (target="_blank")
+ * FIXME: message corrupt on LinkedIn.
+ *
+ * TODO: find hints in frames.
+ * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
+ *
+ * TODO: use get_client_rects() for the hint position when updating to webkit 2.18.
+ * FIXME: Wrong position for the hints in inner content of: https://groups.google.com/forum/#!msg/mozilla.dev.servo/20lkEsRI-ZI/RbEaVG_MAAAJ
+ *
+ * TODO: exit insert mode after hitting Enter in text input.
+ * TODO: default window size.
+ *
+ * FIXME: config file marks not created.
  *
  * TODO: set user agent.
- * TODO: may need to enable fullscript API (in config) to allow real fullscreen.
+ * TODO: may need to enable fullscreen API (in config) to allow real fullscreen.
  *
  * TODO: save mark when focusing the first input.
- *
- * TODO: use connect_load_failed_with_tls_errors() to show the URL in red in case there's a TLS
- * error (test with https://www.pcwebshop.co.uk/)
+ * TODO: save current scroll position in ' register before starting a search.
  *
  * FIXME: using Escape in insert mode triggers Escape in the web page (in Scala doc: http://www.scala-lang.org/api/current/).
  *
  * FIXME: sometimes, the page load percentage stays shown after the load is finished.
- *
- * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
+ * To reproduce the issue of the percentage stuck at 10%:
+ ** on this page: https://github.com/antoyo/titanium/issues
+ ** click on an issue
+ ** go back in the history
+ * the percentage should be shown.
  *
  * TODO: plugin for a read mode (remove all useless stuff in the page, only keep the text).
  *
@@ -151,6 +166,8 @@
  * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
+ * TODO: show [<>] like vimperator to show whether we can go back/forward in the history?
+ *
  * TODO: check if calling pass can block other windows.
  * TODO: use asynchronous communication with pass?
  *
@@ -228,6 +245,7 @@
  * TODO: do not hard-code the extension directory: use the one provided by cargo.
  * TODO: find a way to install the titanium web extension library on cargo install.
  * TODO: activate insert mode after focusing a text element (disable insert mode when focus is lost).
+ * TODO: block coin miner (take blacklist from https://github.com/keraf/NoCoin).
  * TODO: add a validator for the file input (browse): check that a file is selected (and not a
  * directory), check that the input file exists.
  * FIXME: prompt slow to show (it seems to slow down when there are other events waiting: try

@@ -165,7 +165,7 @@ impl Update for Executor {
                     LoadUsernamePass(username, password) => self.load_username_pass(&username, &password),
                     Mark(char) => self.add_mark(char),
                     ResetMarks() => self.reset_marks(),
-                    ResetScrollElement() => self.init_scroll_element(),
+                    ResetScrollElement() => self.reset_scroll_element(),
                     ScrollBy(pixels) => self.scroll_by(pixels),
                     ScrollByX(pixels) => self.scroll_by_x(pixels),
                     ScrollTop() => self.scroll_top(),

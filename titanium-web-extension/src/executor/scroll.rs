@@ -50,6 +50,11 @@ impl Executor {
         }
     }
 
+    /// Reset the scroll element.
+    pub fn reset_scroll_element(&mut self) {
+        self.model.scroll_element = None;
+    }
+
     /// Scroll the web page vertically by the specified amount of pixels.
     /// A negative value scroll towards to top.
     pub fn scroll_by(&mut self, pixels: i64) {
@@ -68,15 +73,20 @@ impl Executor {
 
     /// Get the current vertical scroll position of the web page as a percentage.
     pub fn scroll_percentage(&mut self) -> Percentage {
+        info!("scroll_percentage");
         let default = All;
         let element = unwrap_opt_or_ret!(self.model.scroll_element.as_ref(), default);
         let document = unwrap_opt_or_ret!(get_document(&self.model.page), default);
         let height = document.get_client_height();
         let scroll_height = element.get_scroll_height();
+        info!("height: {}", height);
+        info!("scroll_height: {}", scroll_height);
         if scroll_height <= height as i64 {
+            info!("returned {:?}", default);
             default
         }
         else {
+            info!("scroll_top: {}", element.get_scroll_top());
             Percent((element.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0).round() as i64)
         }
     }
