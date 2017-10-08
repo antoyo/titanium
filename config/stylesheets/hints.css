@@ -2,6 +2,7 @@
     all: initial;
     background: #fff200 !important;
     border: 1px solid #ccc200 !important;
+    color: black !important;
     font-family: "DejaVu Sans Mono", FreeMono, "Liberation Mono", "Lucida Console", monospace !important;
     font-size: small !important;
     font-weight: bold !important;

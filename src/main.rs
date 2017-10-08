@@ -91,6 +91,8 @@
  *
  * TODO: add a command to delete history, …
  *
+ * TODO: show the letters typed in follow mode.
+ *
  * TODO: command to restore the last closed window.
  *
  * TODO: rename the quit command to close.
