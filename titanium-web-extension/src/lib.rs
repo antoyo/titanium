@@ -31,7 +31,6 @@
     unused_qualifications,
 )]
 
-extern crate regex;
 extern crate fg_uds;
 extern crate futures;
 extern crate futures_glib;
@@ -41,6 +40,7 @@ extern crate lazy_static;
 extern crate log;
 extern crate nix;
 extern crate simplelog;
+extern crate regex;
 #[macro_use]
 extern crate relm_state;
 #[macro_use]

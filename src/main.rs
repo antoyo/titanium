@@ -22,6 +22,9 @@
 /*
  * FIXME: web extension panics with newer webkit2gtk-webextension crate.
  *
+ * FIXME: slow startup (The update function was slow to execute for message NewApp: 1943ms).
+ * Perhaps should init table and cleanup download folder in another thread.
+ *
  * FIXME: Links not working on https://tecnocode.co.uk/2014/03/27/what-is-gmaincontext/ (target="_blank")
  * FIXME: message corrupt on LinkedIn.
  *
@@ -128,6 +131,10 @@
  *
  * TODO: remove dependencies like tokio.
  *
+ * TODO: shortcut to toggle between open and win-open.
+ *
+ * TODO: delete file if download is halted (when browser closes).
+ *
  * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
  * javascript_can_close_windows when the window was opened by JS.
  *
@@ -164,6 +171,9 @@
  *
  * TODO: show [<>] like vimperator to show whether we can go back/forward in the history?
  *
+ * TODO: shortcut zz to center the selected text (from a search, for instance).
+ * TODO: shortcuts like zt and zb (is there something similar in vim that is not related to the cursor?).
+ *
  * TODO: check if calling pass can block other windows.
  * TODO: use asynchronous communication with pass?
  *
@@ -186,7 +196,14 @@
  * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
  * TODO: auto-detect static bars at the bottom/top of webpages to scroll less when one is present.
  *
+ * TODO: prevent from auto-downloading videos.
+ *
  * FIXME: saving empty credentials on https://lichess4545.slack.com/
+ *
+ * TODO: shortcut to copy selected text.
+ *
+ * TODO: shortcut to (un)check all checkboxes in page (for email notification pages with many
+ * checkboxes).
  *
  * TODO: sort bookmark completion with number of access (the most accessed URLs come first, then by
  * alphebetical order) and perhaps also by relevance (like the percentage of tags/words that

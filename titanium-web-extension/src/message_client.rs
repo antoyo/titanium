@@ -97,13 +97,7 @@ impl Update for MessageClient {
                 self.model.writer = Some(WriteBincode::new(FramedWrite::new(writer)));
                 let reader = ReadBincode::new(FramedRead::new(reader));
                 self.model.relm.connect_exec(reader, MsgRecv, MsgError);
-
-                // The extension id is initialized when a page is created, hence unwrap().
-                let extension_id = self.model.extension_id.unwrap();
-                if let Some(page_id) = self.model.page_id_to_send {
-                    trace!("Send page id {}", page_id);
-                    self.send(page_id, Id(extension_id, page_id));
-                }
+                self.send_page_id();
             },
             MsgError(error) => error!("MsgError: {}", error),
             MsgRecv(Message(page_id, msg)) => {
@@ -122,6 +116,7 @@ impl Update for MessageClient {
                 trace!("New page created with id {}", page_id);
                 if self.model.extension_id.is_none() {
                     self.model.extension_id = Some(page_id);
+                    self.send_page_id();
                 }
                 let executor = execute::<Executor>(page.clone());
                 connect_stream!(page, connect_document_loaded(_), executor, DocumentLoaded);
@@ -173,6 +168,15 @@ impl MessageClient {
         }
         else {
             println!("No writer");
+        }
+    }
+
+    fn send_page_id(&mut self) {
+        if let Some(extension_id) = self.model.extension_id {
+            if let Some(page_id) = self.model.page_id_to_send {
+                trace!("Send page id {}", page_id);
+                self.send(page_id, Id(extension_id, page_id));
+            }
         }
     }
 }
