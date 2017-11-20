@@ -6,7 +6,7 @@ A keyboard-driven web browser written in Rust
 //image:https://img.shields.io/crates/d/titanium.svg[link="https://crates.io/crates/titanium"]
 image:https://img.shields.io/crates/l/titanium.svg[link="LICENSE"]
 
-Titanium is written and Rust and uses WebKit2GTK to render web pages.
+Titanium is written in Rust and uses WebKit2GTK to render web pages.
 
 It is inspired on Vimperator and qutebrowser.py.
 
