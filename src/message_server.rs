@@ -202,6 +202,8 @@ impl MessageServer {
         let listener =
             match UnixListener::bind_abstract(SOCKET_NAME, &cx) {
                 Err(nix::Error::Sys(nix::Errno::EADDRINUSE)) => {
+                    info!("Address already in use for the abstract domain socket, sending message to existing process.");
+
                     // A titanium process is already running, so we send the URL to this process so
                     // that it can open a new window.
                     if let Err(ref e) = send_url_to_existing_process(&url) {
