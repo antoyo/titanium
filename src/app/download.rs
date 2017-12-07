@@ -36,7 +36,11 @@ use webkit2gtk::{
 
 use INVALID_UTF8_ERROR;
 use app;
-use app::Msg::{DecideDownloadDestination, OverwriteDownload, ShowError};
+use app::Msg::{
+    DecideDownloadDestination,
+    OverwriteDownload,
+    ShowError,
+};
 use config_dir::ConfigDir;
 use download::download_dir;
 use download_list_view;
@@ -122,11 +126,7 @@ impl App {
             },
             Shortcut(shortcut) => {
                 if shortcut == "download" {
-                    let download_destination = gen_unique_filename(&suggested_filename)?;
-                    let temp_file = temp_dir(&self.model.config_dir, &download_destination)?;
-                    let temp_file = temp_file.to_str()
-                        .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
-                    let destination = format!("file://{}", temp_file);
+                    let destination = find_destination(&self.model.config_dir, &suggested_filename)?;
                     self.download_list_view.emit(AddFileToOpen(download.clone()));
                     // DownloadDestination must be emitted after AddFileToOpen because this event
                     // will open the file in case the download is already finished.
@@ -150,21 +150,23 @@ impl App {
         let stream = stream.clone();
         let list_stream = list_stream.clone();
         download.connect_decide_destination(move |download, suggested_filename| {
-            // Some suggested file name are actually a path, so only take the last part of it.
-            let path = Path::new(suggested_filename);
-            let new_filename = path.file_name()
-                .and_then(|filename| filename.to_str())
-                .unwrap_or(suggested_filename);
-            trace!("Decide download destination, suggested filename: {}", suggested_filename);
-            if let Ok(destination) = find_download_destination(new_filename) {
-                download.set_destination(&format!("file://{}", destination));
-                stream.emit(DecideDownloadDestination(download.clone(), new_filename.to_string()));
-                list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
-                true
+            // If the destination is already set, the download is originating from titanium, so the
+            // user must not choose it.
+            if download.get_destination().is_none() {
+                // Some suggested file name are actually a path, so only take the last part of it.
+                let path = Path::new(suggested_filename);
+                let new_filename = path.file_name()
+                    .and_then(|filename| filename.to_str())
+                    .unwrap_or(suggested_filename);
+                trace!("Decide download destination, suggested filename: {}", suggested_filename);
+                if let Ok(destination) = find_download_destination(new_filename) {
+                    download.set_destination(&format!("file://{}", destination));
+                    stream.emit(DecideDownloadDestination(download.clone(), new_filename.to_string()));
+                    list_stream.emit(DownloadOriginalDestination(download.clone(), destination));
+                    return true;
+                }
             }
-            else {
-                false
-            }
+            false
         });
     }
 
@@ -209,6 +211,14 @@ fn find_download_destination(suggested_filename: &str) -> Result<String> {
     Ok(path.to_str()
        .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?
        .to_string())
+}
+
+pub fn find_destination(config_dir: &ConfigDir, suggested_filename: &str) -> Result<String> {
+    let download_destination = gen_unique_filename(suggested_filename)?;
+    let temp_file = temp_dir(config_dir, &download_destination)?;
+    let temp_file = temp_file.to_str()
+        .ok_or_else(|| Error::from_string(INVALID_UTF8_ERROR.to_string()))?;
+    Ok(format!("file://{}", temp_file))
 }
 
 fn temp_dir(config_dir: &ConfigDir, filename: &str) -> Result<PathBuf> {

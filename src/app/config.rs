@@ -48,7 +48,6 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
     let keys_path = config_dir.config_file("keys");
     let webkit_config_path = config_dir.config_file("webkit");
     let hints_css_path = config_dir.config_file("stylesheets/hints.css");
-    let hosts_path = config_dir.data_file("hosts");
     let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(config_dir);
 
     vec![Dir(stylesheets_path),
@@ -59,7 +58,6 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
          File(config_path, include_str!("../../config/config")),
          File(webkit_config_path, include_str!("../../config/webkit")),
          File(hints_css_path, include_str!("../../config/stylesheets/hints.css")),
-         File(hosts_path, include_str!("../../config/hosts")),
          File(popup_whitelist_path, ""),
          File(popup_blacklist_path, ""),
         ]

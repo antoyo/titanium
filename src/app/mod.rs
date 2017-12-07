@@ -26,6 +26,7 @@ macro_rules! handle_error {
     }};
 }
 
+mod adblock;
 mod bookmarks;
 mod browser;
 mod config;
@@ -191,6 +192,7 @@ pub enum Msg {
     Exit(bool),
     FileDialogSelection(Option<String>),
     HasActiveDownloads(bool),
+    HostfileDownloaded(String, Download),
     InsecureContent,
     KeyPress(EventKey),
     LoadChanged(LoadEvent),
@@ -342,6 +344,7 @@ impl Widget for App {
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
+            HostfileDownloaded(file, download) => handle_error!(self.process_hostfile(&file, download)),
             InsecureContent => self.insecure_content_detected(),
             KeyPress(event_key) => self.handle_key_press(event_key),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
@@ -531,6 +534,7 @@ impl App {
     fn handle_command(&mut self, command: &AppCommand) {
         match *command {
             ActivateSelection => self.activate_selection(),
+            AdblockUpdate => handle_error!(self.adblock_update()),
             Back => self.history_back(),
             BackwardSearch(ref input) => {
                 self.webview.emit(SearchBackward(true));

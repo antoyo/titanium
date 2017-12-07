@@ -74,9 +74,10 @@ impl Adblocker {
                             },
                         }
                     }
-                }
+                },
                 Err(_) => {
-                    error!("Cannot open hosts file {}", path.to_str().unwrap_or_default())
+                    error!("Cannot open hosts file {}. Run the command adblock-update",
+                           path.to_str().unwrap_or_default())
                 },
             }
         }

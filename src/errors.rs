@@ -28,6 +28,7 @@ use nix;
 use password_store;
 use rusqlite;
 use tokio_serde_bincode;
+use zip::result::ZipError;
 
 pub struct Error {
     msg: String,
@@ -103,6 +104,14 @@ impl From<Utf8Error> for Error {
 
 impl From<tokio_serde_bincode::Error> for Error {
     fn from(error: tokio_serde_bincode::Error) -> Self {
+        Error {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<ZipError> for Error {
+    fn from(error: ZipError) -> Self {
         Error {
             msg: error.to_string(),
         }

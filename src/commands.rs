@@ -23,6 +23,8 @@
 pub enum AppCommand {
     #[completion(hidden)]
     ActivateSelection,
+    #[help(text="Update the host file used by the adblocker")]
+    AdblockUpdate,
     #[help(text="Go back in the history")]
     Back,
     #[special_command(incremental, identifier="?")]

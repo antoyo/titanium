@@ -20,6 +20,26 @@
  */
 
 /*
+ * FIXME: kill-win does not unfreeze the other web pages in the same web process.
+ *
+ * TODO: settings containing a list of websites that automatically open in private mode?
+ *
+ * FIXME: If titanium was opened by xdg-open (by e.g. zathura), the abstract domain socket can live
+ * longer than what we want, preventing a new titanium from starting.
+ * ~ ss -apx | rg titanium
+ * u_str  LISTEN     11     128    @titanium-server 38583                 * 0
+ * +users:(("zathura",pid=7755,fd=11),("xdg-open",pid=7637,fd=11))
+ *
+ * FIXME: cannot open html with from file:// url.
+ *
+ * FIXME: web process crash on a specific website (only the first time): might be caused by
+ * webkit2gtk itself.
+ *
+ * FIXME: scroll broken on http://kcsrk.info/ocaml/multicore/2015/05/20/effects-multicore/
+ *
+ * TODO: shortcut to insert the password in insert mode?
+ * TODO: shortcut to open in the same window.
+ *
  * FIXME: web extension panics with newer webkit2gtk-webextension crate.
  *
  * FIXME: slow startup (The update function was slow to execute for message NewApp: 1943ms).
@@ -65,8 +85,8 @@
  * time, or perhaps just using a blocking input for popups will do it).
  * TODO: in command and input mode, put the messages into a queue.
  *
- * TODO: command to update adblocker hosts file.
  * TODO: option to disable the adblocker.
+ * TODO: remove duplicates in the hostfile.
  *
  * TODO: remove the title bar of the inspector (window decorated property).
  *
@@ -79,6 +99,11 @@
  * FIXME: ctrl-/ should not trigger the mapping for /.
  *
  * TODO: allow using Backspace to remove the last hint character.
+ *
+ * TODO: remove ads on DuckDuckGo Lite.
+ *
+ * TODO: Command to know which pages are in which process:
+ * * to check whether the pages are distributed evenly between the processes.
  *
  * TODO: hide HTML in title/bookmarks?
  *
@@ -138,12 +163,18 @@
  * FIXME: windows opened by JavaScript cannot be claused: probably need to set the settings
  * javascript_can_close_windows when the window was opened by JS.
  *
+ * TODO: websites with login form (or credit card input) should be shown as insecure if not in
+ * HTTPS.
+ *
  * FIXME: scroll on
  * https://tutorial.ponylang.org/getting-started/how-it-works.html
  * https://www.fstar-lang.org/tutorial/
  * https://www.cnet.com/special-reports/mozilla-firefox-fights-back-against-google-chrome/
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
+ * http://www.expressionsofchange.org/reification-of-interaction/
+ *
+ * FIXME: too many redirections: https://www.cavendre.com/fr/annonce/login.php
  *
  * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
  * order.
@@ -166,7 +197,6 @@
  * TODO: method called by message should not take ownership of values.
  * TODO: add documentation for non-obvious code.
  * TODO: refactor to remove every use of callbacks in relm widgets.
- * FIXME: wrong scroll percentage on https://mail.gnome.org/archives/gtk-devel-list/2001-November/msg00204.html
  * FIXME: Invalid read of size 8 (see valgrind).
  *
  * TODO: show [<>] like vimperator to show whether we can go back/forward in the history?
@@ -188,6 +218,10 @@
  *
  * TODO: block cookie banner.
  * FIXME: the insert mode sometimes disable itself (using rofi-pass). For instance, on https://courrielweb.videotron.com/cw/legacyLoginResidentiel.action
+ *
+ * TODO: stop sending message to a web process after it crashed:
+ * (.:1266): GLib-CRITICAL **: g_io_channel_write_chars: assertion 'channel->is_writeable' failed
+ * (.:1266): GLib-CRITICAL **: g_source_modify_unix_fd: assertion 'g_slist_find (source->priv->fds, tag)' failed
  *
  * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
  * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
@@ -221,6 +255,18 @@
  *
  * TODO: #[default(value)] attribute for settings.
  *
+ * FIXME: if search engine query contains #, it does not include it (and what follows it) in the
+ * search form.
+ *
+ * TODO: feature to detect when there's a login page for a network.
+ *
+ * FIXME: wrong formatting on https://doc.rust-lang.org/stable/book/first-edition/testing.html#the-tests-directory
+ *
+ * TODO: feature to import bookmarks from .sqlite file.
+ *
+ * TODO: support creating bookmarks with:
+ * https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/bookmarks/create
+ *
  * FIXME: the window sometimes does not hide when quitting: it hides when a new window is shown.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
  * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
@@ -250,6 +296,8 @@
  * (example: https://www.fastcoexist.com/3027876/millennials-dont-care-about-owning-cars-and-car-makers-cant-figure-out-why).
  * FIXME: popup not blocked on bnc.ca.
  * TODO: delete the files opened (perhaps by placing them in a temporary directory).
+ *
+ * TODO: allow to search bookmarks not containing a tag or containing only the specified tags.
  *
  * TODO: Rust-based plugin architecture (based on webkit web extensions).
  * TODO: block ads coming from websocket.
@@ -322,6 +370,7 @@ extern crate tokio_serde_bincode;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
+extern crate zip;
 
 mod app;
 mod bookmarks;
