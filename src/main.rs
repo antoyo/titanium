@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: cannot follow the clone button on GitHub anymore.
+ *
  * FIXME: kill-win does not unfreeze the other web pages in the same web process.
  *
  * TODO: settings containing a list of websites that automatically open in private mode?
@@ -110,6 +112,8 @@
  * TODO: message when search fails (and when it wraps to the start/end).
  *
  * TODO: show source.
+ *
+ * TODO: block ads on youtube.
  *
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.
@@ -234,7 +238,7 @@
  *
  * FIXME: saving empty credentials on https://lichess4545.slack.com/
  *
- * TODO: shortcut to copy selected text.
+ * TODO: shortcut to copy selected text (without being in insert mode).
  *
  * TODO: shortcut to (un)check all checkboxes in page (for email notification pages with many
  * checkboxes).
