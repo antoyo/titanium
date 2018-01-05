@@ -53,9 +53,6 @@
  * TODO: find hints in frames.
  * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
  *
- * TODO: use get_client_rects() for the hint position when updating to webkit 2.18.
- * FIXME: Wrong position for the hints in inner content of: https://groups.google.com/forum/#!msg/mozilla.dev.servo/20lkEsRI-ZI/RbEaVG_MAAAJ
- *
  * TODO: exit insert mode after hitting Enter in text input.
  * TODO: default window size.
  *
@@ -227,8 +224,6 @@
  * (.:1266): GLib-CRITICAL **: g_io_channel_write_chars: assertion 'channel->is_writeable' failed
  * (.:1266): GLib-CRITICAL **: g_source_modify_unix_fd: assertion 'g_slist_find (source->priv->fds, tag)' failed
  *
- * FIXME: hint on wrong location on the warning of https://zestedesavoir.com/tutoriels/1642/les-soins-non-urgents/#2-traiter-une-plaie
- * FIXME: hints on wrong locations on http://www.mensacanada.org/contact/ and on https://www.ralfj.de/blog/2017/06/06/MIR-semantics.html
  * FIXME: crash when attempting to open a PDF on Air Transat, Mon Dossier.
  * TODO: auto-delete tags.
  * FIXME: scrolling not working on http://www.freenom.com/en/termsandconditions.html
@@ -253,7 +248,6 @@
  * TODO: find a way to avoid having hints on top of each other.
  *
  * TODO: check if an extension process crashing causes issues in other extension process.
- * FIXME: missing hints on duckduckgo.com menu (caused by CSS3 transform).
  *
  * FIXME: show hints for element with click event.
  *

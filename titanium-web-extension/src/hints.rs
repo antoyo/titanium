@@ -143,9 +143,11 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
 
         let mut hint_map = Hints::new(elements_to_hint.len(), hint_chars);
         for element in elements_to_hint {
-            let pos = wtry_opt!(get_position(&element));
-            let hint = wtry_opt!(create_hint(document, &pos, &hint_map.add(&element)));
-            check_err_opt!(hints.append_child(&hint).ok());
+            if let Some(mut pos) = get_position(&element) {
+                // FIXME: adjust the position to avoid showing the hint outside the viewport.
+                let hint = wtry_opt!(create_hint(document, &pos, &hint_map.add(&element)));
+                check_err_opt!(hints.append_child(&hint).ok());
+            }
         }
         Some((hints, hint_map.hints))
     })
@@ -167,6 +169,8 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
         let elements = NodeIter::new(document.get_elements_by_tag_name(tag_name));
         for element in elements {
             // Only show the hints for visible elements that are not disabled.
+            // TODO: might not need to check if the element is visible anymore because in this
+            // case, get_position() returns None.
             if is_visible(document, &element) && is_enabled(&element) {
                 elements_to_hint.push(element);
             }

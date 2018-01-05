@@ -34,7 +34,7 @@ path = "../titanium-common"
 version = "0.1.0"
 
 [features]
-default = ["webkit2gtk-webextension/v2_16"]
+default = ["webkit2gtk-webextension/v2_18", "webkit2gtk-webextension/gio"]
 
 [lib]
 crate-type = ["dylib"]

@@ -23,6 +23,8 @@ use glib::Cast;
 use regex::Regex;
 
 use webkit2gtk_webextension::{
+    DOMClientRectExt,
+    DOMClientRectListExt,
     DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
@@ -112,8 +114,8 @@ iter!(ElementIter, DOMHTMLCollection);
 
 #[derive(Debug)]
 pub struct Pos {
-    pub x: i64,
-    pub y: i64,
+    pub x: f32,
+    pub y: f32,
 }
 
 /// Trigger a click event on the element.
@@ -145,77 +147,19 @@ pub fn get_href(element: &DOMHTMLElement) -> Option<String> {
     }
 }
 
-/// Get the position of an element relative to the window.
-fn get_offset(element: &DOMElement) -> Pos {
-    let document = element.get_owner_document();
-    let mut top = 0;
-    let mut left = 0;
-    let mut element = Some(element.clone());
-    let mut in_body = false;
-    while let Some(el) = element {
-        left += el.get_offset_left() as i64 - el.get_scroll_left() + el.get_client_left() as i64;
-        top += el.get_offset_top() as i64 - el.get_scroll_top() + el.get_client_top() as i64;
-        element = el.get_offset_parent();
-        if el.get_tag_name() == Some("BODY".to_string()) {
-            in_body = true;
-        }
-    }
-    let mut margin_top = 0;
-    if in_body {
-        // The margin top property only takes effect if the element is relative to the body.
-        // This means that static/fixed elements won't be affected by this margin.
-        if let Some(document) = document {
-            let property = document.get_elements_by_tag_name("html")
-                .and_then(|htmls| htmls.item(0))
-                .and_then(|html| html.downcast::<DOMElement>().ok())
-                .and_then(|html| document.get_default_view().map(|window| (window, html)))
-                .and_then(|(window, html)| window.get_computed_style(&html, None))
-                .and_then(|style| style.get_property_value("margin-top"));
-            if let Some(property) = property {
-                if let Ok(value) = property[..property.len() - 2].parse() {
-                    margin_top = value;
-                }
-            }
-        }
-    }
-    Pos {
-        x: left,
-        y: top + margin_top,
-    }
-}
-
-/// Get the position of an element relative to the iframe.
-fn get_position_from_iframe(document: &DOMDocument, element: &DOMElement) -> Pos {
-    let (left, top) =
-        if let Some(body) = document.get_body() {
-            let left = body.get_scroll_left();
-            let top = body.get_scroll_top();
-            (left, top)
-        }
-        else {
-            (0, 0)
-        };
-    let mut pos = get_offset(element);
-    pos.x += left;
-    pos.y += top;
-    pos
-}
-
 /// Get the position of an element relative to the page root.
 pub fn get_position(element: &DOMElement) -> Option<Pos> {
-    let document = wtry_opt!(element.get_owner_document());
-    let mut pos = get_position_from_iframe(&document, element);
-    let window = wtry_opt!(document.get_default_view());
-    let mut frame = window.get_frame_element();
-    while let Some(parent_frame) = frame {
-        let parent_document = wtry_opt!(parent_frame.get_owner_document());
-        let iframe_pos = get_position_from_iframe(&document, &parent_frame);
-        pos.x += iframe_pos.x;
-        pos.y += iframe_pos.y;
-        let window = wtry_opt!(parent_document.get_default_view());
-        frame = window.get_frame_element();
-    }
-    Some(pos)
+    let rects = element.get_client_rects()?;
+    let rect = rects.item(0)?;
+
+    let document = element.get_owner_document()?;
+    let window = document.get_default_view()?;
+    let scroll_x = window.get_scroll_x();
+    let scroll_y = window.get_scroll_y();
+    Some(Pos {
+        x: rect.get_left() + scroll_x as f32,
+        y: rect.get_top() + scroll_y as f32,
+    })
 }
 
 /// Hide an element.
@@ -286,25 +230,15 @@ pub fn is_text_input(element: &DOMElement) -> bool {
 /// Check if an element is visible and in the viewport.
 pub fn is_visible(document: &DOMDocument, element: &DOMElement) -> bool {
     let window = unwrap_opt_or_ret!(document.get_default_view(), false);
-    let height = window.get_inner_height();
-    let width = window.get_inner_width();
-    let pos = get_offset(element);
-    // FIXME: use the absolute position (including between frames).
-    if pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height {
-        return false;
-    }
-    let mut element = Some(element.clone());
-    while let Some(el) = element {
-        let style = unwrap_opt_or_ret!(window.get_computed_style(&el, None), false);
-        if style.get_property_value("display") == Some("none".to_string()) ||
-            style.get_property_value("visibility") == Some("hidden".to_string()) ||
-            style.get_property_value("opacity") == Some("0".to_string())
-        {
-            return false;
-        }
-        element = el.get_parent_element();
-    }
-    true
+    let rect = unwrap_opt_or_ret!(element.get_bounding_client_rect(), false);
+    let x1 = rect.get_left();
+    let x2 = rect.get_right();
+    let y1 = rect.get_top();
+    let y2 = rect.get_bottom();
+
+    let height = window.get_inner_height() as f32;
+    let width = window.get_inner_width() as f32;
+    (x1 >= 0.0 || x2 >= 0.0) && x1 < width && (y1 >= 0.0 || y2 >= 0.0) && y1 < height
 }
 
 /// Trigger a mouse down event on the element.
