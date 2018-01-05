@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,6 +21,8 @@
 
 /*
  * FIXME: cannot follow the clone button on GitHub anymore.
+ *
+ * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test
  *
  * FIXME: kill-win does not unfreeze the other web pages in the same web process.
  *
@@ -267,7 +269,6 @@
  *
  * FIXME: the window sometimes does not hide when quitting: it hides when a new window is shown.
  * FIXME: hover does not always work (usherbrooke.ca) (perhaps trigger real click/hover mouse events in GTK+ instead of using DOM while still using the DOM focus function).
- * FIXME: an element visible but whose top-left corner is not shown wont get an hint.
  * FIXME: sometimes does not go to insert mode after focusing first input (youtube.com).
  * TODO: generate the default files from the code (for instance, from default settings) instead of
  * copying predefined files.

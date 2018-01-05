@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -66,9 +66,6 @@ use webkit2gtk::{
     WebInspector,
     WebInspectorExt,
     WebViewExt,
-    FIND_OPTIONS_BACKWARDS,
-    FIND_OPTIONS_CASE_INSENSITIVE,
-    FIND_OPTIONS_WRAP_AROUND,
 };
 use webkit2gtk::NavigationType::LinkClicked;
 use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
@@ -354,10 +351,10 @@ impl WebView {
 
     /// Search some text.
     fn search(&self, input: String) -> Result<()> {
-        let default_options = FIND_OPTIONS_CASE_INSENSITIVE | FIND_OPTIONS_WRAP_AROUND;
+        let default_options = FindOptions::CASE_INSENSITIVE | FindOptions::WRAP_AROUND;
         let other_options =
             if self.model.search_backwards {
-                FIND_OPTIONS_BACKWARDS
+                FindOptions::BACKWARDS
             }
             else {
                 FindOptions::empty()

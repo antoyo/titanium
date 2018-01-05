@@ -656,7 +656,7 @@ dependencies = [
  "tokio-io 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-serde-bincode 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "webkit2gtk-webextension 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "webkit2gtk-webextension 0.4.0",
  "webkit2gtk-webextension-sys 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "xdg 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -751,7 +751,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "webkit2gtk-webextension"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gio 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -901,7 +900,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum url 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fa35e768d4daf1d85733418a49fb42e10d7f633e394fccab4ab7aba897053fe2"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
-"checksum webkit2gtk-webextension 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b11ba3f5d1bba571f8142a16ba8448efa5873926c6f693282998d8117b1d07a9"
 "checksum webkit2gtk-webextension-sys 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6c77f33a5a0a87f2006031182b9eb3cb0e232eda18194ac3fd1a0791e4145715"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b09fb3b6f248ea4cd42c9a65113a847d612e17505d6ebd1f7357ad68a8bf8693"
