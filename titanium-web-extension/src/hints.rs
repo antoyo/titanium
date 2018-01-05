@@ -22,13 +22,15 @@
 use std::collections::HashMap;
 use std::i32;
 
-use glib::object::Downcast;
+use glib::Cast;
 use webkit2gtk_webextension::{
     DOMCSSStyleDeclarationExt,
     DOMDocument,
     DOMDocumentExt,
     DOMElement,
     DOMElementExt,
+    DOMHTMLFrameElement,
+    DOMHTMLFrameElementExt,
     DOMHTMLIFrameElement,
     DOMHTMLIFrameElementExt,
     DOMNodeExt,
@@ -157,7 +159,7 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
 fn get_elements_to_hint(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = get_hintable_elements(document);
     elements_to_hint.append(&mut get_input_elements(document));
-    elements_to_hint.append(&mut get_hintable_elements_from_iframes(document));
+    elements_to_hint.append(&mut get_hintable_elements_from_frames(document));
     elements_to_hint
 }
 
@@ -179,15 +181,24 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
     elements_to_hint
 }
 
-/// Get the hintable elements from the iframes.
-fn get_hintable_elements_from_iframes(document: &DOMDocument) -> Vec<DOMElement> {
+/// Get the hintable elements from the frames.
+fn get_hintable_elements_from_frames(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
+
     let iter = NodeIter::new(document.get_elements_by_tag_name("iframe"));
-    for iframe in iter {
-        if let Ok(iframe) = iframe.downcast() {
-            let iframe: DOMHTMLIFrameElement = iframe;
+    for frame in iter {
+        if let Ok(iframe) = frame.downcast::<DOMHTMLIFrameElement>() {
             if let Some(iframe_document) = iframe.get_content_document() {
                 elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
+            }
+        }
+    }
+
+    let iter = NodeIter::new(document.get_elements_by_tag_name("frame"));
+    for frame in iter {
+        if let Ok(frame) = frame.downcast::<DOMHTMLFrameElement>() {
+            if let Some(frame_document) = frame.get_content_document() {
+                elements_to_hint.append(&mut get_elements_to_hint(&frame_document));
             }
         }
     }

@@ -72,6 +72,7 @@ use titanium_common::InnerMessage::*;
 use dom::{
     NodeIter,
     get_body,
+    get_hints_container,
     get_href,
     is_enabled,
     is_hidden,
@@ -356,9 +357,9 @@ impl Executor {
         let elements =
             self.model.page.get_dom_document()
             .and_then(|document| document.get_element_by_id(HINTS_ID))
-            .and_then(|hints| get_body(&self.model.page).map(|body| (hints, body)));
-        if let Some((hints, body)) = elements {
-            check_err!(body.remove_child(&hints));
+            .and_then(|hints| get_hints_container(&self.model.page).map(|container| (hints, container)));
+        if let Some((hints, container)) = elements {
+            check_err!(container.remove_child(&hints));
         }
     }
 
@@ -422,11 +423,11 @@ impl Executor {
     // TODO: only send the hint characters once, not every time?
     fn show_hints(&mut self, hint_chars: &str) {
         self.model.hint_keys.clear();
-        let body = wtry_opt_no_ret!(get_body(&self.model.page));
+        let container = wtry_opt_no_ret!(get_hints_container(&self.model.page));
         let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
         let (hints, hint_map) = wtry_opt_no_ret!(create_hints(&document, hint_chars));
         self.model.hint_map = hint_map;
-        check_err!(body.append_child(&hints));
+        check_err!(container.append_child(&hints));
     }
 
     // Submit the login form.

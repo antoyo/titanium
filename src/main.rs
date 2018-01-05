@@ -22,6 +22,8 @@
 /*
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
+ * FIXME: hints on wrong position in dialogs of AccesD and postel.
+ *
  * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test
  *
  * FIXME: kill-win does not unfreeze the other web pages in the same web process.
@@ -51,9 +53,6 @@
  *
  * FIXME: Links not working on https://tecnocode.co.uk/2014/03/27/what-is-gmaincontext/ (target="_blank")
  * FIXME: message corrupt on LinkedIn.
- *
- * TODO: find hints in frames.
- * FIXME: hint not working on http://bibliotheque.ville.brossard.qc.ca/
  *
  * TODO: exit insert mode after hitting Enter in text input.
  * TODO: default window size.

@@ -50,6 +50,7 @@ use webkit2gtk_webextension::{
     DOMHTMLTextAreaElementExt,
     DOMMouseEvent,
     DOMMouseEventExt,
+    DOMNode,
     DOMNodeExt,
     DOMNodeList,
     DOMNodeListExt,
@@ -135,6 +136,18 @@ pub fn get_document(page: &WebPage) -> Option<DOMElement> {
     page.get_dom_document().and_then(|document|
         document.get_document_element()
     )
+}
+
+/// Get the body if it exists or the html element.
+pub fn get_hints_container(page: &WebPage) -> Option<DOMNode> {
+    let document = page.get_dom_document()?;
+    if let Some(elements) = document.get_elements_by_tag_name("body") {
+        if let Some(body) = elements.item(0) {
+            return Some(body);
+        }
+    }
+    let document = get_document(page)?;
+    Some(document.upcast::<DOMNode>())
 }
 
 /// Get the href attribute of an anchor element.
