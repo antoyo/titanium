@@ -29,12 +29,13 @@ percent-encoding = "^1.0.0"
 relm = "^0.11.0"
 relm-attributes = "^0.11.0"
 relm-derive = "^0.11.0"
-rusqlite = "^0.7.3"
+rusqlite = "^0.13.0"
 simplelog = "^0.4"
 syslog = "^3.2.0"
 tempfile = "^2.1"
 tokio-io = "^0.1.1"
 tokio-serde-bincode = "^0.1.0"
+tql_macros = "^0.1.0"
 url = "^1.2"
 webkit2gtk = "^0.3.0"
 xdg = "^2.0"
@@ -43,6 +44,10 @@ zip = "^0.2.6"
 [dependencies.titanium-common]
 path = "titanium-common"
 version = "^0.1"
+
+[dependencies.tql]
+features = ["sqlite"]
+version = "0.1.0"
 
 [dev-dependencies]
 libxdo = "^0.4.1"

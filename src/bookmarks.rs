@@ -28,11 +28,33 @@ use std::result;
 
 use rusqlite::Connection;
 use rusqlite::types::ToSql;
+use tql::{ForeignKey, PrimaryKey};
+use tql_macros::sql;
 
 use errors::{Error, Result};
 
 thread_local! {
     static CONNECTION: RefCell<Option<Connection>> = RefCell::new(None);
+}
+
+#[derive(SqlTable)]
+struct Bookmarks {
+    id: PrimaryKey,
+    title: String,
+    url: String,
+    visit_count: i32,
+}
+
+#[derive(SqlTable)]
+struct Tags {
+    id: PrimaryKey,
+    name: String,
+}
+
+#[derive(SqlTable)]
+struct Bookmarks_Tags {
+    bookmark_id: i32,
+    tag_id: i32,
 }
 
 /// A bookmark has a title and a URL and optionally some tags.
@@ -70,13 +92,11 @@ impl BookmarkManager {
     pub fn add(&self, url: String, title: Option<String>) -> Result<bool> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(inserted_count) = connection.execute("
-                    INSERT INTO bookmarks (title, url)
-                    VALUES ($1, $2)
-                    ", &[&title.unwrap_or_default(), &url])
-                {
-                    return Ok(inserted_count > 0);
-                }
+                // TODO: when default values are supported in tql, remove visit_count.
+                let title = title.unwrap_or_default(); // FIXME: tql should not try to move the expression.
+                return sql!(Bookmarks.insert(title = title, url = url, visit_count = 0))
+                    .map(|inserted_count| inserted_count > 0)
+                    .map_err(Into::into);
             }
             Ok(false)
         })
@@ -132,13 +152,9 @@ impl BookmarkManager {
     pub fn delete(&self, url: &str) -> Result<bool> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(deleted_count) = connection.execute("
-                    DELETE FROM bookmarks
-                    WHERE url = $1
-                    ", &[&url.to_string()])
-                {
-                    return Ok(deleted_count > 0);
-                }
+                return sql!(Bookmarks.get(url == url).delete())
+                    .map(|deleted_count| deleted_count > 0)
+                    .map_err(Into::into);
             }
             Ok(false)
         })
@@ -153,10 +169,7 @@ impl BookmarkManager {
         let tags_to_delete = &original_tags - &tags;
         for tag in tags_to_delete {
             let tag_id = self.get_tag_id(connection, tag)?;
-            connection.execute("
-                DELETE FROM bookmarks_tags
-                WHERE bookmark_id = $1 AND tag_id = $2
-            ", &[&bookmark_id, &tag_id])?;
+            sql!(Bookmarks_Tags.get(bookmark_id == bookmark_id && tag_id == tag_id).delete())?;
         }
         Ok(())
     }
@@ -170,17 +183,8 @@ impl BookmarkManager {
     pub fn get_id(&self, url: &str) -> Option<i32> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(mut statement) = connection.prepare("
-                        SELECT id
-                        FROM bookmarks
-                        WHERE url = $1
-                    ")
-                {
-                    if let Ok(mut rows) = statement.query(&[&url.to_string()])
-                    {
-                        return rows.next().and_then(|row| row.ok().map(|row| row.get(0)));
-                    }
-                }
+                return sql!(Bookmarks.get(url == url)).ok()
+                    .map(|bookmark| bookmark.id);
             }
             None
         })
@@ -188,14 +192,8 @@ impl BookmarkManager {
 
     /// Get the tag ID of a bookmark.
     pub fn get_tag_id(&self, connection: &Connection, tag: &str) -> Result<i32> {
-        let mut statement = connection.prepare("
-            SELECT id
-            FROM tags
-            WHERE name = $1
-        ")?;
-        let mut rows = statement.query(&[&tag.to_string()])?;
-        let row = rows.next().ok_or_else(|| Error::from_string("tag not found".to_string()))?;
-        let id = row.map(|row| row.get(0))?;
+        let tag = sql!(Tags.get(name == tag))?;
+        let id = tag.id;
         Ok(id)
     }
 
