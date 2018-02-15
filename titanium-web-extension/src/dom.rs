@@ -160,18 +160,49 @@ pub fn get_href(element: &DOMHTMLElement) -> Option<String> {
     }
 }
 
+fn get_frame_offsets(element: &DOMElement) -> Option<Pos> {
+    let element = element.clone().upcast::<DOMNode>();
+    let document = element.get_owner_document()?;
+    let mut window = document.get_default_view();
+    let mut previous_window = None;
+    let mut x = 0.0;
+    let mut y = 0.0;
+    while window != previous_window {
+        if let Some(frame) = window.as_ref().and_then(|window| window.get_frame_element()) {
+            let rects = frame.get_client_rects()?;
+            let rect = rects.item(0)?;
+            x += rect.get_left();
+            y += rect.get_top();
+        }
+        previous_window = window.clone();
+        let new_window =
+            if let Some(ref win) = window {
+                win.get_parent()
+            }
+            else {
+                break;
+            };
+        window = new_window;
+    }
+    Some(Pos {
+        x,
+        y,
+    })
+}
+
 /// Get the position of an element relative to the page root.
 pub fn get_position(element: &DOMElement) -> Option<Pos> {
     let rects = element.get_client_rects()?;
     let rect = rects.item(0)?;
+    let frame_offsets = get_frame_offsets(element).unwrap_or(Pos { x: 0.0, y: 0.0 });
 
     let document = element.get_owner_document()?;
     let window = document.get_default_view()?;
     let scroll_x = window.get_scroll_x();
     let scroll_y = window.get_scroll_y();
     Some(Pos {
-        x: rect.get_left() + scroll_x as f32,
-        y: rect.get_top() + scroll_y as f32,
+        x: rect.get_left() + frame_offsets.x + scroll_x as f32,
+        y: rect.get_top() + frame_offsets.y + scroll_y as f32,
     })
 }
 

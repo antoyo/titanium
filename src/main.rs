@@ -22,9 +22,7 @@
 /*
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
- * FIXME: hints on wrong position in dialogs of AccesD and postel.
- *
- * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test
+ * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test (now a scroll issue)
  *
  * FIXME: kill-win does not unfreeze the other web pages in the same web process.
  *
