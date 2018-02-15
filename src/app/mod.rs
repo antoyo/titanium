@@ -45,6 +45,8 @@ mod url;
 
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::env;
+use std::path::Path;
 use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle, RGBA};
@@ -252,11 +254,7 @@ impl Widget for App {
 
         handle_error!(self.clean_download_folder());
         self.init_popup_manager();
-
-        if let Some(ref url) = self.model.init_url {
-            self.webview.emit(PageOpen(url.clone()));
-        }
-
+        self.open_init_url();
         self.connect_dialog_events();
         self.connect_download_events();
         self.create_variables();
@@ -293,6 +291,27 @@ impl Widget for App {
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
             web_context,
+        }
+    }
+
+    fn open_init_url(&self) {
+        if let Some(ref url) = self.model.init_url {
+            // Open as a file if the path exist, otherwise open as a normal URL.
+            let url = {
+                let new_path = || {
+                    if Path::new(url).exists() {
+                        if let Ok(path) = env::current_dir() {
+                            let url = path.join(url);
+                            if let Some(url) = url.to_str() {
+                                return format!("file://{}", url);
+                            }
+                        }
+                    }
+                    url.clone()
+                };
+                new_path()
+            };
+            self.webview.emit(PageOpen(url));
         }
     }
 
