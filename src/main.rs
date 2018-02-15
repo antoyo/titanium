@@ -20,13 +20,9 @@
  */
 
 /*
- * TODO: for gi (first input), also search in frames.
- *
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
  * FIXME: hints on wrong position in dialogs of AccesD and postel.
- *
- * TODO: set a different z-index on hints so that the ones behind other elements will be hidden.
  *
  * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test
  *
@@ -369,9 +365,6 @@ extern crate tempfile;
 extern crate titanium_common;
 extern crate tokio_io;
 extern crate tokio_serde_bincode;
-extern crate tql;
-#[macro_use]
-extern crate tql_macros;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
