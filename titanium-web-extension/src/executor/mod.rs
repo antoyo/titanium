@@ -35,6 +35,7 @@ mod marks;
 mod scroll;
 
 use std::collections::HashMap;
+use std::f32;
 use std::sync::Mutex;
 
 use glib::{Cast, Closure};
@@ -74,6 +75,7 @@ use dom::{
     get_body,
     get_hints_container,
     get_href,
+    get_position,
     is_enabled,
     is_hidden,
     is_text_input,
@@ -335,6 +337,8 @@ impl Executor {
         let document = self.model.page.get_dom_document();
         if let Some(document) = document {
             let tag_names = ["input", "textarea"];
+            let mut element_to_focus = None;
+            let mut element_y_pos = f32::INFINITY;
             for tag_name in &tag_names {
                 let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
                 for element in iter {
@@ -342,12 +346,21 @@ impl Executor {
                     if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
                         && tabindex != Some("-1".to_string())
                     {
-                        element.focus();
-                        element.scroll_into_view_if_needed(false);
-                        self.send(EnterInsertMode());
-                        break;
+                        if let Some(pos) = get_position(&element) {
+                            // TODO: If y is equal, compare x?
+                            if pos.y < element_y_pos {
+                                element_y_pos = pos.y;
+                                element_to_focus = Some(element);
+                            }
+                        }
                     }
                 }
+            }
+
+            if let Some(element) = element_to_focus {
+                element.focus();
+                element.scroll_into_view_if_needed(false);
+                self.send(EnterInsertMode());
             }
         }
     }
