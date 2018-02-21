@@ -44,8 +44,11 @@ pub struct Credential {
 /// If a visible form exists, prefer it.
 fn find_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
     let elements = NodeIter::new(document.query_selector_all("input[type='password']").ok());
+    let elements_count = elements.len();
     for input_element in elements {
-        if !is_hidden(document, &input_element) {
+        // TODO: check that all elements are hidden instead of checking that there is only one
+        // element.
+        if !is_hidden(document, &input_element) || elements_count == 1 {
             let mut form_element = None;
             let mut element = Some(input_element);
             while let Some(el) = element {
@@ -129,7 +132,10 @@ pub fn load_password(document: &DOMDocument, password: &str) {
 pub fn load_username(document: &DOMDocument, username: &str) {
     let username_input =
         find_login_form(document)
-            .and_then(|login_form| login_form.query_selector("input[type='text']").flatten())
+            .and_then(|login_form|
+                // TODO: should we only get visible elements?
+                login_form.query_selector("input[type='text']").flatten()
+            )
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
     if let Some(username_input) = username_input {
         username_input.set_value(username);

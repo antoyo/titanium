@@ -86,6 +86,11 @@ macro_rules! iter {
                     node_list,
                 }
             }
+
+            pub fn len(&self) -> usize {
+                self.node_list.as_ref().map(|list| list.get_length() as usize)
+                    .unwrap_or(0)
+            }
         }
 
         impl Iterator for $name {

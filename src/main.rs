@@ -20,6 +20,10 @@
  */
 
 /*
+ * FIXME: submit not working in bnc.ca login form.
+ *
+ * FIXME: in login forms, sometimes the username is not typed by the form filler.
+ *
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
  * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test (now a scroll issue)
@@ -50,7 +54,7 @@
  * Perhaps should init table and cleanup download folder in another thread.
  *
  * FIXME: Links not working on https://tecnocode.co.uk/2014/03/27/what-is-gmaincontext/ (target="_blank")
- * FIXME: message corrupt on LinkedIn.
+ * FIXME: message corrupt on LinkedIn (libsoup issue).
  *
  * TODO: exit insert mode after hitting Enter in text input.
  * TODO: default window size.
@@ -79,7 +83,7 @@
  *
  * TODO: do not consider right-click open in new window as a popup.
  *
- * FIXME: issues when multiple input are shown (they must be inserted in a queue and shown one at a
+ * FIXME: issues when multiple input dialogs are shown (they must be inserted in a queue and shown one at a
  * time, or perhaps just using a blocking input for popups will do it).
  * TODO: in command and input mode, put the messages into a queue.
  *
@@ -122,6 +126,7 @@
  * TODO: show the letters typed in follow mode.
  *
  * TODO: command to restore the last closed window.
+ * TODO: command to open last deleted bookmark?
  *
  * TODO: rename the quit command to close.
  * TODO: add a close-all command?
@@ -141,7 +146,7 @@
  * FIXME: should not silently fail when an included file is missing.
  *
  * TODO: webkit_web_view_get_main_resource() to get source code
- * TODO: Hint to navigate to elements with an ID.
+ * TODO: Show hints on elements with an ID (to be able to navigate to their anchor).
  *
  * FIXME: angular form needs the typing action to be done in order to submit: https://grafana.int.adgear.com/
  *
@@ -176,9 +181,6 @@
  *
  * FIXME: too many redirections: https://www.cavendre.com/fr/annonce/login.php
  *
- * FIXME: focus does not go to first element (wiktionary). Compare the position instead of element
- * order.
- *
  * TODO: save the current URLs of every window in case of a crash.
  *
  * TODO: add command (;f) to change the active element.
@@ -204,8 +206,7 @@
  * TODO: shortcut zz to center the selected text (from a search, for instance).
  * TODO: shortcuts like zt and zb (is there something similar in vim that is not related to the cursor?).
  *
- * TODO: check if calling pass can block other windows.
- * TODO: use asynchronous communication with pass?
+ * TODO: use asynchronous communication with pass (to avoid blocking other windows)?
  *
  * FIXME: cannot scroll on https://translate.google.com/translate?hl=fr&sl=es&tl=en&u=http%3A%2F%2Fblog.bltavares.com%2F2017%2F01%2F18%2Fexpressando_o_dominio_atraves_do_sistema_de_tipos%2F (find the closest node which can scroll: if more than one are found at the same level, use the largest)
  * TODO: add tests for the scrolling element.

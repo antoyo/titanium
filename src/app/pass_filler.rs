@@ -31,6 +31,18 @@ use super::App;
 use errors::Result;
 
 impl App {
+    fn decrypt_username_if_needed<'a>(&self, username: &'a str, password: &'a str) -> (&'a str, &'a str) {
+        if username == "__titanium_encrypted_username" {
+            let mut password_parts = password.split('\n');
+            let username = password_parts.next().unwrap_or("");
+            let password = password_parts.next().unwrap_or("");
+            (username, password)
+        }
+        else {
+            (username, password)
+        }
+    }
+
     /// Delete the password for the current URL.
     pub fn delete_password(&self) -> Result<()> {
         let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
@@ -52,7 +64,8 @@ impl App {
             // TODO: ask for which username to insert.
             let username = &usernames[0];
             let password = self.model.password_manager.get_password(&self.model.current_url, username)?;
-            self.server_send(InsertText(password));
+            let (_username, password) = self.decrypt_username_if_needed(username, &password);
+            self.server_send(InsertText(password.to_string()));
         }
         Ok(())
     }
@@ -75,7 +88,8 @@ impl App {
         if !usernames.is_empty() {
             let username = &usernames[0];
             let password = self.model.password_manager.get_password(&self.model.current_url, username)?;
-            self.server_send(LoadUsernamePass(username.clone(), password));
+            let (username, password) = self.decrypt_username_if_needed(username, &password);
+            self.server_send(LoadUsernamePass(username.to_string(), password.to_string()));
         }
         Ok(())
     }
