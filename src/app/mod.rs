@@ -50,6 +50,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle, RGBA};
+use glib::Cast;
 use gtk::{
     self,
     Inhibit,
@@ -83,11 +84,17 @@ use mg::{
 use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{
+    self,
     Download,
+    GeolocationPermissionRequest,
     HitTestResult,
     HitTestResultExt,
     NavigationAction,
+    NotificationPermissionRequest,
+    PermissionRequestExt,
     URIRequestExt,
+    UserMediaPermissionRequest,
+    UserMediaPermissionRequestExt,
     WebContext,
     WebViewExt,
 };
@@ -139,6 +146,7 @@ use webview::Msg::{
     PageZoomIn,
     PageZoomNormal,
     PageZoomOut,
+    PermissionRequest,
     SearchBackward,
     SetOpenInNewWindow,
     ShowInspector,
@@ -185,6 +193,7 @@ pub struct Model {
 pub enum Msg {
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
+    AskPermission(webkit2gtk::PermissionRequest),
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
@@ -202,6 +211,7 @@ pub enum Msg {
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
     SetPageId(PageId),
+    PermissionResponse(webkit2gtk::PermissionRequest, bool),
     PopupDecision(Option<String>, String),
     Remove(PageId),
     ServerSend(PageId, InnerMessage),
@@ -353,6 +363,7 @@ impl Widget for App {
                 self.model.mode = mode
             },
             AppSettingChanged(setting) => self.setting_changed(setting),
+            AskPermission(request) => self.handle_permission_request(&request),
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
@@ -374,6 +385,7 @@ impl Widget for App {
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
+            PermissionResponse(request, confirmed) => self.handle_permission_response(&request, confirmed),
             // To be listened by the user.
             Remove(_) => (),
             // To be listened by the user.
@@ -423,6 +435,7 @@ impl Widget for App {
                     AppError(ref error) => ShowError(error.clone()),
                     Close => WebViewClose,
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
+                    PermissionRequest(ref request) => AskPermission(request.clone()),
                     WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
                     create(_, action) => (Create(action.clone()), None),
@@ -661,6 +674,40 @@ impl App {
     fn handle_key_press(&mut self, event_key: EventKey) {
         if self.model.mode == "follow" {
             self.handle_follow_key_press(event_key);
+        }
+    }
+
+    fn handle_permission_request(&self, request: &webkit2gtk::PermissionRequest) {
+        let msg =
+            if request.is::<GeolocationPermissionRequest>() {
+                "This page wants to know your location."
+            }
+            else if request.is::<NotificationPermissionRequest>() {
+                "This page wants to show desktop notifications."
+            }
+            else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
+                if media_permission.get_property_is_for_video_device() {
+                    "This page wants to use your webcam."
+                }
+                else {
+                    "This page wants to use your microphone."
+                }
+            }
+            else {
+                // TODO: log.
+                return;
+            };
+        let request = request.clone();
+        yes_no_question(&self.mg, &self.model.relm, msg.to_string(), move |confirmed|
+            PermissionResponse(request.clone(), confirmed));
+    }
+
+    fn handle_permission_response(&self, request: &webkit2gtk::PermissionRequest, confirmed: bool) {
+        if confirmed {
+            request.allow();
+        }
+        else {
+            request.deny();
         }
     }
 

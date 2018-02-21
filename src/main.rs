@@ -83,6 +83,8 @@
  *
  * TODO: do not consider right-click open in new window as a popup.
  *
+ * TODO: add command to save credentials by encrypting the username.
+ *
  * FIXME: issues when multiple input dialogs are shown (they must be inserted in a queue and shown one at a
  * time, or perhaps just using a blocking input for popups will do it).
  * TODO: in command and input mode, put the messages into a queue.

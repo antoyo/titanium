@@ -49,6 +49,7 @@ use webkit2gtk::{
     FindOptions,
     NavigationPolicyDecision,
     NavigationPolicyDecisionExt,
+    PermissionRequest,
     PolicyDecision,
     PolicyDecisionExt,
     PrintOperation,
@@ -110,6 +111,7 @@ pub enum Msg {
     PageZoomIn,
     PageZoomNormal,
     PageZoomOut,
+    PermissionRequest(PermissionRequest),
     SearchBackward(bool),
     SendPageId,
     SetOpenInNewWindow(bool),
@@ -166,6 +168,8 @@ impl Widget for WebView {
             PageZoomIn => self.show_zoom(self.zoom_in()),
             PageZoomNormal => self.show_zoom(self.zoom_normal()),
             PageZoomOut => self.show_zoom(self.zoom_out()),
+            // To be listened by the user.
+            PermissionRequest(_) => (),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
             SendPageId => self.send_page_id(),
             SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
@@ -188,6 +192,7 @@ impl Widget for WebView {
             vexpand: true,
             decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window, relm) =>
                 return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window, &relm),
+            permission_request(_, request) => (PermissionRequest(request.clone()), true),
         }
     }
 }
