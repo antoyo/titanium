@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: find first input also in frames.
+ *
  * FIXME: submit not working in bnc.ca login form.
  *
  * FIXME: in login forms, sometimes the username is not typed by the form filler.

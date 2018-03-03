@@ -16,8 +16,8 @@ lazy_static = "^0.2.8"
 log = "^0.3"
 nix = "^0.9.0"
 regex = "^0.2.2"
-relm-derive-state = "^0.11.0"
-relm-state = "^0.11.0"
+relm-derive-state = "^0.12.0"
+relm-state = "^0.12.0"
 send-cell = "^0.1.2"
 serde = "^1.0.7"
 simplelog = "^0.4"
@@ -34,7 +34,7 @@ path = "../titanium-common"
 version = "0.1.0"
 
 [features]
-default = ["webkit2gtk-webextension/v2_18", "webkit2gtk-webextension/gio"]
+default = ["relm-derive-state/unstable", "webkit2gtk-webextension/v2_18", "webkit2gtk-webextension/gio"]
 
 [lib]
 crate-type = ["dylib"]

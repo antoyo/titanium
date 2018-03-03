@@ -31,7 +31,7 @@ use std::fs::{remove_file, rename};
 use std::time::SystemTime;
 
 use gtk;
-use gtk::{ProgressBarExt, WidgetExt};
+use gtk::ProgressBarExt;
 use number_prefix::{Prefixed, Standalone, binary_prefix};
 use relm::{Relm, Widget};
 use relm_attributes::widget;
