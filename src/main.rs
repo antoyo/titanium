@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: open file in titanium only works when the process is created, not when the process already exists.
+ *
  * TODO: find first input also in frames.
  *
  * FIXME: submit not working in bnc.ca login form.
@@ -29,6 +31,9 @@
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
  * FIXME: Hint on wrong position on: http://www.travbuddy.com/search_google.php?cx=001087027826441394888%3Ap6zx7j2vnt8&cof=FORID%3A9&q=test (now a scroll issue)
+ * https://queue.acm.org/detail.cfm?id=3185224
+ *
+ * FIXME: hints on two lines on: https://area.autodesk.com/all/tutorials/stingray/?p=2
  *
  * FIXME: kill-win does not unfreeze the other web pages in the same web process.
  *
@@ -158,6 +163,8 @@
  * it down. Looks like it is slowed down by the hard drive.
  *
  * TODO: switch to relm-epoll, a crate that polls epoll from glib.
+ *
+ * TODO: plugin to hide disqus.
  *
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
  *

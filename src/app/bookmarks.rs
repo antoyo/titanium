@@ -89,7 +89,7 @@ impl App {
                     let default_answer = tags.join(", ");
                     // TODO: tags completion.
                     input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
-                    default_answer, TagEdit);
+                        default_answer, TagEdit);
                 },
                 Err(err) => self.error(&err.to_string()),
             }
