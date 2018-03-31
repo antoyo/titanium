@@ -188,6 +188,56 @@ impl Completer for FileCompleter {
     }
 }
 
+/// A tag completer.
+pub struct TagCompleter {
+    bookmarks: BookmarkManager,
+    current_tags: String,
+}
+
+impl TagCompleter {
+    pub fn new() -> Self {
+        Self {
+            bookmarks: BookmarkManager::new(),
+            current_tags: String::new(),
+        }
+    }
+}
+
+impl Completer for TagCompleter {
+    fn columns(&self) -> Vec<Column> {
+        vec![Expand]
+    }
+
+    fn complete_result(&self, value: &str) -> String {
+        if self.current_tags.is_empty() {
+            value.to_string()
+        }
+        else {
+            format!("{} {}", self.current_tags, value)
+        }
+    }
+
+    fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
+        let index = input.rfind(',')
+            .map(|index| index + 1)
+            .unwrap_or(0);
+        let query = input[index..].trim();
+        self.current_tags = input[..index].to_string();
+        if let Ok(tags) = self.bookmarks.search_tags(query) {
+            tags.iter()
+                .map(|tag| CompletionResult::new(&[&tag]))
+                .collect()
+        }
+        else {
+            vec![]
+        }
+    }
+
+    fn have_command(&self) -> bool {
+        false
+    }
+}
+
 /// Split at whitespaces and at the # character.
 /// The # character will be kept in the words while the spaces are dropped.
 fn split_whitespace_and_hash(input: &str) -> Vec<String> {

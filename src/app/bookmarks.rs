@@ -21,10 +21,16 @@
 
 //! Bookmark management in the application.
 
-use mg::{DeleteCompletionItem, Info, input};
+use mg::{
+    CustomDialog,
+    DialogBuilder,
+    DeleteCompletionItem,
+    Info,
+    InputDialog,
+};
 use webkit2gtk::WebViewExt;
 
-use app::App;
+use app::{App, TAG_COMPLETER};
 use app::Msg::TagEdit;
 
 impl App {
@@ -87,9 +93,14 @@ impl App {
             match self.model.bookmark_manager.get_tags(&self.model.current_url) {
                 Ok(tags) => {
                     let default_answer = tags.join(", ");
-                    // TODO: tags completion.
-                    input(&self.mg, &self.model.relm, "Bookmark tags (separated by comma):".to_string(),
-                        default_answer, TagEdit);
+                    let responder = Box::new(InputDialog::new(&self.model.relm, TagEdit));
+
+                    let builder = DialogBuilder::new()
+                        .completer(TAG_COMPLETER)
+                        .default_answer(default_answer)
+                        .message("Bookmark tags (separated by comma):".to_string())
+                        .responder(responder);
+                    self.mg.emit(CustomDialog(builder));
                 },
                 Err(err) => self.error(&err.to_string()),
             }

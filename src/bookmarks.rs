@@ -287,6 +287,28 @@ impl BookmarkManager {
         })
     }
 
+    pub fn search_tags(&self, tag_name: &str) -> Result<Vec<String>> {
+        CONNECTION.with(|connection| {
+            if let Some(ref connection) = *connection.borrow() {
+                if let Ok(mut statement) = connection.prepare("
+                        SELECT name
+                        FROM tags
+                        WHERE name LIKE '%' || $1 || '%'
+                    ")
+                {
+                    if let Ok(rows) = statement.query_map(&[&tag_name], |row| {
+                            row.get(0)
+                        })
+                    {
+                        return rows.collect::<result::Result<Vec<_>, _>>()
+                            .map_err(Into::into);
+                    }
+                }
+            }
+            Ok(vec![])
+        })
+    }
+
     /// Set the tags of a bookmark.
     pub fn set_tags(&self, url: &str, tags: Vec<String>) -> Result<()> {
         let original_tags = self.get_tags(url)?;

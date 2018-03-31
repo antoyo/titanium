@@ -107,7 +107,7 @@ use titanium_common::Percentage::{self, All, Percent};
 use bookmarks::BookmarkManager;
 use commands::AppCommand;
 use commands::AppCommand::*;
-use completers::{BookmarkCompleter, FileCompleter};
+use completers::{BookmarkCompleter, FileCompleter, TagCompleter};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
 use download_list_view::Msg::{
@@ -159,6 +159,7 @@ pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const INIT_SCROLL_TEXT: &str = "[top]";
 const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
 const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
+const TAG_COMPLETER: &str = "__tag";
 
 static MODES: Modes = &[
     Mode { name: "follow", prefix: "f", show_count: false },
@@ -420,6 +421,7 @@ impl Widget for App {
                 "open" => Box::new(BookmarkCompleter::new("open")),
                 "win-open" => Box::new(BookmarkCompleter::new("win-open")),
                 "private-win-open" => Box::new(BookmarkCompleter::new("private-win-open")),
+                TAG_COMPLETER => Box::new(TagCompleter::new()),
             },
             DarkTheme: true,
             Title: self.model.title.clone(),
