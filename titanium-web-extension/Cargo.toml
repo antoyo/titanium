@@ -8,10 +8,7 @@ version = "0.1.0"
 
 [dependencies]
 gio = "^0.4.0"
-gio-sys = "^0.6.0"
 glib = "^0.5.0"
-glib-sys = "^0.6.0"
-gobject-sys = "^0.6.0"
 lazy_static = "^0.2.8"
 log = "^0.3"
 regex = "^0.2.2"
@@ -30,7 +27,11 @@ path = "../titanium-common"
 version = "0.1.0"
 
 [features]
-default = ["gio-sys/v2_44", "relm-derive-state/unstable", "webkit2gtk-webextension/v2_18", "webkit2gtk-webextension/gio"]
+default = [
+    "relm-derive-state/unstable",
+    "webkit2gtk-webextension/v2_18",
+    "webkit2gtk-webextension/gio",
+]
 
 [lib]
 crate-type = ["dylib"]

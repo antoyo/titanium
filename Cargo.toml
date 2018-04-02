@@ -45,4 +45,12 @@ libxdo = "^0.4.1"
 tempdir = "^0.3"
 
 [features]
-default = ["cairo-rs/png", "gtk/v3_16", "log-panics/with-backtrace", "relm/unstable", "relm-attributes/unstable", "relm-derive/unstable", "webkit2gtk/v2_16"]
+default = [
+    "cairo-rs/png",
+    "gtk/v3_16",
+    "log-panics/with-backtrace",
+    "relm/unstable",
+    "relm-attributes/unstable",
+    "relm-derive/unstable",
+    "webkit2gtk/v2_16",
+]
