@@ -129,22 +129,13 @@ impl Update for PluginProtocol {
                             self.model.buffer = self.model.buffer[HEADER_SIZE..].to_vec(); // TODO: avoid the copy.
                         }
                     }
-                    if size > 0 {
-                        if let Some(ref reader) = self.model.reader {
-                            // FIXME: don't read in a loop. Continue reading when after a message
-                            // is read.
-                            connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT),
-                                self.model.relm, Read, |(_, error)| IOError(error));
-                        }
-                    }
-                    if let Some(size) = self.model.current_msg_size {
-                        let size = size as usize;
-                        if self.model.buffer.len() >= size {
+                    if let Some(msg_size) = self.model.current_msg_size {
+                        let msg_size = msg_size as usize;
+                        if self.model.buffer.len() >= msg_size {
                             {
-                                let mut decoder = Decoder::new(&self.model.buffer[..size]);
+                                let mut decoder = Decoder::new(&self.model.buffer[..msg_size]);
                                 match Decodable::decode(&mut decoder) {
                                     Ok(msg) => {
-                                        msg_read = true;
                                         self.model.relm.stream().emit(MsgRead(msg));
                                         self.model.current_msg_size = None;
                                     },
@@ -153,8 +144,15 @@ impl Update for PluginProtocol {
                                     },
                                 }
                             }
-                            self.model.buffer = self.model.buffer[size..].to_vec(); // TODO: avoid the copy.
+                            self.model.buffer = self.model.buffer[msg_size..].to_vec(); // TODO: avoid the copy.
+                            msg_read = true;
                         }
+                    }
+                }
+                if size > 0 {
+                    if let Some(ref reader) = self.model.reader {
+                        connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT),
+                        self.model.relm, Read, |(_, error)| IOError(error));
                     }
                 }
             },
