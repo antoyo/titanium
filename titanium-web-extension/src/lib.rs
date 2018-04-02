@@ -31,14 +31,12 @@
     unused_qualifications,
 )]
 
-extern crate fg_uds;
-extern crate futures;
-extern crate futures_glib;
+extern crate gio;
+extern crate glib;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
-extern crate nix;
 extern crate simplelog;
 extern crate regex;
 #[macro_use]
@@ -47,8 +45,6 @@ extern crate relm_state;
 extern crate relm_derive_state;
 extern crate send_cell;
 extern crate titanium_common;
-extern crate tokio_io;
-extern crate tokio_serde_bincode;
 extern crate url;
 extern crate xdg;
 #[macro_use]
@@ -177,7 +173,7 @@ pub fn web_extension_initialize(extension: &WebExtension) {
         println!("Cannot initialize the logger: {}", error);
     }
 
-    let client = wtry!(MessageClient::new());
+    let client = MessageClient::new();
 
     connect_stream!(extension, connect_page_created(_, page), client, PageCreated(page.clone()));
 

@@ -24,10 +24,9 @@ use std::io;
 use std::result;
 use std::str::Utf8Error;
 
-use nix;
+use glib;
 use password_store;
 use rusqlite;
-use tokio_serde_bincode;
 use zip::result::ZipError;
 
 pub struct Error {
@@ -62,16 +61,16 @@ impl<'a> From<&'a str> for Error {
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
+impl From<glib::Error> for Error {
+    fn from(error: glib::Error) -> Self {
         Error {
             msg: error.to_string(),
         }
     }
 }
 
-impl From<nix::Error> for Error {
-    fn from(error: nix::Error) -> Self {
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
         Error {
             msg: error.to_string(),
         }
@@ -96,14 +95,6 @@ impl From<rusqlite::Error> for Error {
 
 impl From<Utf8Error> for Error {
     fn from(error: Utf8Error) -> Self {
-        Error {
-            msg: error.to_string(),
-        }
-    }
-}
-
-impl From<tokio_serde_bincode::Error> for Error {
-    fn from(error: tokio_serde_bincode::Error) -> Self {
         Error {
             msg: error.to_string(),
         }

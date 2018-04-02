@@ -30,8 +30,22 @@
     unused_qualifications,
 )]
 
+extern crate gio;
+extern crate gio_sys;
+extern crate glib;
+extern crate glib_sys;
+extern crate gobject_sys;
 #[macro_use]
-extern crate serde_derive;
+extern crate log;
+#[macro_use]
+extern crate relm_derive_state;
+#[macro_use]
+extern crate relm_state;
+extern crate rmp_serialize;
+extern crate rustc_serialize;
+
+pub mod gio_ext;
+pub mod protocol;
 
 /// The mark that goes to the last position after a jump.
 pub const LAST_MARK: u8 = b'\'';
@@ -49,7 +63,7 @@ pub type ExtensionId = u64;
 pub type PageId = u64;
 
 /// Action that should be executed from the UI process.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Action {
     /// Copy the specified link in the clipboard.
     CopyLink(String),
@@ -65,7 +79,7 @@ pub enum Action {
 
 /// The mode for the follow mode.
 /// This indicates the action that will be taken after an hint is selected.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, RustcEncodable, RustcDecodable)]
 pub enum FollowMode {
     /// The link will be clicked.
     Click,
@@ -78,12 +92,12 @@ pub enum FollowMode {
 }
 
 /// Message with the associated window/page id.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
 pub struct Message(pub PageId, pub InnerMessage);
 
 /// Message representing actions to to in the web page.
 // Switch to SimpleMsg to avoid these empty ().
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum InnerMessage {
     /// Response to ActivateHint.
     ActivateAction(Action),
@@ -147,7 +161,7 @@ pub enum InnerMessage {
 }
 
 /// Either all the page is shown (hence, no percentage) or a value between 0 and 100.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, RustcEncodable, RustcDecodable)]
 pub enum Percentage {
     /// No percentage, since all the page is shown.
     All,

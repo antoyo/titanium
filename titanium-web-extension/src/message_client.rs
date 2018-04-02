@@ -20,17 +20,16 @@
  */
 
 use std::collections::HashMap;
-use std::io;
+use std::marker;
 
-use fg_uds::{UnixStream, UnixStreamConnect};
-use futures::{AsyncSink, Sink};
-use futures_glib::MainContext;
-use nix;
+use gio::{
+    self,
+    SocketClient,
+    SocketClientExt,
+    SocketConnection,
+};
+use glib::Cast;
 use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
-use tokio_io::AsyncRead;
-use tokio_io::codec::length_delimited::{FramedRead, FramedWrite};
-use tokio_io::io::WriteHalf;
-use tokio_serde_bincode::{Error, ReadBincode, WriteBincode};
 use webkit2gtk_webextension::{
     URIRequest,
     URIRequestExt,
@@ -39,8 +38,11 @@ use webkit2gtk_webextension::{
 };
 
 use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
+use titanium_common::gio_ext::new_abstract_socket_address;
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
+use titanium_common::protocol::{self, PluginProtocol};
+use titanium_common::protocol::Msg::{MsgRead, Write};
 
 use adblocker::Adblocker;
 use executor::Executor;
@@ -59,44 +61,48 @@ pub struct Model {
     executors: HashMap<PageId, EventStream<<Executor as Update>::Msg>>,
     extension_id: Option<ExtensionId>,
     page_id_to_send: Option<u64>,
+    protocol: Option<EventStream<protocol::Msg>>,
     relm: Relm<MessageClient>,
-    writer: Option<WriteBincode<FramedWrite<WriteHalf<UnixStream>>, Message>>,
 }
 
 #[derive(Msg)]
 pub enum Msg {
-    ConnectErr(io::Error),
-    Connection(UnixStream),
+    ConnectErr(gio::Error),
+    Connection(SocketConnection),
     MsgRecv(Message),
-    MsgError(Error),
+    MsgError(String),
     PageCreated(WebPage),
     Send(PageId, InnerMessage),
 }
 
+// NOTE: safe because the main loop is ran on the main thread.
+unsafe impl marker::Send for Msg {}
+
 impl Update for MessageClient {
     type Model = Model;
-    type ModelParam = UnixStreamConnect;
+    type ModelParam = ();
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, connection: Self::ModelParam) -> Model {
-        relm.connect_exec(connection, Connection, ConnectErr);
+    fn model(relm: &Relm<Self>, (): ()) -> Model {
+        let client = SocketClient::new();
+        let address = new_abstract_socket_address(SOCKET_NAME);
+        connect_async_full!(client, connect_async(&address), relm, Connection, ConnectErr);
         Model {
             executors: HashMap::new(),
             extension_id: None,
             page_id_to_send: None,
+            protocol: None,
             relm: relm.clone(),
-            writer: None,
         }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
-            ConnectErr(error) => error!("MsgError: {}", error),
+            ConnectErr(error) => error!("ConnectErr: {}", error),
             Connection(stream) => {
-                let (reader, writer) = stream.split();
-                self.model.writer = Some(WriteBincode::new(FramedWrite::new(writer)));
-                let reader = ReadBincode::new(FramedRead::new(reader));
-                self.model.relm.connect_exec(reader, MsgRecv, MsgError);
+                let protocol = execute::<PluginProtocol>(stream.upcast());
+                connect_stream!(protocol@MsgRead(ref msg), self.model.relm.stream(), MsgRecv(msg.clone()));
+                self.model.protocol = Some(protocol);
                 self.send_page_id();
             },
             MsgError(error) => error!("MsgError: {}", error),
@@ -125,7 +131,7 @@ impl Update for MessageClient {
                 self.model.executors.insert(page_id, executor);
 
                 let extension_id = self.model.extension_id.unwrap();
-                if self.model.writer.is_some() {
+                if self.model.protocol.is_some() {
                     trace!("Send page id {}", page_id);
                     self.send(page_id, Id(extension_id, page_id));
                 }
@@ -147,27 +153,17 @@ impl UpdateNew for MessageClient {
 }
 
 impl MessageClient {
-    pub fn new() -> nix::Result<EventStream<<Self as Update>::Msg>> {
-        let cx = MainContext::default(|cx| cx.clone());
-        let stream = UnixStream::connect_abstract(SOCKET_NAME, &cx)?;
-        Ok(execute::<MessageClient>(stream))
+    pub fn new() -> EventStream<<Self as Update>::Msg> {
+        execute::<MessageClient>(())
     }
 
     // Send a message to the server.
     fn send(&mut self, page_id: PageId, msg: InnerMessage) {
-        if let Some(ref mut writer) = self.model.writer {
-            match writer.start_send(Message(page_id, msg)) {
-                Ok(AsyncSink::Ready) =>
-                    if let Err(error) = writer.poll_complete() {
-                        error!("Cannot send message to UI process: {}", error);
-                    },
-                Ok(AsyncSink::NotReady(_)) => error!("not ready to send to server"),
-                Err(send_error) =>
-                    error!("cannot send a message to the web process: {}", send_error),
-            }
+        if let Some(ref mut protocol) = self.model.protocol {
+            protocol.emit(Write(Message(page_id, msg)));
         }
         else {
-            println!("No writer");
+            error!("No protocol");
         }
     }
 

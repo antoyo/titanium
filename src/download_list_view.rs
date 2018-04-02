@@ -20,9 +20,7 @@
  */
 
 use std::collections::HashMap;
-use std::time::Duration;
 
-use futures_glib::Timeout;
 use glib::Cast;
 use gtk::{
     self,
@@ -33,7 +31,13 @@ use gtk::{
     SelectionMode,
     WidgetExt,
 };
-use relm::{Component, ContainerWidget, Relm, Widget};
+use relm::{
+    Component,
+    ContainerWidget,
+    Relm,
+    Widget,
+    timeout,
+};
 use relm_attributes::widget;
 use webkit2gtk::{
     Download,
@@ -53,7 +57,7 @@ use download_view::Msg::{
 };
 use self::Msg::*;
 
-const DOWNLOAD_TIME_BEFORE_HIDE: u64 = 2;
+const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2;
 
 pub struct Model {
     download_count: u32,
@@ -122,7 +126,7 @@ impl DownloadListView {
             DownloadFailed(error.clone(), download.clone()));
         connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone()));
 
-        let download_view = self.view.add_widget::<DownloadView, _>(&self.model.relm, download.clone());
+        let download_view = self.view.add_widget::<DownloadView>(download.clone());
         if let Some(flow_child) = self.view.get_children().last() {
             flow_child.set_can_focus(false);
         }
@@ -143,8 +147,7 @@ impl DownloadListView {
 
     fn delayed_remove(&self, download: Download) {
         // Delete the view after a certain amount of time after the download finishes.
-        let timeout = Timeout::new(Duration::from_secs(DOWNLOAD_TIME_BEFORE_HIDE));
-        self.model.relm.connect_exec_ignore_err(timeout, move |_| DownloadRemove(download.clone()));
+        timeout(self.model.relm.stream(), DOWNLOAD_TIME_BEFORE_HIDE, move || DownloadRemove(download.clone()));
     }
 
     /// Delete a view and remove it from its parent.
