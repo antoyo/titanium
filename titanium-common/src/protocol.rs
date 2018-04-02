@@ -19,6 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+//! Communication protocol between the UI process and the web processes.
+
 use std::collections::VecDeque;
 use std::io::{Cursor, Seek};
 use std::io::SeekFrom::Start;
@@ -49,6 +51,7 @@ use self::SendMode::{Async, Sync};
 const BUFFER_SIZE: usize = 1024;
 const HEADER_SIZE: usize = 4;
 
+#[allow(missing_docs)]
 pub struct Model {
     buffer: Vec<u8>,
     current_msg_size: Option<u32>,
@@ -56,22 +59,26 @@ pub struct Model {
     reader: Option<InputStream>,
     relm: Relm<PluginProtocol>,
     sending_message: bool,
-    stream: IOStream,
+    _stream: IOStream,
     writer: Option<OutputStream>,
 }
 
+/// The variant MsgRead can be listened by the caller in order to get notified when a message is
+/// received.
+#[allow(missing_docs)]
 #[derive(Msg)]
 pub enum Msg {
     MsgRead(Message),
     Read((Vec<u8>, usize)),
+    IOError(Error),
     Write(Message),
-    WriteError(Error),
     Wrote,
 }
 
 // NOTE: safe because the main loop is ran on the main thread.
 unsafe impl Send for Msg {}
 
+/// This plugin protocol uses MessagePack to communicate.
 pub struct PluginProtocol {
     model: Model,
 }
@@ -85,7 +92,8 @@ impl Update for PluginProtocol {
         let reader = stream.get_input_stream();
         let writer = stream.get_output_stream();
         if let Some(ref reader) = reader {
-            connect_async!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT), relm, Read);
+            connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT), relm, Read,
+                |(_, error)| IOError(error));
         }
         Model {
             buffer: vec![],
@@ -94,13 +102,16 @@ impl Update for PluginProtocol {
             reader,
             relm: relm.clone(),
             sending_message: false,
-            stream,
+            // Keep the stream to avoid it being closed.
+            _stream: stream,
             writer,
         }
     }
 
     fn update(&mut self, message: Msg) {
         match message {
+            // To be listened to by the user.
+            IOError(_) => (),
             // To be listened by the user.
             MsgRead(_) => (),
             Read((mut buffer, size)) => {
@@ -120,7 +131,10 @@ impl Update for PluginProtocol {
                     }
                     if size > 0 {
                         if let Some(ref reader) = self.model.reader {
-                            connect_async!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT), self.model.relm, Read);
+                            // FIXME: don't read in a loop. Continue reading when after a message
+                            // is read.
+                            connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT),
+                                self.model.relm, Read, |(_, error)| IOError(error));
                         }
                     }
                     if let Some(size) = self.model.current_msg_size {
@@ -148,8 +162,6 @@ impl Update for PluginProtocol {
                 self.model.queue.push_back(msg);
                 self.send();
             },
-            WriteError(error) =>
-                error!("Async send error: {}", error),
             Wrote => {
                 self.model.sending_message = false;
                 self.send();
@@ -201,34 +213,43 @@ fn write_u32(buffer: &mut [u8], size: u32) {
     }
 }
 
+/// Whether to send a message asynchronously or synchronously.
 pub enum SendMode<'a> {
+    /// The message Wrote is sent on a successful write and IOError if there was an error.
     Async(&'a Relm<PluginProtocol>),
+    /// The error is shown when there's one.
     Sync,
 }
 
+/// Send a `msg` of the `writer`.
 pub fn send(writer: &OutputStream, msg: Message, send_mode: SendMode) {
     // Reserve space to write the size.
     let buffer = vec![0; HEADER_SIZE];
     let mut cursor = Cursor::new(buffer);
-    cursor.seek(Start(HEADER_SIZE as u64));
-    match msg.encode(&mut Encoder::new(&mut &mut cursor)) {
-        Ok(_) => {
-            let mut buffer = cursor.into_inner();
-            let size = buffer.len() - HEADER_SIZE;
-            write_u32(&mut buffer, size as u32);
-            match send_mode {
-                Async(relm) => {
-                    connect_async_full!(writer, write_all_async(buffer, PRIORITY_DEFAULT), relm,
+    if cursor.seek(Start(HEADER_SIZE as u64)).is_ok() {
+        match msg.encode(&mut Encoder::new(&mut &mut cursor)) {
+            Ok(_) => {
+                let mut buffer = cursor.into_inner();
+                let size = buffer.len() - HEADER_SIZE;
+                write_u32(&mut buffer, size as u32);
+                match send_mode {
+                    Async(relm) => {
+                        connect_async_full!(writer, write_all_async(buffer, PRIORITY_DEFAULT), relm,
                         |_| Wrote,
-                        |(_, error)| WriteError(error)
-                    );
-                },
-                Sync =>
-                    if let Err(error) = writer.write_all(&buffer, None) {
-                        error!("Send error: {}", error);
-                    }
-            }
-        },
-        Err(error) => error!("Failed to serialize message. {}", error),
+                        |(_, error)| IOError(error)
+                        );
+                    },
+                    Sync =>
+                        if let Err(error) = writer.write_all(&buffer, None) {
+                            // TODO: send these errors back to the web extension?
+                            error!("Send error: {}", error);
+                        }
+                }
+            },
+            Err(error) => error!("Failed to serialize message. {}", error),
+        }
+    }
+    else {
+        error!("Failed to seek buffer.");
     }
 }

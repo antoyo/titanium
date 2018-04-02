@@ -42,7 +42,7 @@ use titanium_common::gio_ext::new_abstract_socket_address;
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 use titanium_common::protocol::{self, PluginProtocol};
-use titanium_common::protocol::Msg::{MsgRead, Write};
+use titanium_common::protocol::Msg::{IOError, MsgRead, Write};
 
 use adblocker::Adblocker;
 use executor::Executor;
@@ -70,7 +70,7 @@ pub enum Msg {
     ConnectErr(gio::Error),
     Connection(SocketConnection),
     MsgRecv(Message),
-    MsgError(String),
+    MsgError(gio::Error),
     PageCreated(WebPage),
     Send(PageId, InnerMessage),
 }
@@ -102,6 +102,7 @@ impl Update for MessageClient {
             Connection(stream) => {
                 let protocol = execute::<PluginProtocol>(stream.upcast());
                 connect_stream!(protocol@MsgRead(ref msg), self.model.relm.stream(), MsgRecv(msg.clone()));
+                connect_stream!(protocol@IOError(ref error), self.model.relm.stream(), MsgError(error.clone()));
                 self.model.protocol = Some(protocol);
                 self.send_page_id();
             },
