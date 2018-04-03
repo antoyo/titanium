@@ -6,35 +6,31 @@ license = "MIT"
 name = "titanium"
 repository = "https://github.com/antoyo/titanium"
 version = "0.1.1"
+
 [dependencies]
 cairo-rs = "^0.4.0"
-fg-uds = "^0.3.0"
-futures = "^0.1.14"
-futures-glib = "^0.4.0"
 gdk = "^0.8.0"
+gio = "^0.4.0"
 glib = "^0.5.0"
 gtk = "^0.4.0"
 gumdrop = "^0.2.0"
 gumdrop_derive = "^0.2.0"
 log = "^0.3"
 log-panics = "^1.1.0"
-mg = "^0.8.1"
+mg = "^0.9.0"
 mg-settings = "^0.4.0"
 mg-settings-macros = "^0.4.0"
-nix = "^0.9.0"
 number_prefix = "^0.2"
 open = "^1.1"
 password-store = "^0.2.0"
 percent-encoding = "^1.0.0"
-relm = "^0.13.0"
-relm-attributes = "^0.13.0"
-relm-derive = "^0.13.0"
+relm = "^0.14.0"
+relm-attributes = "^0.14.0"
+relm-derive = "^0.14.0"
 rusqlite = "^0.7.3"
 simplelog = "^0.4"
 syslog = "^3.2.0"
 tempfile = "^2.1"
-tokio-io = "^0.1.1"
-tokio-serde-bincode = "^0.1.0"
 url = "^1.2"
 webkit2gtk = "^0.4.0"
 xdg = "^2.0"
@@ -49,5 +45,12 @@ libxdo = "^0.4.1"
 tempdir = "^0.3"
 
 [features]
-default = ["cairo-rs/png", "gtk/v3_16", "log-panics/with-backtrace", "relm/unstable", "relm-attributes/unstable",
-    "relm-derive/unstable", "relm/use_impl_trait", "webkit2gtk/v2_16"]
+default = [
+    "cairo-rs/png",
+    "gtk/v3_16",
+    "log-panics/with-backtrace",
+    "relm/unstable",
+    "relm-attributes/unstable",
+    "relm-derive/unstable",
+    "webkit2gtk/v2_16",
+]

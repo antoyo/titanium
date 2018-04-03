@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: use String as error.
+ *
  * FIXME: open file in titanium only works when the process is created, not when the process already exists.
  *
  * TODO: find first input also in frames.
@@ -169,8 +171,6 @@
  * TODO: downloading a non-existing file (http://download.microsoft.com/download/8/8/8/888f34b7-4f54-4f06-8dac-fa29b19f33dd/msxml3.msi) causes an error.
  *
  * TODO: might not require the syntax with (relm) if we emit the signal normally.
- *
- * TODO: remove dependencies like tokio.
  *
  * TODO: shortcut to toggle between open and win-open.
  *
@@ -337,10 +337,8 @@
 )]
 
 extern crate cairo;
-extern crate fg_uds;
-extern crate futures;
-extern crate futures_glib;
 extern crate gdk;
+extern crate gio;
 extern crate glib;
 extern crate gtk;
 extern crate gumdrop;
@@ -356,7 +354,6 @@ extern crate mg;
 extern crate mg_settings;
 #[macro_use]
 extern crate mg_settings_macros;
-extern crate nix;
 extern crate number_prefix;
 extern crate open;
 extern crate password_store;
@@ -373,8 +370,6 @@ extern crate syslog;
 extern crate tempdir;
 extern crate tempfile;
 extern crate titanium_common;
-extern crate tokio_io;
-extern crate tokio_serde_bincode;
 extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
@@ -424,7 +419,6 @@ struct Args {
 }
 
 fn main() {
-    futures_glib::init();
     gtk::init().unwrap(); // TODO: this is called twice. Remove?
 
     let args: Vec<_> = args().collect();
