@@ -349,8 +349,6 @@ extern crate gio;
 extern crate glib;
 extern crate gtk;
 extern crate gumdrop;
-#[macro_use]
-extern crate gumdrop_derive;
 #[cfg(test)]
 extern crate libxdo;
 #[macro_use]
