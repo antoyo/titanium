@@ -26,7 +26,7 @@ use std::thread;
 use INVALID_UTF8_ERROR;
 use errors::{Error, Result};
 use open;
-use tempfile::NamedTempFileOptions;
+use tempfile::Builder as TempFileBuilder;
 
 /// Generate a unique filename from `filename`.
 pub fn gen_unique_filename(filename: &str) -> Result<String> {
@@ -37,10 +37,10 @@ pub fn gen_unique_filename(filename: &str) -> Result<String> {
         else {
             (filename, "")
         };
-    let file = NamedTempFileOptions::new()
+    let file = TempFileBuilder::new()
         .prefix(prefix)
         .suffix(suffix)
-        .create()?;
+        .tempfile()?;
     let filename =
         file.path().file_name()
             .ok_or_else(|| Error::new("generated file name has no file name"))?

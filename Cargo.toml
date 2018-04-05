@@ -29,7 +29,7 @@ relm-derive = "^0.14.0"
 rusqlite = "^0.7.3"
 simplelog = "^0.4"
 syslog = "^3.2.0"
-tempfile = "^2.1"
+tempfile = "3"
 url = "^1.2"
 webkit2gtk = "^0.4.0"
 xdg = "^2.0"
@@ -41,7 +41,6 @@ version = "^0.1"
 
 [dev-dependencies]
 libxdo = "0.6"
-tempdir = "^0.3"
 
 [features]
 default = [

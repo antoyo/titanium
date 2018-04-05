@@ -370,8 +370,6 @@ extern crate relm_derive;
 extern crate rusqlite;
 extern crate simplelog;
 extern crate syslog;
-#[cfg(test)]
-extern crate tempdir;
 extern crate tempfile;
 extern crate titanium_common;
 extern crate url;

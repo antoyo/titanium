@@ -111,7 +111,7 @@ mod tests {
 
     use gtk;
     use libxdo::XDo;
-    use tempdir::TempDir;
+    use tempfile::Builder as TempFileBuilder;
     use webkit2gtk::WebViewExt;
 
     use app::App;
@@ -126,7 +126,7 @@ mod tests {
         gtk::init().unwrap();
 
         let path = "/tmp/titanium_test";
-        let temp_dir = TempDir::new(path).unwrap();
+        let temp_dir = TempFileBuilder::new().tempdir_in(path).unwrap();
 
         let dir = env::current_dir().unwrap();
         let cwd = dir.to_str().unwrap();
