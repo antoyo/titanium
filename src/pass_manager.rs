@@ -79,8 +79,8 @@ impl PasswordManager {
         }
     }
 
-    /// Get the password for a `url` and username.
-    pub fn get_password(&self, url: &str, username: &str) -> Result<String> {
+    /// Get the username and password for a `url` and username.
+    pub fn get(&self, url: &str, username: &str) -> Result<(String, String)> {
         if let Some(url) = host(url) {
             Ok(PasswordStore::get(&path_username(&url, username))?)
         }

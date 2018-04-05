@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "password-store"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "json 0.11.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -955,7 +955,7 @@ dependencies = [
  "mg-settings-macros 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "number_prefix 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "open 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "password-store 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "password-store 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-attributes 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1223,7 +1223,7 @@ dependencies = [
 "checksum open 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c281318d992e4432cfa799969467003d05921582a7489a8325e37f8a450d5113"
 "checksum pango 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "45374801e224373c3c0393cd48073c81093494c8735721e81d1dbaa4096b2767"
 "checksum pango-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "94039b3921a4af4058a3e4335e5d15099101f298a92f5afc40bab3a3027594a1"
-"checksum password-store 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "51afc7fcce9c271ff45b63338f5d1e1d8e5ca78a543b490e20a7077c2be39b7b"
+"checksum password-store 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9a681d1e7a991ddb88fba60b2ecd5d96924f22e900055351b332675181222cc9"
 "checksum percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
 "checksum podio 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e5422a1ee1bc57cc47ae717b0137314258138f38fd5f3cea083f43a9725383a0"

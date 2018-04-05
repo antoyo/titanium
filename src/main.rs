@@ -20,7 +20,15 @@
  */
 
 /*
+ * FIXME: Username not filled for zoho mail.
+ * FIXME: messages (like bookmarks added) are automatically hidden.
+ *
+ * TODO: Add a shortcut to copy from selection clipboard in insert mode.
+ * TODO: completion overlay should not change the webview size
+ * * Test here: https://doc.rust-lang.org/stable/book/first-edition/
  * TODO: use String as error.
+ *
+ * TODO: might find this useful for for filler: https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebPage.html#WebKitWebPage-form-controls-associated
  *
  * FIXME: open file in titanium only works when the process is created, not when the process already exists.
  *
