@@ -21,7 +21,6 @@
 
 /*
  * FIXME: Username not filled for zoho mail.
- * FIXME: messages (like bookmarks added) are automatically hidden.
  *
  * TODO: Add a shortcut to copy from selection clipboard in insert mode.
  * TODO: completion overlay should not change the webview size
