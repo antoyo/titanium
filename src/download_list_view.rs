@@ -57,7 +57,7 @@ use download_view::Msg::{
 };
 use self::Msg::*;
 
-const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2;
+const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2000;
 
 pub struct Model {
     download_count: u32,
