@@ -364,7 +364,6 @@ extern crate mg_settings_macros;
 extern crate number_prefix;
 extern crate open;
 extern crate password_store;
-extern crate percent_encoding;
 #[macro_use]
 extern crate relm;
 extern crate relm_attributes;

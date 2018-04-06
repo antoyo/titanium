@@ -21,7 +21,6 @@
 
 //! Password management.
 
-use percent_encoding::{percent_decode, utf8_percent_encode, USERINFO_ENCODE_SET};
 use password_store::PasswordStore;
 
 use app::APP_NAME;
@@ -67,11 +66,6 @@ impl PasswordManager {
     pub fn get_usernames(&self, url: &str) -> Result<Vec<String>> {
         if let Some(url) = host(url) {
             let mut usernames = PasswordStore::get_usernames(&path(&url))?;
-            for username in &mut usernames {
-                *username = percent_decode(username.as_bytes())
-                    .decode_utf8()?
-                    .to_string();
-            }
             Ok(usernames)
         }
         else {
@@ -95,5 +89,5 @@ fn path(url: &str) -> String {
 }
 
 fn path_username(url: &str, username: &str) -> String {
-    format!("{}/{}/{}", APP_NAME, url, utf8_percent_encode(username, USERINFO_ENCODE_SET))
+    format!("{}/{}/{}", APP_NAME, url, username)
 }
