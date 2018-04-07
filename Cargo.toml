@@ -40,7 +40,7 @@ path = "titanium-common"
 version = "^0.1"
 
 [dev-dependencies]
-libxdo = "^0.4.1"
+libxdo = "0.6"
 tempdir = "^0.3"
 
 [features]
