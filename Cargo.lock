@@ -766,7 +766,7 @@ dependencies = [
 
 [[package]]
 name = "relm-derive-state"
-version = "0.14.3"
+version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "relm-derive-common 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -975,7 +975,7 @@ dependencies = [
  "url 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "webkit2gtk 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "xdg 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "zip 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zip 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -988,7 +988,7 @@ dependencies = [
  "glib-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gobject-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "relm-derive-state 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "relm-derive-state 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-state 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serialize 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1149,7 +1149,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "zip"
-version = "0.2.8"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bzip2 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1244,7 +1244,7 @@ dependencies = [
 "checksum relm-core 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "e7f2718d4837b262cb359f6c5d4ab6f83f83fd6c4388350fe45c996e17d472bf"
 "checksum relm-derive 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "70974b03e3ea80b645285dc87077ed55b712ab587535c97c154d971bebd7ddc9"
 "checksum relm-derive-common 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "5d9c81e9e029f5220aea929905936ef80a5f586e2c7ba186ba00b75e7ae96786"
-"checksum relm-derive-state 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)" = "28384ceab4bbe1868cd7fe44bc7fb386632b1e12e8ed4765ac4edc7922a72407"
+"checksum relm-derive-state 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ba75051fbd206cf2a36d6688188b55bedfcd2338daab34c00da237d2c607fd8a"
 "checksum relm-gen-widget 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "07d00456cde875588e2b83a05ea121e5d87e7a373f77feb77ae3f2b9af36026b"
 "checksum relm-state 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "40dcb946873dd313faf498a881a903eda06332cd20a7bd02cfeb7212b9b8656a"
 "checksum remove_dir_all 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "dfc5b3ce5d5ea144bb04ebd093a9e14e9765bcfec866aecda9b6dec43b3d1e24"
@@ -1282,4 +1282,4 @@ dependencies = [
 "checksum wincolor 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "eeb06499a3a4d44302791052df005d5232b927ed1a9658146d842165c4de7767"
 "checksum x11 2.17.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e2a86db9d61a3697ded72bb068b4b641a752aaba77a6ce569827bc7e97dc4c5b"
 "checksum xdg 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a66b7c2281ebde13cf4391d70d4c7e5946c3c25e72a7b859ca8f677dcd0b0c61"
-"checksum zip 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "e7341988e4535c60882d5e5f0b7ad0a9a56b080ade8bdb5527cb512f7b2180e0"
+"checksum zip 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "10931e278527cea65682696481e6d840371d581079df529ebfee186e0eaad719"
