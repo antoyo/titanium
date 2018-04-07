@@ -399,8 +399,8 @@ mod webview;
 use std::env::args;
 
 use gumdrop::Options;
-use log::LogLevel::Error;
-use simplelog::{Config, LogLevelFilter, TermLogger};
+use log::Level::Error;
+use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
 use app::APP_NAME;
@@ -455,11 +455,12 @@ fn init_logging(log_to_term: bool) {
             level: Some(Error),
             target: None,
             location: None,
+            time_format: None,
         };
-        TermLogger::init(LogLevelFilter::max(), config).unwrap();
+        TermLogger::init(LevelFilter::max(), config).unwrap();
     }
     else {
-        syslog::init_unix(Facility::LOG_USER, LogLevelFilter::max()).unwrap();
+        syslog::init_unix(Facility::LOG_USER, LevelFilter::max()).unwrap();
     }
     log_panics::init();
 }
