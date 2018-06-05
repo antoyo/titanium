@@ -20,7 +20,7 @@
  */
 
 /*
- * FIXME: Username not filled for zoho mail.
+ * FIXME: Submit login form does not work on Zoho.
  * FIXME: URLs not opening in new window on http://www.canadiantire.ca/fr/outdoor-living/outdoor-power-equipment/lawn-mowers/electric-lawn-mowers.html?adlocation=LIT_Content_Category_ElectricMower_fr
  *
  * TODO: Add a shortcut to copy from selection clipboard in insert mode.

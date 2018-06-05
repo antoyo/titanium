@@ -119,27 +119,38 @@ fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
 
 /// Load the password in the login form.
 pub fn load_password(document: &DOMDocument, password: &str) {
-    let password_input =
+    let password_inputs =
         find_login_form(document)
-            .and_then(|login_form| login_form.query_selector("input[type='password']").flatten())
-            .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
-    if let Some(password_input) = password_input {
-        password_input.set_value(password);
+            .and_then(|login_form| login_form.query_selector_all("input[type='password']").ok());
+    let inputs = NodeIter::new(password_inputs);
+    for input in inputs {
+        if !is_hidden(document, &input) {
+            let password_input = input.downcast::<DOMHTMLInputElement>();
+            if let Ok(password_input) = password_input {
+                password_input.set_value(password);
+                break;
+            }
+        }
     }
 }
 
 /// Load the username in the login form.
 pub fn load_username(document: &DOMDocument, username: &str) {
-    let username_input =
+    let username_inputs =
         find_login_form(document)
             .and_then(|login_form|
-                // TODO: should we only get visible elements?
                 // FIXME: check for more types than just text and email.
-                login_form.query_selector("input[type='text'], input[type='email']").flatten()
-            )
-            .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
-    if let Some(username_input) = username_input {
-        username_input.set_value(username);
+                login_form.query_selector_all("input[type='text'], input[type='email']").ok()
+            );
+    let inputs = NodeIter::new(username_inputs);
+    for input in inputs {
+        if !is_hidden(document, &input) {
+            let username_input = input.downcast::<DOMHTMLInputElement>();
+            if let Ok(username_input) = username_input {
+                username_input.set_value(username);
+                break;
+            }
+        }
     }
 }
 
