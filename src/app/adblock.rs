@@ -39,6 +39,7 @@ use app::download::find_destination;
 use app::Msg::HostfileDownloaded;
 use download_list_view::Msg::DownloadRemove;
 use errors::{Error, Result};
+use file;
 use super::App;
 use urls::get_filename;
 
@@ -96,7 +97,7 @@ impl App {
         let hostfile = hostfile.to_str()
             .ok_or_else(|| Error::new("Cannot get hostfile"))?;
         if filename.ends_with(".zip") {
-            let mut archive = ZipArchive::new(File::open(filename)?)?;
+            let mut archive = ZipArchive::new(file::open(filename)?)?;
             let mut file =
                 if filename.contains("/hosts") {
                     archive.by_name("HOSTS")?
@@ -110,7 +111,7 @@ impl App {
             copy_file(hostfile, just_domains, &mut file)?;
         }
         else {
-            let mut file = File::open(filename)?;
+            let mut file = file::open(filename)?;
             copy_file(hostfile, just_domains, &mut file)?;
         }
         self.download_list_view.emit(DownloadRemove(download));

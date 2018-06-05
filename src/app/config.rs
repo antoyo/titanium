@@ -40,6 +40,7 @@ impl App {
 
 /// Get the default configuration files and directories.
 pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
+    let downloads_path = config_dir.data_file("downloads");
     let stylesheets_path = config_dir.config_file("stylesheets");
     let scripts_path = config_dir.config_file("scripts");
     let popups_path = config_dir.config_file("popups");
@@ -50,7 +51,8 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
     let hints_css_path = config_dir.config_file("stylesheets/hints.css");
     let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(config_dir);
 
-    vec![Dir(stylesheets_path),
+    vec![Dir(downloads_path),
+         Dir(stylesheets_path),
          Dir(scripts_path),
          Dir(popups_path),
          Dir(Ok(config_dir.data_home())),

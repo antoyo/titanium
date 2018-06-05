@@ -39,7 +39,7 @@ use webkit2gtk::{Download, DownloadExt, URIRequestExt};
 
 use urls;
 
-use file::open;
+use file::open_app_for_file;
 use self::Msg::*;
 
 pub struct Model {
@@ -137,7 +137,7 @@ impl Widget for DownloadView {
             // TODO: warning?
             // Open the file if the user chose to.
             if self.model.to_open {
-                open(destination.clone());
+                open_app_for_file(destination.clone());
             }
             self.model.relm.stream().emit(Remove);
         }

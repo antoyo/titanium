@@ -134,7 +134,8 @@ pub fn load_username(document: &DOMDocument, username: &str) {
         find_login_form(document)
             .and_then(|login_form|
                 // TODO: should we only get visible elements?
-                login_form.query_selector("input[type='text']").flatten()
+                // FIXME: check for more types than just text and email.
+                login_form.query_selector("input[type='text'], input[type='email']").flatten()
             )
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
     if let Some(username_input) = username_input {

@@ -79,6 +79,7 @@ use titanium_common::PageId;
 
 use config_dir::ConfigDir;
 use errors::Result;
+use file;
 use self::Msg::*;
 use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
@@ -204,7 +205,7 @@ impl WebView {
             content_manager.remove_all_scripts();
             let script_path = self.model.config_dir.config_file("scripts")?;
             for filename in read_dir(script_path)? {
-                let mut file = File::open(filename?.path())?;
+                let mut file = file::open(filename?.path())?;
                 let mut content = String::new();
                 file.read_to_string(&mut content)?;
                 // TODO: support whitelist as a comment in the script.
@@ -221,7 +222,7 @@ impl WebView {
             content_manager.remove_all_style_sheets();
             let stylesheets_path = self.model.config_dir.config_file("stylesheets")?;
             for filename in read_dir(stylesheets_path)? {
-                let mut file = File::open(filename?.path())?;
+                let mut file = file::open(filename?.path())?;
                 let mut content = String::new();
                 file.read_to_string(&mut content)?;
                 let (stylesheet, stylesheet_whitelist) = get_stylesheet_and_whitelist(&content);

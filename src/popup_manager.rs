@@ -27,6 +27,7 @@ use std::path::PathBuf;
 use app::App;
 use config_dir::ConfigDir;
 use errors::Result;
+use file;
 use urls::get_base_url;
 
 /// Manager to know whether a popup should be always or never opened.
@@ -79,7 +80,7 @@ impl PopupManager {
 
     /// Read a file as a HashSet where all lines are one entry in the set.
     fn read_as_set(&self, path: &PathBuf) -> Result<HashSet<String>> {
-        let mut file = File::open(path)?;
+        let mut file = file::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
         let set = content.lines()

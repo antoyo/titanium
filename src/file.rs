@@ -21,6 +21,9 @@
 
 //! Utility functions related to file.
 
+use std::ffi::OsStr;
+use std::fs::File;
+use std::path::Path;
 use std::thread;
 
 use INVALID_UTF8_ERROR;
@@ -50,8 +53,14 @@ pub fn gen_unique_filename(filename: &str) -> Result<String> {
     Ok(filename)
 }
 
+pub fn open<P: AsRef<Path> + AsRef<OsStr>>(path: P) -> Result<File> {
+    let string = AsRef::<OsStr>::as_ref(&path).to_string_lossy();
+    File::open(&path)
+        .map_err(|err| Error::new(&format!("Cannot open file {}: {}", string, err)))
+}
+
 /// Open a file in a new process.
-pub fn open(url: String) {
+pub fn open_app_for_file(url: String) {
     thread::spawn(move ||
         open::that(url).ok()
     );
