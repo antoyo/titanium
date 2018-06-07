@@ -90,7 +90,9 @@ impl Adblocker {
     /// Check if the specified url should be blocked.
     pub fn should_block(&self, url: &str) -> bool {
         if let Some(host) = get_url_host(url) {
-            let result = self.blacklisted_urls.contains(&host);
+            let result = self.blacklisted_urls.contains(&host) ||
+                // Block YouTube ads.
+                (host.contains("googlevideo.com") && url.contains("pltype=adhost"));
             if result {
                 info!("Blocked URL {}", host);
             }
