@@ -31,7 +31,11 @@ use webkit2gtk_webextension::{
     DOMNodeExt,
 };
 
-use dom::{NodeIter, is_hidden};
+use dom::{
+    NodeIter,
+    change_event,
+    is_hidden,
+};
 use option_util::OptionExt;
 
 pub struct Credential {
@@ -125,9 +129,10 @@ pub fn load_password(document: &DOMDocument, password: &str) {
     let inputs = NodeIter::new(password_inputs);
     for input in inputs {
         if !is_hidden(document, &input) {
-            let password_input = input.downcast::<DOMHTMLInputElement>();
+            let password_input = input.clone().downcast::<DOMHTMLInputElement>();
             if let Ok(password_input) = password_input {
                 password_input.set_value(password);
+                change_event(&input);
                 break;
             }
         }
@@ -145,9 +150,10 @@ pub fn load_username(document: &DOMDocument, username: &str) {
     let inputs = NodeIter::new(username_inputs);
     for input in inputs {
         if !is_hidden(document, &input) {
-            let username_input = input.downcast::<DOMHTMLInputElement>();
+            let username_input = input.clone().downcast::<DOMHTMLInputElement>();
             if let Ok(username_input) = username_input {
                 username_input.set_value(username);
+                change_event(&input);
                 break;
             }
         }

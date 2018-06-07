@@ -31,6 +31,7 @@ use webkit2gtk_webextension::{
     DOMDOMWindowExt,
     DOMElement,
     DOMElementExt,
+    DOMEventExt,
     DOMEventTarget,
     DOMEventTargetExt,
     DOMHTMLAnchorElement,
@@ -300,6 +301,15 @@ pub fn mouse_down(element: &DOMElement) {
 pub fn mouse_enter(element: &DOMElement) {
     mouse_event("mouseenter", element);
 }*/
+
+/// Trigger a change event on the element.
+pub fn change_event(element: &DOMElement) {
+    let event = wtry_opt_no_ret!(element.get_owner_document()
+        .and_then(|document| document.create_event("HTMLEvents").ok()));
+    event.init_event("change", false, true);
+    let element: DOMEventTarget = element.clone().upcast();
+    wtry!(element.dispatch_event(&event));
+}
 
 /// Trigger a mouse event on the element.
 pub fn mouse_event(event_name: &str, element: &DOMElement, ctrl_key: bool) {
