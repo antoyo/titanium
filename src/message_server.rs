@@ -76,6 +76,7 @@ use app::Msg::{
 use config_dir::ConfigDir;
 use errors::{Error, Result};
 use self::Msg::*;
+use urls::canonicalize_url;
 use webview::WebView;
 
 pub struct AppServer {
@@ -350,8 +351,8 @@ impl MessageServer {
 
 /// Create a new message server.
 /// If it is not possible to create one, show the error and exit.
-pub fn create_message_server(url: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
-    match MessageServer::new(url, config_dir) {
+pub fn create_message_server(urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
+    match MessageServer::new(urls, config_dir) {
         Ok(message_server) => message_server,
         Err(error) => {
             let message = format!("cannot create the message server used to communicate with the web processes: {}",
@@ -369,11 +370,14 @@ fn dialog_and_exit(message: &str) -> ! {
     process::exit(1);
 }
 
-fn send_url_to_existing_process(url: &[String]) -> Result<()> {
+fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
     let address = new_abstract_socket_address(SOCKET_NAME);
     let connection = client.connect(&address, None)?;
     let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
-    send(&writer, Message(0, Open(url.to_vec())), SendMode::Sync);
+    let urls = urls.iter()
+        .map(|url| canonicalize_url(url))
+        .collect();
+    send(&writer, Message(0, Open(urls)), SendMode::Sync);
     Ok(())
 }

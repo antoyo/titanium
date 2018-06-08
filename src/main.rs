@@ -20,8 +20,15 @@
  */
 
 /*
- * FIXME: Submit login form does not work on Zoho.
- * FIXME: URLs not opening in new window on http://www.canadiantire.ca/fr/outdoor-living/outdoor-power-equipment/lawn-mowers/electric-lawn-mowers.html?adlocation=LIT_Content_Category_ElectricMower_fr
+ * TODO: Block ads on youtube:
+ * https://github.com/adblockplus/adblockpluschrome/blob/ed07aad42e52fe169ef160c67571842525cf3692/safari/include.youtube.js
+ * Might be able to change the content of the request to:
+ * https://www.youtube.com/watch?v=RvnkAtWcKYg&list=RDEMCEY_ml9yV206dEgRXEKSkg&start_radio=1&pbj=1
+ *
+ * normal video: videoplayback?clen=26562312&itag=43&mime=video%2Fwebm&gir=yes&key=yt6&mv=m&c=web&ei=yE8ZW--bBoqH-QOR7ZjIAw&initcwndbps=867500&lmt=1516735696905984&mm=31,29&mn=sn-4pcgxovpgx-t0ae,sn-t0a7sn7d&id=o-AOM1kOpaVnUns1y_vIkM0Xxe-TssoxptbMiah5HPg
+ * ads: videoplayback?ip=70.35.215.109&lmt=1526332905241335&itag=43&requiressl=yes&id=o-AICQD28nyUKvGo_q-p47C57Yq_MvY3o78bQ3yYn1nVFu&pcm2cms=yes&source=youtube&dur=0.000&key=yt6&mn=sn-4pcgxovpgx-t0ae,sn-t0a7sn7d&mm=31,29&pl=25&mv=m&mt=152838538
+ *
+ * FIXME: Submit login form does not work on Zoho and Grafana.
  *
  * TODO: Add a shortcut to copy from selection clipboard in insert mode.
  * TODO: completion overlay should not change the webview size
@@ -30,13 +37,9 @@
  *
  * TODO: might find this useful for for filler: https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebPage.html#WebKitWebPage-form-controls-associated
  *
- * FIXME: open file in titanium only works when the process is created, not when the process already exists.
- *
  * TODO: find first input also in frames.
  *
  * FIXME: submit not working in bnc.ca login form.
- *
- * FIXME: in login forms, sometimes the username is not typed by the form filler.
  *
  * FIXME: cannot follow the clone button on GitHub anymore.
  *
@@ -131,8 +134,6 @@
  * TODO: message when search fails (and when it wraps to the start/end).
  *
  * TODO: show source.
- *
- * TODO: block ads on youtube.
  *
  * FIXME: scrolling hides the info message.
  * FIXME: scrolling goes too far when zoomed in.

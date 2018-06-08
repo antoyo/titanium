@@ -19,8 +19,24 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+use std::env;
+use std::path::Path;
+
 use url::{Position, Url};
 use url::percent_encoding::percent_decode;
+
+/// Get a file URL from the input if the file exists, otherwise return the input as is.
+pub fn canonicalize_url(url: &str) -> String {
+    if Path::new(url).exists() {
+        if let Ok(path) = env::current_dir() {
+            let url = path.join(url);
+            if let Some(url) = url.to_str() {
+                return format!("file://{}", url);
+            }
+        }
+    }
+    url.to_string()
+}
 
 /// Get the base URL (domain and tld) of an URL.
 pub fn get_base_url(url: &str) -> Option<String> {
