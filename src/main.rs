@@ -21,6 +21,9 @@
 
 /*
  * TODO: Block ads on youtube:
+ * Maybe we can get the URL of the video and play it instead of the ads and hide the Skip ad
+ * button.
+ *
  * https://github.com/adblockplus/adblockpluschrome/blob/ed07aad42e52fe169ef160c67571842525cf3692/safari/include.youtube.js
  * Might be able to change the content of the request to:
  * https://www.youtube.com/watch?v=RvnkAtWcKYg&list=RDEMCEY_ml9yV206dEgRXEKSkg&start_radio=1&pbj=1
@@ -29,6 +32,14 @@
  * ads: videoplayback?ip=70.35.215.109&lmt=1526332905241335&itag=43&requiressl=yes&id=o-AICQD28nyUKvGo_q-p47C57Yq_MvY3o78bQ3yYn1nVFu&pcm2cms=yes&source=youtube&dur=0.000&key=yt6&mn=sn-4pcgxovpgx-t0ae,sn-t0a7sn7d&mm=31,29&pl=25&mv=m&mt=152838538
  *
  * FIXME: Submit login form does not work on Zoho and Grafana.
+ * FIXME: URLs not opening in new window on http://www.canadiantire.ca/fr/outdoor-living/outdoor-power-equipment/lawn-mowers/electric-lawn-mowers.html?adlocation=LIT_Content_Category_ElectricMower_fr
+ * * https://www.homedepot.ca/fr/accueil/categories/decor/meubles/mobilier-de-salle-de-sejour/tables-basses-et-tables-de-bout.html
+ * * https://www.kijiji.ca/b-longueuil-rive-sud/table-basse/k0l1700279?dc=true
+ *
+ * TODO: block ads on YouTube: greasemonkey scripts to block youtube video ads
+ * http://userscripts-mirror.org/scripts/review/173910
+ * https://github.com/airodactyl/qutebrowser/commit/48eb50d7e
+ * https://greasyfork.org/en/scripts/9932-youtube
  *
  * TODO: Add a shortcut to copy from selection clipboard in insert mode.
  * TODO: use String as error.
