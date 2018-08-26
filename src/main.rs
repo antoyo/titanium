@@ -20,6 +20,10 @@
  */
 
 /*
+ * FIXME: enabling webkit-mediasource breaks some youtube videos.
+ *
+ * TODO: command to input username?
+ *
  * TODO: Block ads on youtube:
  * Maybe we can get the URL of the video and play it instead of the ads and hide the Skip ad
  * button.
