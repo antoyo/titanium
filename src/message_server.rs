@@ -38,6 +38,8 @@ use gio::{
     SocketListenerExt,
     SocketProtocol,
     SocketType,
+    UnixSocketAddress,
+    UnixSocketAddressPath,
 };
 use glib;
 use glib::Cast;
@@ -54,7 +56,6 @@ use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
 use webkit2gtk::WebContext;
 
 use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
-use titanium_common::gio_ext::{ListenerAsync, new_abstract_socket_address};
 use titanium_common::InnerMessage::{Id, Open};
 use titanium_common::protocol::{
     self,
@@ -210,7 +211,7 @@ impl UpdateNew for MessageServer {
 impl MessageServer {
     pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
         let listener = SocketListener::new();
-        let address = new_abstract_socket_address(SOCKET_NAME);
+        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
         let socket = Socket::new(SocketFamily::Unix, SocketType::Stream, SocketProtocol::Default)?;
         if let Err(error) = socket.bind(&address, false) {
             if error.kind::<IOErrorEnum>() == Some(IOErrorEnum::AddressInUse) {
@@ -237,7 +238,7 @@ impl MessageServer {
     }
 
     fn accept(&self) {
-        connect_async_full!(ListenerAsync::new(&self.model.listener), accept_async, self.model.relm,
+        connect_async_full!(self.model.listener, accept_async, self.model.relm,
             |(connection, _)| ClientConnect(connection), |error: glib::Error| MsgError(error.into()));
     }
 
@@ -372,7 +373,7 @@ fn dialog_and_exit(message: &str) -> ! {
 
 fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
-    let address = new_abstract_socket_address(SOCKET_NAME);
+    let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
     let connection = client.connect(&address, None)?;
     let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
     let urls = urls.iter()

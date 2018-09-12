@@ -27,6 +27,8 @@ use gio::{
     SocketClient,
     SocketClientExt,
     SocketConnection,
+    UnixSocketAddress,
+    UnixSocketAddressPath,
 };
 use glib::Cast;
 use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
@@ -38,7 +40,6 @@ use webkit2gtk_webextension::{
 };
 
 use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
-use titanium_common::gio_ext::new_abstract_socket_address;
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 use titanium_common::protocol::{self, PluginProtocol};
@@ -85,7 +86,7 @@ impl Update for MessageClient {
 
     fn model(relm: &Relm<Self>, (): ()) -> Model {
         let client = SocketClient::new();
-        let address = new_abstract_socket_address(SOCKET_NAME);
+        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
         connect_async_full!(client, connect_async(&address), relm, Connection, ConnectErr);
         Model {
             executors: HashMap::new(),

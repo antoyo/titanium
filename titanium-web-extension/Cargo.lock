@@ -562,10 +562,7 @@ name = "titanium-common"
 version = "0.1.0"
 dependencies = [
  "gio 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gio-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glib-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gobject-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-derive-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",

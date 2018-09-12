@@ -33,8 +33,8 @@ use gio::{
     IOStreamExt,
     OutputStream,
     OutputStreamExt,
+    OutputStreamExtManual,
 };
-use gio_ext::WriteAsync;
 use glib::PRIORITY_DEFAULT;
 use relm_state::{
     Relm,
