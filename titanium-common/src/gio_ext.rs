@@ -23,12 +23,7 @@ use glib::translate::{
 use glib_sys;
 use gobject_sys;
 
-macro_rules! callback_guard {
-    () => (
-        let _guard = glib::CallbackGuard::new();
-    )
-}
-
+// TODO: use implementation from gio.
 pub fn new_abstract_socket_address(name: &[u8]) -> SocketAddress {
     let path = name.to_glib_none().0 as *mut i8;
     let len = name.len();
@@ -38,6 +33,7 @@ pub fn new_abstract_socket_address(name: &[u8]) -> SocketAddress {
     }
 }
 
+// TODO: use implementation from gio.
 pub trait WriteAsync {
     fn write_all_async<'a, B: AsRef<[u8]> + Send + 'static, P: Into<Option<&'a Cancellable>>, Q: FnOnce(Result<(B, usize, Option<Error>), (B, Error)>) + Send + 'static>(&self, buffer: B, io_priority: Priority, cancellable: P, callback: Q);
 }
@@ -54,7 +50,6 @@ impl WriteAsync for OutputStream {
         let user_data: Box<Option<(Box<Q>, Box<B>)>> = Box::new(Some((Box::new(callback), buffer)));
         unsafe extern "C" fn write_all_async_trampoline<B: AsRef<[u8]> + Send + 'static, Q: FnOnce(Result<(B, usize, Option<Error>), (B, Error)>) + Send + 'static>(_source_object: *mut gobject_sys::GObject, res: *mut gio_sys::GAsyncResult, user_data: glib_sys::gpointer)
         {
-            callback_guard!();
             let mut user_data: Box<Option<(Box<Q>, Box<B>)>> = Box::from_raw(user_data as *mut _);
             let (callback, buffer) = user_data.take().unwrap();
             let buffer = *buffer;
@@ -78,10 +73,12 @@ impl WriteAsync for OutputStream {
     }
 }
 
+// TODO: use implementation from gio.
 pub struct ListenerAsync<'a> {
     listener: &'a SocketListener,
 }
 
+// TODO: use implementation from gio.
 impl<'b> ListenerAsync<'b> {
     pub fn new(listener: &'b SocketListener) -> Self {
         Self {
@@ -95,7 +92,6 @@ impl<'b> ListenerAsync<'b> {
         let user_data: Box<Box<Q>> = Box::new(Box::new(callback));
         unsafe extern "C" fn accept_async_trampoline<Q: FnOnce(Result<(SocketConnection, Option<glib::Object>), Error>) + Send + 'static>(_source_object: *mut gobject_sys::GObject, res: *mut gio_sys::GAsyncResult, user_data: glib_sys::gpointer)
         {
-            callback_guard!();
             let mut error = ptr::null_mut();
             let mut source_object = ptr::null_mut();
             let ret = gio_sys::g_socket_listener_accept_finish(_source_object as *mut _, res, &mut source_object, &mut error);

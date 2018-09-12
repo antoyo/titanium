@@ -347,7 +347,7 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
-#![feature(proc_macro)]
+#![feature(extern_prelude)]
 
 #![warn(
     missing_docs,
