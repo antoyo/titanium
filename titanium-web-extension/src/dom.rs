@@ -43,6 +43,10 @@ use webkit2gtk_webextension::{
     DOMHTMLElement,
     DOMHTMLFieldSetElement,
     DOMHTMLFieldSetElementExtManual,
+    DOMHTMLFrameElement,
+    DOMHTMLFrameElementExt,
+    DOMHTMLIFrameElement,
+    DOMHTMLIFrameElementExt,
     DOMHTMLInputElement,
     DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
@@ -142,6 +146,40 @@ pub fn get_document(page: &WebPage) -> Option<DOMElement> {
     page.get_dom_document().and_then(|document|
         document.get_document_element()
     )
+}
+
+pub fn get_elements_by_tag_name_in_all_frames(document: &DOMDocument, tag_name: &str) -> Vec<(DOMDocument, DOMElement)> {
+    let mut elements = vec![];
+    let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
+    for element in iter {
+        elements.push((document.clone(), element));
+    }
+
+    let iter = NodeIter::new(document.get_elements_by_tag_name("frame"));
+    for frame in iter {
+        if let Ok(frame) = frame.downcast::<DOMHTMLFrameElement>() {
+            if let Some(document) = frame.get_content_document() {
+                let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
+                for element in iter {
+                    elements.push((document.clone(), element));
+                }
+            }
+        }
+    }
+
+    let iter = NodeIter::new(document.get_elements_by_tag_name("iframe"));
+    for frame in iter {
+        if let Ok(frame) = frame.downcast::<DOMHTMLIFrameElement>() {
+            if let Some(document) = frame.get_content_document() {
+                let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
+                for element in iter {
+                    elements.push((document.clone(), element));
+                }
+            }
+        }
+    }
+
+    elements
 }
 
 /// Get the body if it exists or the html element.
@@ -260,7 +298,7 @@ pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
         {
             return true;
         }
-        element = el.get_offset_parent();
+        element = el.get_parent_element();
     }
     true
 }

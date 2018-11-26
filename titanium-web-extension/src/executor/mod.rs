@@ -73,6 +73,7 @@ use titanium_common::InnerMessage::*;
 use dom::{
     NodeIter,
     get_body,
+    get_elements_by_tag_name_in_all_frames,
     get_hints_container,
     get_href,
     get_position,
@@ -340,8 +341,8 @@ impl Executor {
             let mut element_to_focus = None;
             let mut element_y_pos = f32::INFINITY;
             for tag_name in &tag_names {
-                let iter = NodeIter::new(document.get_elements_by_tag_name(tag_name));
-                for element in iter {
+                let iter = get_elements_by_tag_name_in_all_frames(&document, tag_name);
+                for (document, element) in iter {
                     let tabindex = element.get_attribute("tabindex");
                     if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
                         && tabindex != Some("-1".to_string())

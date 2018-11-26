@@ -50,8 +50,6 @@
  *
  * TODO: might find this useful for for filler: https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebPage.html#WebKitWebPage-form-controls-associated
  *
- * TODO: find first input also in frames.
- *
  * FIXME: submit not working in bnc.ca login form.
  *
  * FIXME: cannot follow the clone button on GitHub anymore.
