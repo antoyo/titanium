@@ -347,8 +347,6 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
-#![feature(extern_prelude)]
-
 #![warn(
     missing_docs,
     trivial_casts,
@@ -391,6 +389,10 @@ extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
 extern crate zip;
+// TODO: remove when https://github.com/gtk-rs/gio/issues/99 is fixed.
+extern crate gio_sys;
+extern crate glib_sys;
+extern crate gobject_sys;
 
 mod app;
 mod bookmarks;
@@ -403,6 +405,7 @@ mod download_view;
 mod download_list_view;
 mod errors;
 mod file;
+mod gio_ext;
 mod message_server;
 mod pass_manager;
 mod popup_manager;

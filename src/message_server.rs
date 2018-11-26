@@ -79,6 +79,7 @@ use errors::{Error, Result};
 use self::Msg::*;
 use urls::canonicalize_url;
 use webview::WebView;
+use gio_ext::ListenerAsync;
 
 pub struct AppServer {
     stream: EventStream<app::Msg>,
@@ -110,7 +111,7 @@ pub struct Model {
     apps: HashMap<PageId, AppServer>,
     config_dir: ConfigDir,
     extension_page: HashMap<PageId, ExtensionId>,
-    listener: SocketListener,
+    listener: ListenerAsync,
     private_web_context: WebContext,
     relm: Relm<MessageServer>,
     // TODO: save the widgets somewhere allowing to remove them when its window is closed.
@@ -136,10 +137,10 @@ unsafe impl marker::Send for Msg {}
 
 impl Update for MessageServer {
     type Model = Model;
-    type ModelParam = (SocketListener, Vec<String>, Option<String>);
+    type ModelParam = (ListenerAsync, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (listener, urls, config): (SocketListener, Vec<String>, Option<String>)) -> Model {
+    fn model(relm: &Relm<Self>, (listener, urls, config): (ListenerAsync, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
@@ -234,7 +235,7 @@ impl MessageServer {
         }
         socket.listen()?;
         listener.add_socket(&socket, None::<&Socket>)?;
-        Ok(execute::<MessageServer>((listener, url, config_dir)))
+        Ok(execute::<MessageServer>((ListenerAsync::new(listener), url, config_dir)))
     }
 
     fn accept(&self) {
