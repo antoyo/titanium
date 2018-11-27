@@ -7,16 +7,13 @@ repository = "https://github.com/antoyo/titanium"
 version = "0.1.0"
 
 [dependencies]
-gio = "^0.4.0"
-gio-sys = "^0.6.0"
-glib = "^0.5.0"
-glib-sys = "^0.6.0"
-gobject-sys = "^0.6.0"
+gio = "^0.5.0"
+glib = "^0.6.0"
 log = "^0.4.1"
-relm-derive-state = "^0.14.0"
-relm-state = "^0.14.0"
+relm-derive-state = "^0.15.0"
+relm-state = "^0.15.0"
 rmp-serialize = "^0.8.0"
 rustc-serialize = "^0.3.24"
 
 [features]
-default = ["gio-sys/v2_44"]
+default = ["gio/v2_44"]

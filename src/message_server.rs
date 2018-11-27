@@ -38,6 +38,8 @@ use gio::{
     SocketListenerExt,
     SocketProtocol,
     SocketType,
+    UnixSocketAddress,
+    UnixSocketAddressPath,
 };
 use glib;
 use glib::Cast;
@@ -54,7 +56,6 @@ use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
 use webkit2gtk::WebContext;
 
 use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
-use titanium_common::gio_ext::{ListenerAsync, new_abstract_socket_address};
 use titanium_common::InnerMessage::{Id, Open};
 use titanium_common::protocol::{
     self,
@@ -78,6 +79,7 @@ use errors::{Error, Result};
 use self::Msg::*;
 use urls::canonicalize_url;
 use webview::WebView;
+use gio_ext::ListenerAsync;
 
 pub struct AppServer {
     stream: EventStream<app::Msg>,
@@ -109,7 +111,7 @@ pub struct Model {
     apps: HashMap<PageId, AppServer>,
     config_dir: ConfigDir,
     extension_page: HashMap<PageId, ExtensionId>,
-    listener: SocketListener,
+    listener: ListenerAsync,
     private_web_context: WebContext,
     relm: Relm<MessageServer>,
     // TODO: save the widgets somewhere allowing to remove them when its window is closed.
@@ -135,10 +137,10 @@ unsafe impl marker::Send for Msg {}
 
 impl Update for MessageServer {
     type Model = Model;
-    type ModelParam = (SocketListener, Vec<String>, Option<String>);
+    type ModelParam = (ListenerAsync, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (listener, urls, config): (SocketListener, Vec<String>, Option<String>)) -> Model {
+    fn model(relm: &Relm<Self>, (listener, urls, config): (ListenerAsync, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
@@ -210,7 +212,7 @@ impl UpdateNew for MessageServer {
 impl MessageServer {
     pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
         let listener = SocketListener::new();
-        let address = new_abstract_socket_address(SOCKET_NAME);
+        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
         let socket = Socket::new(SocketFamily::Unix, SocketType::Stream, SocketProtocol::Default)?;
         if let Err(error) = socket.bind(&address, false) {
             if error.kind::<IOErrorEnum>() == Some(IOErrorEnum::AddressInUse) {
@@ -233,11 +235,11 @@ impl MessageServer {
         }
         socket.listen()?;
         listener.add_socket(&socket, None::<&Socket>)?;
-        Ok(execute::<MessageServer>((listener, url, config_dir)))
+        Ok(execute::<MessageServer>((ListenerAsync::new(listener), url, config_dir)))
     }
 
     fn accept(&self) {
-        connect_async_full!(ListenerAsync::new(&self.model.listener), accept_async, self.model.relm,
+        connect_async_full!(self.model.listener, accept_async, self.model.relm,
             |(connection, _)| ClientConnect(connection), |error: glib::Error| MsgError(error.into()));
     }
 
@@ -372,7 +374,7 @@ fn dialog_and_exit(message: &str) -> ! {
 
 fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
-    let address = new_abstract_socket_address(SOCKET_NAME);
+    let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
     let connection = client.connect(&address, None)?;
     let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
     let urls = urls.iter()

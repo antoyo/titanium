@@ -31,10 +31,7 @@
 )]
 
 extern crate gio;
-extern crate gio_sys;
 extern crate glib;
-extern crate glib_sys;
-extern crate gobject_sys;
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -44,7 +41,6 @@ extern crate relm_state;
 extern crate rmp_serialize;
 extern crate rustc_serialize;
 
-pub mod gio_ext;
 pub mod protocol;
 
 /// The mark that goes to the last position after a jump.
