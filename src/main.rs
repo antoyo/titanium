@@ -79,8 +79,6 @@
  * TODO: shortcut to insert the password in insert mode?
  * TODO: shortcut to open in the same window.
  *
- * FIXME: web extension panics with newer webkit2gtk-webextension crate.
- *
  * FIXME: slow startup (The update function was slow to execute for message NewApp: 1943ms).
  * Perhaps should init table and cleanup download folder in another thread.
  *
@@ -92,7 +90,6 @@
  *
  * FIXME: config file marks not created.
  *
- * TODO: set user agent.
  * TODO: may need to enable fullscreen API (in config) to allow real fullscreen.
  * Most probably needs to hide the status bar in the signal enter_fullscreen.
  *
@@ -139,6 +136,7 @@
  *
  * TODO: Command to know which pages are in which process:
  * * to check whether the pages are distributed evenly between the processes.
+ * * maybe to know if a process is stuck.
  *
  * TODO: hide HTML in title/bookmarks?
  *
@@ -179,12 +177,10 @@
  * TODO: webkit_web_view_get_main_resource() to get source code
  * TODO: Show hints on elements with an ID (to be able to navigate to their anchor).
  *
- * FIXME: angular form needs the typing action to be done in order to submit: https://grafana.int.adgear.com/
+ * FIXME: angular form needs the typing action to be done in order to submit: https://www.codingame.com/start
  *
  * FIXME: seems slower when running as normal user (and faster as root), so perhaps the config slow
  * it down. Looks like it is slowed down by the hard drive.
- *
- * TODO: switch to relm-epoll, a crate that polls epoll from glib.
  *
  * TODO: plugin to hide disqus.
  *

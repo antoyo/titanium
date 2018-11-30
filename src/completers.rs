@@ -26,6 +26,8 @@ use std::path::{Path, PathBuf};
 use mg::completion::{Completer, CompletionCell, CompletionResult};
 use mg::completion::Column::{self, AllVisible, Expand};
 
+use app::USER_AGENT_COMPLETER;
+use app::user_agent::UserAgentManager;
 use bookmarks::{BookmarkInput, BookmarkManager};
 use download::download_dir;
 
@@ -235,6 +237,40 @@ impl Completer for TagCompleter {
 
     fn have_command(&self) -> bool {
         false
+    }
+}
+
+/// A user agent completer.
+pub struct UserAgentCompleter {
+    manager: UserAgentManager,
+}
+
+impl UserAgentCompleter {
+    pub fn new() -> Self {
+        Self {
+            manager: UserAgentManager,
+        }
+    }
+}
+
+impl Completer for UserAgentCompleter {
+    fn columns(&self) -> Vec<Column> {
+        vec![AllVisible]
+    }
+
+    fn complete_result(&self, value: &str) -> String {
+        format!("{} {}", USER_AGENT_COMPLETER, value)
+    }
+
+    fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
+        let mut results = vec![];
+        let names = self.manager.get_all();
+        for name in names {
+            if name.contains(input) {
+                results.push(CompletionResult::new(&[&name]));
+            }
+        }
+        results
     }
 }
 

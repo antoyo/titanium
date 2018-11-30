@@ -42,6 +42,7 @@ mod search_engine;
 mod server;
 mod test_utils;
 mod url;
+pub mod user_agent;
 
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -105,7 +106,12 @@ use titanium_common::Percentage::{self, All, Percent};
 use bookmarks::BookmarkManager;
 use commands::AppCommand;
 use commands::AppCommand::*;
-use completers::{BookmarkCompleter, FileCompleter, TagCompleter};
+use completers::{
+    BookmarkCompleter,
+    FileCompleter,
+    TagCompleter,
+    UserAgentCompleter,
+};
 use config_dir::ConfigDir;
 use download_list_view::DownloadListView;
 use download_list_view::Msg::{
@@ -120,11 +126,13 @@ use self::config::default_config;
 use self::dialog::handle_script_dialog;
 use self::file_chooser::handle_file_chooser;
 use self::Msg::*;
+use self::user_agent::UserAgentManager;
 use settings::AppSettings;
 use settings::AppSettingsVariant::{
     self,
     HintChars,
     HomePage,
+    WebkitUserAgent,
 };
 use urls::canonicalize_url;
 use webview::WebView;
@@ -159,6 +167,7 @@ const INIT_SCROLL_TEXT: &str = "[top]";
 const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
 const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
 const TAG_COMPLETER: &str = "__tag";
+pub const USER_AGENT_COMPLETER: &str = "select-user-agent";
 
 static MODES: Modes = &[
     Mode { name: "follow", prefix: "f", show_count: false },
@@ -186,6 +195,8 @@ pub struct Model {
     scroll_text: String,
     search_engines: HashMap<String, String>,
     title: String,
+    user_agents: HashMap<String, String>,
+    user_agent_manager: UserAgentManager,
     web_context: WebContext,
 }
 
@@ -300,6 +311,8 @@ impl Widget for App {
             scroll_text: INIT_SCROLL_TEXT.to_string(),
             search_engines: HashMap::new(),
             title: APP_NAME.to_string(),
+            user_agents: HashMap::new(),
+            user_agent_manager: UserAgentManager,
             web_context,
         }
     }
@@ -408,6 +421,7 @@ impl Widget for App {
                 "win-open" => Box::new(BookmarkCompleter::new("win-open")),
                 "private-win-open" => Box::new(BookmarkCompleter::new("private-win-open")),
                 TAG_COMPLETER => Box::new(TagCompleter::new()),
+                USER_AGENT_COMPLETER => Box::new(UserAgentCompleter::new()),
             },
             DarkTheme: true,
             Title: self.model.title.clone(),
@@ -460,6 +474,14 @@ impl App {
         let mark = mark_from_str(mark);
         self.server_send(InnerMessage::Mark(mark));
         self.mg.emit(Info(format!("Added mark {}", mark as char)));
+    }
+
+    fn add_user_agent(&mut self, user_agent: &str) {
+        let mut params = user_agent.splitn(2, ' ');
+        if let (Some(name), Some(user_agent)) = (params.next(), params.next()) {
+            self.model.user_agents.insert(name.to_string(), user_agent.to_string());
+            self.model.user_agent_manager.add(name);
+        }
     }
 
     fn adjust_in_follow_mode(&mut self, mode: &str) {
@@ -555,6 +577,7 @@ impl App {
         match *command {
             ActivateSelection => self.activate_selection(),
             AdblockUpdate => handle_error!(self.adblock_update()),
+            AddUserAgent(ref user_agent) => self.add_user_agent(user_agent),
             Back => self.history_back(),
             BackwardSearch(ref input) => {
                 self.webview.emit(SearchBackward(true));
@@ -617,6 +640,7 @@ impl App {
             SearchEngine(ref args) => self.add_search_engine(args),
             SearchNext => self.webview.emit(PageSearchNext),
             SearchPrevious => self.webview.emit(PageSearchPrevious),
+            SelectUserAgent(ref name) => self.select_user_agent(name),
             Stop => self.webview.widget().stop_loading(),
             UrlIncrement => self.url_increment(),
             UrlDecrement => self.url_decrement(),
@@ -759,6 +783,13 @@ impl App {
     fn quit(&self, can_quit: bool) {
         if can_quit {
             self.webview.widget().try_close();
+        }
+    }
+
+    fn select_user_agent(&mut self, name: &str) {
+        if let Some(user_agent) = self.model.user_agents.get(name).cloned() {
+            self.info(format!("Set user agent to: {}", user_agent));
+            self.setting_changed(WebkitUserAgent(user_agent));
         }
     }
 

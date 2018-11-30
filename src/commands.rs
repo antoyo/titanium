@@ -25,6 +25,8 @@ pub enum AppCommand {
     ActivateSelection,
     #[help(text="Update the host file used by the adblocker")]
     AdblockUpdate,
+    #[help(text="Add a new user agent")]
+    AddUserAgent(String),
     #[help(text="Go back in the history")]
     Back,
     #[special_command(incremental, identifier="?")]
@@ -139,6 +141,8 @@ pub enum AppCommand {
     SearchNext,
     #[completion(hidden)]
     SearchPrevious,
+    #[help(text="Select a user agent by name")]
+    SelectUserAgent(String),
     #[help(text="Stop loading the current page")]
     Stop,
     #[completion(hidden)]
