@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2019 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: add shortcut to scroll by paragraph (like { and } in vim).
+ *
  * FIXME: enabling webkit-mediasource breaks some youtube videos.
  *
  * TODO: command to input username?
@@ -402,6 +404,7 @@ mod file;
 mod gio_ext;
 mod message_server;
 mod pass_manager;
+mod permission_manager;
 mod popup_manager;
 mod settings;
 mod stylesheet;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2019 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -78,6 +78,7 @@ use mg::{
     StatusBarItem,
     Text,
     Title,
+    question,
     yes_no_question,
 };
 use relm::{Relm, Widget};
@@ -121,6 +122,7 @@ use download_list_view::Msg::{
 use errors::Result;
 use message_server::Privacy;
 use pass_manager::PasswordManager;
+use permission_manager::{Permission, PermissionManager, create_permission_manager};
 use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
@@ -190,6 +192,7 @@ pub struct Model {
     open_in_new_window: bool,
     password_manager: PasswordManager,
     overridden_color: Option<RGBA>,
+    permission_manager: Option<PermissionManager>,
     popup_manager: Option<PopupManager>,
     relm: Relm<App>,
     scroll_text: String,
@@ -222,7 +225,7 @@ pub enum Msg {
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
     SetPageId(PageId),
-    PermissionResponse(webkit2gtk::PermissionRequest, bool),
+    PermissionResponse(webkit2gtk::PermissionRequest, Option<String>),
     PopupDecision(Option<String>, String),
     Remove(PageId),
     ServerSend(PageId, InnerMessage),
@@ -274,6 +277,7 @@ impl Widget for App {
         }
 
         handle_error!(self.clean_download_folder());
+        self.init_permission_manager();
         self.init_popup_manager();
         self.open_init_url();
         self.connect_dialog_events();
@@ -289,6 +293,7 @@ impl Widget for App {
     }
 
     fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
+        let permission_manager = create_permission_manager(&config_dir);
         let popup_manager = create_popup_manager(&config_dir);
         Model {
             bookmark_manager: BookmarkManager::new(),
@@ -306,6 +311,7 @@ impl Widget for App {
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
             overridden_color: None,
+            permission_manager,
             popup_manager,
             relm: relm.clone(),
             scroll_text: INIT_SCROLL_TEXT.to_string(),
@@ -385,7 +391,7 @@ impl Widget for App {
             OverwriteDownload(download, download_destination, overwrite) =>
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
-            PermissionResponse(request, confirmed) => self.handle_permission_response(&request, confirmed),
+            PermissionResponse(request, choice) => self.handle_permission_response(&request, choice),
             // To be listened by the user.
             Remove(_) => (),
             // To be listened by the user.
@@ -689,38 +695,71 @@ impl App {
         }
     }
 
-    fn handle_permission_request(&self, request: &webkit2gtk::PermissionRequest) {
-        let msg =
-            if request.is::<GeolocationPermissionRequest>() {
-                "This page wants to know your location."
+    fn handle_permission_request(&mut self, request: &webkit2gtk::PermissionRequest) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            if let Some(ref mut permission_manager) = self.model.permission_manager {
+                if permission_manager.is_blacklisted(&url, request) {
+                    request.deny();
+                    return;
+                }
+                if permission_manager.is_whitelisted(&url, request) {
+                    request.allow();
+                    return;
+                }
             }
-            else if request.is::<NotificationPermissionRequest>() {
-                "This page wants to show desktop notifications."
-            }
-            else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
-                if media_permission.get_property_is_for_video_device() {
-                    "This page wants to use your webcam."
+
+            let msg =
+                if request.is::<GeolocationPermissionRequest>() {
+                    "This page wants to know your location."
+                }
+                else if request.is::<NotificationPermissionRequest>() {
+                    "This page wants to show desktop notifications."
+                }
+                else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
+                    if media_permission.get_property_is_for_video_device() {
+                        "This page wants to use your webcam."
+                    }
+                    else {
+                        "This page wants to use your microphone."
+                    }
                 }
                 else {
-                    "This page wants to use your microphone."
+                    // TODO: log.
+                    return;
+                };
+            let request = request.clone();
+            question(&self.mg, &self.model.relm, msg.to_string(),
+                char_slice!['y', 'n', 'a', 'e'], move |choice| PermissionResponse(request.clone(), choice));
+        }
+    }
+
+    fn handle_permission_response(&mut self, request: &webkit2gtk::PermissionRequest, choice: Option<String>) {
+        if let Some(url) = self.webview.widget().get_uri() {
+            match choice.as_ref().map(String::as_str) {
+                Some("y") | Some("a") => request.allow(),
+                _ => request.deny(),
+            }
+
+            match choice.as_ref().map(String::as_str) {
+                Some("a") => self.remember_permission(Permission::Always, request, &url),
+                Some("e") => self.remember_permission(Permission::Never, request, &url),
+                _ => (),
+            }
+        }
+    }
+
+    fn remember_permission(&mut self, permission: Permission, request: &webkit2gtk::PermissionRequest, url: &str) {
+        let result =
+            if let Some(ref mut permission_manager) = self.model.permission_manager {
+                match permission {
+                    Permission::Always => permission_manager.whitelist(url, request),
+                    Permission::Never => permission_manager.blacklist(url, request),
                 }
             }
             else {
-                // TODO: log.
-                return;
+                Ok(())
             };
-        let request = request.clone();
-        yes_no_question(&self.mg, &self.model.relm, msg.to_string(), move |confirmed|
-            PermissionResponse(request.clone(), confirmed));
-    }
-
-    fn handle_permission_response(&self, request: &webkit2gtk::PermissionRequest, confirmed: bool) {
-        if confirmed {
-            request.allow();
-        }
-        else {
-            request.deny();
-        }
+        self.handle_error(result);
     }
 
     fn history_back(&mut self) {
@@ -746,6 +785,17 @@ impl App {
     /// Show an info.
     pub fn info(&self, info: String) {
         self.mg.emit(Info(info));
+    }
+
+    fn init_permission_manager(&mut self) {
+        let result =
+            if let Some(ref mut permission_manager) = self.model.permission_manager {
+                permission_manager.load()
+            }
+            else {
+                Ok(())
+            };
+        self.handle_error(result);
     }
 
     fn init_popup_manager(&mut self) {

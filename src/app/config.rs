@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2019 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -50,6 +50,7 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
     let webkit_config_path = config_dir.config_file("webkit");
     let hints_css_path = config_dir.config_file("stylesheets/hints.css");
     let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(config_dir);
+    let (permission_whitelist_path, permission_blacklist_path) = App::permission_path(config_dir);
 
     vec![Dir(downloads_path),
          Dir(stylesheets_path),
@@ -62,5 +63,7 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
          File(hints_css_path, include_str!("../../config/stylesheets/hints.css")),
          File(popup_whitelist_path, ""),
          File(popup_blacklist_path, ""),
+         File(permission_whitelist_path, ""),
+         File(permission_blacklist_path, ""),
         ]
 }
