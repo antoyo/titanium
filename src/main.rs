@@ -23,6 +23,10 @@
  * TODO: add shortcut to scroll by paragraph (like { and } in vim).
  *
  * FIXME: enabling webkit-mediasource breaks some youtube videos.
+ * FIXME: downloading a file on a different partition does not work.
+ * TODO: prevent screensaver when playing video.
+ *
+ * TODO: command to change user agent (with a set of default).
  *
  * TODO: command to input username?
  *
