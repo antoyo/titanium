@@ -123,6 +123,11 @@ fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
 
 /// Load the password in the login form.
 pub fn load_password(document: &DOMDocument, password: &str) {
+    // TODO: trigger change event (https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210):
+    // var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    // nativeInputValueSetter.call(element, 'react 16 value');
+    // var ev2 = new Event('input', { bubbles: true});
+    // element.dispatchEvent(ev2);
     let password_inputs =
         find_login_form(document)
             .and_then(|login_form| login_form.query_selector_all("input[type='password']").ok());
@@ -141,6 +146,7 @@ pub fn load_password(document: &DOMDocument, password: &str) {
 
 /// Load the username in the login form.
 pub fn load_username(document: &DOMDocument, username: &str) {
+    // TODO: trigger change event:
     let username_inputs =
         find_login_form(document)
             .and_then(|login_form|

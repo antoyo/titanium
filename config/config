@@ -10,3 +10,6 @@ search-engine wikipedia http://en.wikipedia.org/w/index.php?search={}
 set hint-chars = hjklasdfgyuiopqwertnmzxcvb
 
 set cookie-accept = always
+
+# User agents.
+add-user-agent firefox Mozilla/5.0 (X11; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0
