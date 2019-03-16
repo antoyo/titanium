@@ -28,6 +28,7 @@ use webkit2gtk_webextension::{
     DOMElementExt,
     DOMNodeExt,
     WebPage,
+    WebPageExt,
 };
 
 use titanium_common::LAST_MARK;
@@ -58,27 +59,28 @@ impl Executor {
     /// Scroll the web page vertically by the specified amount of pixels.
     /// A negative value scroll towards to top.
     pub fn scroll_by(&mut self, pixels: i64) {
-        self.init_scroll_element_if_needed();
-        let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
-        element.set_scroll_top(element.get_scroll_top() + pixels);
+        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+        let window = wtry_opt_no_ret!(document.get_default_view());
+        window.scroll_by(0.0, pixels as f64);
     }
 
     /// Scroll the web page horizontally by the specified amount of pixels.
     /// A negative value scroll towards left.
     pub fn scroll_by_x(&mut self, pixels: i64) {
-        self.init_scroll_element_if_needed();
-        let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
-        element.set_scroll_left(element.get_scroll_left() + pixels);
+        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+        let window = wtry_opt_no_ret!(document.get_default_view());
+        window.scroll_by(pixels as f64, 0.0);
     }
 
     /// Get the current vertical scroll position of the web page as a percentage.
     pub fn scroll_percentage(&mut self) -> Percentage {
         info!("scroll_percentage");
         let default = All;
-        let element = unwrap_opt_or_ret!(self.model.scroll_element.as_ref(), default);
+        let document = unwrap_opt_or_ret!(self.model.page.get_dom_document(), default);
+        let window = unwrap_opt_or_ret!(document.get_default_view(), default);
         let document = unwrap_opt_or_ret!(get_document(&self.model.page), default);
         let height = document.get_client_height();
-        let scroll_height = element.get_scroll_height();
+        let scroll_height = document.get_scroll_height();
         info!("height: {}", height);
         info!("scroll_height: {}", scroll_height);
         if scroll_height <= height as i64 {
@@ -86,29 +88,30 @@ impl Executor {
             default
         }
         else {
-            info!("scroll_top: {}", element.get_scroll_top());
-            Percent((element.get_scroll_top() as f64 / (scroll_height as f64 - height) * 100.0).round() as i64)
+            info!("scroll_y: {}", window.get_scroll_y());
+            Percent((window.get_scroll_y() as f64 / (scroll_height as f64 - height) * 100.0).round() as i64)
         }
     }
 
     /// Scroll to the top of the web page.
     pub fn scroll_top(&mut self) {
-        self.init_scroll_element_if_needed();
         self.add_mark(LAST_MARK);
-        let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
-        element.set_scroll_top(0);
+        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+        let window = wtry_opt_no_ret!(document.get_default_view());
+        window.scroll_to(0.0, 0.0);
     }
 
     /// Scroll to the specified percent of the web page.
     pub fn scroll_to_percent(&mut self, percent: u32) {
-        self.init_scroll_element_if_needed();
         self.add_mark(LAST_MARK);
+        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+        let window = wtry_opt_no_ret!(document.get_default_view());
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         let document = wtry_opt_no_ret!(get_document(&self.model.page));
         let height = document.get_client_height() as i64;
         let scroll_height = document.get_scroll_height();
         let scroll_height = (percent as i64) * (scroll_height - height) / 100;
-        element.set_scroll_top(scroll_height);
+        window.scroll_to(0.0, scroll_height as f64);
     }
 }
 
