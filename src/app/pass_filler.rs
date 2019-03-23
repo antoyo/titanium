@@ -20,10 +20,7 @@
  */
 
 use titanium_common::InnerMessage::{
-    GetCredentials,
-    InsertText,
-    LoadUsernamePass,
-    SubmitLoginForm,
+    GetCredentials, InsertText, LoadUsernamePass, SubmitLoginForm,
 };
 
 use super::App;
@@ -33,25 +30,36 @@ use errors::Result;
 impl App {
     /// Delete the password for the current URL.
     pub fn delete_password(&self) -> Result<()> {
-        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        let usernames = self
+            .model
+            .password_manager
+            .get_usernames(&self.model.current_url)?;
         if !usernames.is_empty() {
             // TODO: ask for which username to delete.
             let username = &usernames[0];
-            self.model.password_manager.delete(&self.model.current_url, username)?;
+            self.model
+                .password_manager
+                .delete(&self.model.current_url, username)?;
         }
         /*Ok(true) => self.app.info("Password deleted"),
-          Ok(false) => self.app.info("No password for the current URL"),
-          Err(err) => self.error(err.to_string()),*/
+        Ok(false) => self.app.info("No password for the current URL"),
+        Err(err) => self.error(err.to_string()),*/
         Ok(())
     }
 
     /// Insert a password in the focused text input.
     pub fn insert_password(&mut self) -> Result<()> {
-        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        let usernames = self
+            .model
+            .password_manager
+            .get_usernames(&self.model.current_url)?;
         if !usernames.is_empty() {
             // TODO: ask for which username to insert.
             let username = &usernames[0];
-            let (_username, password) = self.model.password_manager.get(&self.model.current_url, username)?;
+            let (_username, password) = self
+                .model
+                .password_manager
+                .get(&self.model.current_url, username)?;
             self.server_send(InsertText(password.to_string()));
         }
         Ok(())
@@ -69,12 +77,18 @@ impl App {
     /// Return true if a login form was filled.
     pub fn load_password(&mut self) -> Result<()> {
         /*Ok(true) => return Ok(true),
-          Ok(false) => self.app.info("No password for the current URL"),
-          Err(err) => self.error(err.to_string()),*/
-        let usernames = self.model.password_manager.get_usernames(&self.model.current_url)?;
+        Ok(false) => self.app.info("No password for the current URL"),
+        Err(err) => self.error(err.to_string()),*/
+        let usernames = self
+            .model
+            .password_manager
+            .get_usernames(&self.model.current_url)?;
         if !usernames.is_empty() {
             let username = &usernames[0];
-            let (username, password) = self.model.password_manager.get(&self.model.current_url, username)?;
+            let (username, password) = self
+                .model
+                .password_manager
+                .get(&self.model.current_url, username)?;
             self.server_send(LoadUsernamePass(username.to_string(), password.to_string()));
         }
         Ok(())
@@ -89,10 +103,12 @@ impl App {
     pub fn save_username_password(&self, username: &str, password: &str) -> Result<()> {
         // TODO: ask to override existing password.
         // TODO: handle errors.
-        self.model.password_manager.add(&self.model.current_url, username, password)
+        self.model
+            .password_manager
+            .add(&self.model.current_url, username, password)
         /*Ok(true) => self.app.info("Password added"),
-          Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
-          Err(err) => self.error(err.to_string()),*/
+        Ok(false) => self.app.info("A password is already in the store for the current URL"), // TODO: ask for a confirmation to overwrite.
+        Err(err) => self.error(err.to_string()),*/
     }
 
     /// Load the username and password in the login form and submit it.
@@ -114,8 +130,8 @@ mod tests {
     use tempfile::Builder as TempFileBuilder;
     use webkit2gtk::WebViewExt;
 
-    use app::App;
     use app::test_utils::XDoExt;
+    use app::App;
 
     fn sleep_ms(ms: u64) {
         thread::sleep(Duration::from_millis(ms));
@@ -134,7 +150,10 @@ mod tests {
         let js_username_value = "document.getElementById('username').value";
         let js_password_value = "document.getElementById('password').value";
 
-        let app = App::new(Some(url), Some(temp_dir.path().to_str().unwrap().to_string()));
+        let app = App::new(
+            Some(url),
+            Some(temp_dir.path().to_str().unwrap().to_string()),
+        );
 
         thread::spawn(|| {
             let xdo = XDo::new(None).unwrap();
@@ -162,23 +181,29 @@ mod tests {
 
         gtk::main();
 
-        app.webview.widget().run_javascript_with_callback(&format!("{}.length", js_username_value), |result| {
-            let result = result.unwrap();
-            let value = result.get_value().unwrap();
-            let context = result.get_global_context().unwrap();
-            let username_length = value.to_number(&context).unwrap() as i32;
-            assert_eq!(username_length, 8);
-            gtk::main_quit();
-        });
+        app.webview.widget().run_javascript_with_callback(
+            &format!("{}.length", js_username_value),
+            |result| {
+                let result = result.unwrap();
+                let value = result.get_value().unwrap();
+                let context = result.get_global_context().unwrap();
+                let username_length = value.to_number(&context).unwrap() as i32;
+                assert_eq!(username_length, 8);
+                gtk::main_quit();
+            },
+        );
 
-        app.webview.widget().run_javascript_with_callback(&format!("{}.length", js_password_value), |result| {
-            let result = result.unwrap();
-            let value = result.get_value().unwrap();
-            let context = result.get_global_context().unwrap();
-            let password_length = value.to_number(&context).unwrap() as i32;
-            assert_eq!(password_length, 8);
-            gtk::main_quit();
-        });
+        app.webview.widget().run_javascript_with_callback(
+            &format!("{}.length", js_password_value),
+            |result| {
+                let result = result.unwrap();
+                let value = result.get_value().unwrap();
+                let context = result.get_global_context().unwrap();
+                let password_length = value.to_number(&context).unwrap() as i32;
+                assert_eq!(password_length, 8);
+                gtk::main_quit();
+            },
+        );
 
         gtk::main();
         gtk::main();

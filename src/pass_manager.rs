@@ -28,14 +28,12 @@ use errors::{Error, Result};
 use urls::host;
 
 /// A password manager is used to add, get and remove credentials.
-pub struct PasswordManager {
-}
+pub struct PasswordManager {}
 
 impl PasswordManager {
     /// Create a new password manager.
     pub fn new() -> Self {
-        PasswordManager {
-        }
+        PasswordManager {}
     }
 
     /// Add a credential.
@@ -43,9 +41,11 @@ impl PasswordManager {
     pub fn add(&self, url: &str, username: &str, password: &str) -> Result<()> {
         if let Some(url) = host(url) {
             PasswordStore::insert(&path_username(&url, username), password)?;
-        }
-        else {
-            return Err(Error::from_string(format!("Not adding the credentials for {}", url)));
+        } else {
+            return Err(Error::from_string(format!(
+                "Not adding the credentials for {}",
+                url
+            )));
         }
         Ok(())
     }
@@ -55,9 +55,11 @@ impl PasswordManager {
     pub fn delete(&self, url: &str, username: &str) -> Result<()> {
         if let Some(url) = host(url) {
             PasswordStore::remove(&path_username(&url, username))?;
-        }
-        else {
-            return Err(Error::from_string(format!("Not deleting the password for {}", url)));
+        } else {
+            return Err(Error::from_string(format!(
+                "Not deleting the password for {}",
+                url
+            )));
         }
         Ok(())
     }
@@ -67,9 +69,11 @@ impl PasswordManager {
         if let Some(url) = host(url) {
             let mut usernames = PasswordStore::get_usernames(&path(&url))?;
             Ok(usernames)
-        }
-        else {
-            return Err(Error::from_string(format!("Cannot get the usernames for {}", url)));
+        } else {
+            return Err(Error::from_string(format!(
+                "Cannot get the usernames for {}",
+                url
+            )));
         }
     }
 
@@ -77,9 +81,11 @@ impl PasswordManager {
     pub fn get(&self, url: &str, username: &str) -> Result<(String, String)> {
         if let Some(url) = host(url) {
             Ok(PasswordStore::get(&path_username(&url, username))?)
-        }
-        else {
-            return Err(Error::from_string(format!("Cannot get the password for {}", url)));
+        } else {
+            return Err(Error::from_string(format!(
+                "Cannot get the password for {}",
+                url
+            )));
         }
     }
 }

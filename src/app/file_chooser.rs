@@ -20,19 +20,13 @@
  */
 
 use mg::{Error, Mg};
-use mg_settings::{
-    self,
-    EnumFromStr,
-    EnumMetaData,
-    SettingCompletion,
-    SpecialCommand,
-};
+use mg_settings::{self, EnumFromStr, EnumMetaData, SettingCompletion, SpecialCommand};
 use relm::{EventStream, Update};
 use webkit2gtk::{FileChooserRequest, FileChooserRequestExt};
 
-use app::App;
 use app::dialog::show_blocking_file_input;
 use app::dialog::FileInputError::{Cancelled, FileDoesNotExist, SelectedDirectory};
+use app::App;
 
 impl App {
     pub fn file_dialog_selection(&mut self, file: Option<String>) {
@@ -43,18 +37,20 @@ impl App {
 }
 
 /// Show a non-modal file chooser dialog when the user activates a file input.
-pub fn handle_file_chooser<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>,
-    file_chooser_request: &FileChooserRequest) -> bool
-where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
-      SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
+pub fn handle_file_chooser<COMM, SETT>(
+    stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>,
+    file_chooser_request: &FileChooserRequest,
+) -> bool
+where
+    COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
+    SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
 {
     // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
     if file_chooser_request.get_select_multiple() {
         // TODO: support multiple files (use a boolean column that is converted to a pixmap).
         // or only show (selected) beside the file name since we don't support new columns.
         false
-    }
-    else {
+    } else {
         let selected_files = file_chooser_request.get_selected_files();
         match show_blocking_file_input(stream, &selected_files) {
             Ok(file) => file_chooser_request.select_files(&[&file]),
@@ -62,11 +58,11 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
             Err(FileDoesNotExist) => {
                 stream.emit(Error("Please select an existing file".into()));
                 file_chooser_request.cancel();
-            },
+            }
             Err(SelectedDirectory) => {
                 stream.emit(Error("Please select a file, not a directory".into()));
                 file_chooser_request.cancel();
-            },
+            }
         }
         true
     }

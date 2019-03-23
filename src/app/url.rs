@@ -26,9 +26,9 @@ use titanium_common::FollowMode;
 use app::App;
 use app::Msg::CreateWindow;
 use message_server::Privacy;
-use webview::Msg::PageOpen;
-use url::{Url, Position};
+use url::{Position, Url};
 use urls::offset;
+use webview::Msg::PageOpen;
 
 impl App {
     /// Open the given URL in the web view.
@@ -39,13 +39,11 @@ impl App {
 
     /// Open the given URL in a new window.
     pub fn open_in_new_window(&mut self, url: &str, privacy: Privacy) {
-        let privacy =
-            if self.webview.widget().is_ephemeral() {
-                Privacy::Private
-            }
-            else {
-                privacy
-            };
+        let privacy = if self.webview.widget().is_ephemeral() {
+            Privacy::Private
+        } else {
+            privacy
+        };
         let url = self.transform_url(url);
         self.model.relm.stream().emit(CreateWindow(url, privacy));
     }
@@ -65,10 +63,9 @@ impl App {
                 match url.path_segments_mut() {
                     Ok(mut segments) => {
                         for _ in 0..parent_level {
-                            segments.pop_if_empty()
-                                .pop();
+                            segments.pop_if_empty().pop();
                         }
-                    },
+                    }
                     Err(_) => return,
                 }
                 self.open(url.as_str());

@@ -41,9 +41,7 @@ impl Error {
     }
 
     pub fn from_string(msg: String) -> Self {
-        Error {
-            msg,
-        }
+        Error { msg }
     }
 }
 

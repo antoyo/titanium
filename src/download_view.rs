@@ -32,15 +32,15 @@ use std::time::SystemTime;
 
 use gtk;
 use gtk::ProgressBarExt;
-use number_prefix::{Prefixed, Standalone, binary_prefix};
+use number_prefix::{binary_prefix, Prefixed, Standalone};
 use relm::{Relm, Widget};
 use relm_attributes::widget;
 use webkit2gtk::{Download, DownloadExt, URIRequestExt};
 
 use urls;
 
-use file::open_app_for_file;
 use self::Msg::*;
+use file::open_app_for_file;
 
 pub struct Model {
     download: Download,
@@ -75,8 +75,7 @@ impl Widget for DownloadView {
             if let Some(ref destination) = self.model.original_destination {
                 let _ = remove_file(destination);
             }
-        }
-        else {
+        } else {
             self.model.download.cancel();
         }
         self.model.relm.stream().emit(Remove);
@@ -98,15 +97,27 @@ impl Widget for DownloadView {
         let percent = 100;
         self.model.progress = 1.0;
         let (_, total_size) = get_data_sizes(&self.model.download);
-        let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
+        let total_size = total_size
+            .map(|size| format!(" [{}]", size))
+            .unwrap_or_default();
         self.model.text = format!("{} {}%{}", self.model.filename, percent, total_size);
         self.move_or_open();
     }
 
     fn init_view(&mut self) {
         self.model.relm.stream().emit(Update);
-        connect!(self.model.download, connect_received_data(_, _), self.model.relm, Update);
-        connect!(self.model.download, connect_finished(_), self.model.relm, Finish);
+        connect!(
+            self.model.download,
+            connect_received_data(_, _),
+            self.model.relm,
+            Update
+        );
+        connect!(
+            self.model.download,
+            connect_finished(_),
+            self.model.relm,
+            Finish
+        );
     }
 
     fn model(relm: &Relm<DownloadView>, download: Download) -> Model {
@@ -131,7 +142,10 @@ impl Widget for DownloadView {
         if let Some(ref destination) = self.model.new_destination {
             if let Some(ref original_destination) = self.model.original_destination {
                 if let Err(error) = rename(original_destination, &destination[7..]) {
-                    self.model.relm.stream().emit(DownloadError(error.to_string()));
+                    self.model
+                        .relm
+                        .stream()
+                        .emit(DownloadError(error.to_string()));
                 }
             }
             // TODO: warning?
@@ -163,19 +177,24 @@ impl Widget for DownloadView {
         let (downloaded_size, total_size) = get_data_sizes(&self.model.download);
         // TODO: show the speed (downloaded data over the last 5 seconds).
         if percent == 100 {
-            let total_size = total_size.map(|size| format!(" [{}]", size)).unwrap_or_default();
+            let total_size = total_size
+                .map(|size| format!(" [{}]", size))
+                .unwrap_or_default();
             self.model.text = format!("{} {}%{}", self.model.filename, percent, total_size);
-        }
-        else if let Ok(duration) = self.model.last_update.elapsed() {
+        } else if let Ok(duration) = self.model.last_update.elapsed() {
             // Update the text once per second.
             if duration.as_secs() >= 1 || !self.model.was_shown {
                 self.model.last_update = SystemTime::now();
                 let time_remaining = get_remaining_time(&self.model.download)
                     .map(|time| format!(", {}", time))
                     .unwrap_or_default();
-                let total_size = total_size.map(|size| format!("/{}", size)).unwrap_or_default();
-                self.model.text = format!("{} {}%{} [{}{}]", self.model.filename, percent, time_remaining,
-                    downloaded_size, total_size);
+                let total_size = total_size
+                    .map(|size| format!("/{}", size))
+                    .unwrap_or_default();
+                self.model.text = format!(
+                    "{} {}%{} [{}{}]",
+                    self.model.filename, percent, time_remaining, downloaded_size, total_size
+                );
                 self.model.was_shown = true;
             }
         }
@@ -193,11 +212,12 @@ impl Widget for DownloadView {
 /// Get the destination filename of the download.
 /// Return the suggested filename if it does not exist.
 fn get_filename(download: &Download) -> String {
-    let suggested_filename =
-        download.get_request()
-            .and_then(|request| request.get_uri())
-            .and_then(|url| urls::get_filename(&url));
-    download.get_destination()
+    let suggested_filename = download
+        .get_request()
+        .and_then(|request| request.get_uri())
+        .and_then(|url| urls::get_filename(&url));
+    download
+        .get_destination()
         .and_then(|url| urls::get_filename(&url))
         .unwrap_or_else(|| suggested_filename.clone().unwrap_or_default())
 }
@@ -217,8 +237,7 @@ fn get_data_sizes(download: &Download) -> (String, Option<String>) {
     if progress == 0.0 {
         // TODO: show the downloaded size when the progress is not available (slitaz.org/en/get).
         (add_byte_suffix(progress), None)
-    }
-    else {
+    } else {
         let current = download.get_received_data_length() as f64;
         let total = current / progress;
         (add_byte_suffix(current), Some(add_byte_suffix(total)))
@@ -230,8 +249,7 @@ fn get_remaining_time(download: &Download) -> Option<String> {
     let progress = download.get_estimated_progress();
     if progress == 0.0 {
         None
-    }
-    else {
+    } else {
         let elapsed_seconds = download.get_elapsed_time();
         let total_seconds = elapsed_seconds / progress;
         let seconds = total_seconds - elapsed_seconds;

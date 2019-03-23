@@ -21,8 +21,8 @@
 
 use std::env::{home_dir, temp_dir};
 
-use glib::UserDirectory::Downloads;
 use glib::get_user_special_dir;
+use glib::UserDirectory::Downloads;
 
 /// Get the download directory if it can be retrieved, else returns the home directory.
 pub fn download_dir() -> String {

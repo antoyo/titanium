@@ -81,12 +81,16 @@ impl App {
         match message {
             ActivateAction(action) => self.activate_action(action),
             ClickHintElement() => self.click_hint_element(),
-            Credentials(ref username, ref password) => handle_error!(self.save_username_password(&username, &password)),
+            Credentials(ref username, ref password) => {
+                handle_error!(self.save_username_password(&username, &password))
+            }
             EnterInsertMode() => self.go_in_insert_mode(),
             ScrollPercentage(percentage) => self.show_scroll(percentage),
             _ =>
-                // TODO: show the warning in the UI?
-                warn!("Unexpected message received: {:?}", message),
+            // TODO: show the warning in the UI?
+            {
+                warn!("Unexpected message received: {:?}", message)
+            }
         }
     }
 

@@ -26,60 +26,29 @@ use std::marker;
 use std::process;
 
 use gio::{
-    IOErrorEnum,
-    IOStreamExt,
-    Socket,
-    SocketClient,
-    SocketClientExt,
-    SocketConnection,
-    SocketExt,
-    SocketFamily,
-    SocketListener,
-    SocketListenerExt,
-    SocketProtocol,
-    SocketType,
-    UnixSocketAddress,
+    IOErrorEnum, IOStreamExt, Socket, SocketClient, SocketClientExt, SocketConnection, SocketExt,
+    SocketFamily, SocketListener, SocketListenerExt, SocketProtocol, SocketType, UnixSocketAddress,
     UnixSocketAddressPath,
 };
 use glib;
 use glib::Cast;
-use gtk::{
-    self,
-    ButtonsType,
-    DialogExt,
-    DialogFlags,
-    MessageDialog,
-    MessageType,
-    Window,
-};
-use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
+use gtk::{self, ButtonsType, DialogExt, DialogFlags, MessageDialog, MessageType, Window};
+use relm::{execute, init, Component, EventStream, Relm, Update, UpdateNew};
 use webkit2gtk::WebContext;
 
-use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
-use titanium_common::InnerMessage::{Id, Open};
-use titanium_common::protocol::{
-    self,
-    PluginProtocol,
-    SendMode,
-    send,
-};
 use titanium_common::protocol::Msg::{MsgRead, Write};
+use titanium_common::protocol::{self, send, PluginProtocol, SendMode};
+use titanium_common::InnerMessage::{Id, Open};
+use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
 
+use self::Msg::*;
+use app::Msg::{CreateWindow, MessageRecv, Remove, ServerSend, SetPageId, ShowError};
 use app::{self, App};
-use app::Msg::{
-    MessageRecv,
-    CreateWindow,
-    Remove,
-    ServerSend,
-    SetPageId,
-    ShowError,
-};
 use config_dir::ConfigDir;
 use errors::{Error, Result};
-use self::Msg::*;
+use gio_ext::ListenerAsync;
 use urls::canonicalize_url;
 use webview::WebView;
-use gio_ext::ListenerAsync;
 
 pub struct AppServer {
     stream: EventStream<app::Msg>,
@@ -140,13 +109,15 @@ impl Update for MessageServer {
     type ModelParam = (ListenerAsync, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (listener, urls, config): (ListenerAsync, Vec<String>, Option<String>)) -> Model {
+    fn model(
+        relm: &Relm<Self>,
+        (listener, urls, config): (ListenerAsync, Vec<String>, Option<String>),
+    ) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
             relm.stream().emit(NewApp(None, Privacy::Normal));
-        }
-        else {
+        } else {
             for url in urls {
                 relm.stream().emit(NewApp(Some(url), Privacy::Normal));
             }
@@ -177,10 +148,12 @@ impl Update for MessageServer {
                 // FIXME: the writer is inserted too many times. It should be only once per web
                 // extension, not once per page.
                 self.model.apps.insert(page_id, AppServer::new(stream));
-                if let Some((extension_id, protocol_counter)) = self.model.app_extensions.remove(&page_id) {
+                if let Some((extension_id, protocol_counter)) =
+                    self.model.app_extensions.remove(&page_id)
+                {
                     self.connect_app_and_extension(extension_id, page_id, protocol_counter);
                 }
-            },
+            }
             ClientConnect(stream) => {
                 self.accept();
                 let protocol = execute::<PluginProtocol>(stream.upcast());
@@ -190,10 +163,12 @@ impl Update for MessageServer {
                 connect_stream!(protocol@MsgRead(ref msg), self.model.relm.stream(), MsgRecv(counter, msg.clone()));
                 // TODO: handle error.
                 self.model.protocols.insert(counter, protocol);
-            },
+            }
             // To be listened by the app.
             MsgError(_) => (),
-            MsgRecv(protocol_counter, Message(page_id, message)) => self.msg_recv(protocol_counter, page_id, message),
+            MsgRecv(protocol_counter, Message(page_id, message)) => {
+                self.msg_recv(protocol_counter, page_id, message)
+            }
             NewApp(url, privacy) => self.add_app(url, privacy),
             RemoveApp(page_id) => self.remove_app(page_id),
             Send(page_id, message) => self.send(page_id, message),
@@ -203,17 +178,23 @@ impl Update for MessageServer {
 
 impl UpdateNew for MessageServer {
     fn new(_relm: &Relm<Self>, model: Self::Model) -> Self {
-        MessageServer {
-            model,
-        }
+        MessageServer { model }
     }
 }
 
 impl MessageServer {
-    pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
+    pub fn new(
+        url: Vec<String>,
+        config_dir: Option<String>,
+    ) -> Result<EventStream<<Self as Update>::Msg>> {
         let listener = SocketListener::new();
-        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
-        let socket = Socket::new(SocketFamily::Unix, SocketType::Stream, SocketProtocol::Default)?;
+        let address =
+            UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
+        let socket = Socket::new(
+            SocketFamily::Unix,
+            SocketType::Stream,
+            SocketProtocol::Default,
+        )?;
         if let Err(error) = socket.bind(&address, false) {
             if error.kind::<IOErrorEnum>() == Some(IOErrorEnum::AddressInUse) {
                 info!("Address already in use for the abstract domain socket, sending message to existing process.");
@@ -228,30 +209,36 @@ impl MessageServer {
                 }
 
                 process::exit(0);
-            }
-            else {
+            } else {
                 return Err(error.into());
             }
         }
         socket.listen()?;
         listener.add_socket(&socket, None::<&Socket>)?;
-        Ok(execute::<MessageServer>((ListenerAsync::new(listener), url, config_dir)))
+        Ok(execute::<MessageServer>((
+            ListenerAsync::new(listener),
+            url,
+            config_dir,
+        )))
     }
 
     fn accept(&self) {
-        connect_async_full!(self.model.listener, accept_async, self.model.relm,
-            |(connection, _)| ClientConnect(connection), |error: glib::Error| MsgError(error.into()));
+        connect_async_full!(
+            self.model.listener,
+            accept_async,
+            self.model.relm,
+            |(connection, _)| ClientConnect(connection),
+            |error: glib::Error| MsgError(error.into())
+        );
     }
 
     fn add_app(&mut self, url: Option<String>, privacy: Privacy) {
         self.model.app_count += 1;
-        let web_context =
-            if privacy == Privacy::Private {
-                self.model.private_web_context.clone()
-            }
-            else {
-                self.model.web_context.clone()
-            };
+        let web_context = if privacy == Privacy::Private {
+            self.model.private_web_context.clone()
+        } else {
+            self.model.web_context.clone()
+        };
         let app = init::<App>((url, self.model.config_dir.clone(), web_context)).unwrap(); // TODO: remove unwrap().
         let app_stream = app.stream().clone();
         connect!(app@SetPageId(page_id), self.model.relm, AppPageId(app_stream.clone(), page_id));
@@ -261,15 +248,19 @@ impl MessageServer {
         self.model.wins.push(app);
     }
 
-    fn connect_app_and_extension(&mut self, extension_id: ExtensionId, page_id: PageId, protocol_counter: usize) {
+    fn connect_app_and_extension(
+        &mut self,
+        extension_id: ExtensionId,
+        page_id: PageId,
+        protocol_counter: usize,
+    ) {
         if let Some(ref mut app) = self.model.apps.get_mut(&page_id) {
             trace!("Inserting page id {} in extension_page", page_id);
             self.model.extension_page.insert(page_id, extension_id);
             if let Some(protocol) = self.model.protocols.remove(&protocol_counter) {
                 app.protocol = Some(protocol);
             }
-        }
-        else {
+        } else {
             error!("Cannot find app with page id {}", page_id);
         }
     }
@@ -286,26 +277,23 @@ impl MessageServer {
             trace!("Receive page id {}", page_id);
             if self.model.apps.contains_key(&page_id) {
                 self.connect_app_and_extension(extension_id, page_id, protocol_counter);
+            } else {
+                self.model
+                    .app_extensions
+                    .insert(page_id, (extension_id, protocol_counter));
             }
-            else {
-                self.model.app_extensions.insert(page_id, (extension_id, protocol_counter));
-            }
-        }
-        else if let Open(urls) = msg {
+        } else if let Open(urls) = msg {
             self.model.protocols.remove(&protocol_counter);
             if urls.is_empty() {
                 self.add_app(None, Privacy::Normal);
-            }
-            else {
+            } else {
                 for url in urls {
                     self.add_app(Some(url), Privacy::Normal);
                 }
             }
-        }
-        else if let Some(ref app) = self.model.apps.get(&page_id) {
+        } else if let Some(ref app) = self.model.apps.get(&page_id) {
             app.stream.emit(MessageRecv(msg));
-        }
-        else {
+        } else {
             error!("Cannot find app with page id {}", page_id);
         }
     }
@@ -333,17 +321,17 @@ impl MessageServer {
             if let Some(app) = self.model.apps.get_mut(&extension_id) {
                 if let Some(ref mut protocol) = app.protocol {
                     protocol.emit(Write(Message(page_id, message)));
-                }
-                else {
+                } else {
                     error = Some(Error::new("message protocol does not exist"));
                 }
-            }
-            else {
+            } else {
                 error = Some(Error::new("app does not exist"));
             }
-        }
-        else {
-            error = Some(Error::from_string(format!("extension id for page {} does not exist", page_id)));
+        } else {
+            error = Some(Error::from_string(format!(
+                "extension id for page {} does not exist",
+                page_id
+            )));
         }
         if let Some(error) = error {
             self.error(page_id, error);
@@ -353,21 +341,32 @@ impl MessageServer {
 
 /// Create a new message server.
 /// If it is not possible to create one, show the error and exit.
-pub fn create_message_server(urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
+pub fn create_message_server(
+    urls: Vec<String>,
+    config_dir: Option<String>,
+) -> EventStream<<MessageServer as Update>::Msg> {
     match MessageServer::new(urls, config_dir) {
         Ok(message_server) => message_server,
         Err(error) => {
-            let message = format!("cannot create the message server used to communicate with the web processes: {}",
-                error);
+            let message = format!(
+                "cannot create the message server used to communicate with the web processes: {}",
+                error
+            );
             dialog_and_exit(&message);
-        },
+        }
     }
 }
 
 fn dialog_and_exit(message: &str) -> ! {
     let window: Option<&Window> = None;
     let message = format!("Fatal error: {}", message);
-    let dialog = MessageDialog::new(window, DialogFlags::empty(), MessageType::Error, ButtonsType::Close, &message);
+    let dialog = MessageDialog::new(
+        window,
+        DialogFlags::empty(),
+        MessageType::Error,
+        ButtonsType::Close,
+        &message,
+    );
     dialog.run();
     process::exit(1);
 }
@@ -376,10 +375,10 @@ fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
     let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
     let connection = client.connect(&address, None)?;
-    let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
-    let urls = urls.iter()
-        .map(|url| canonicalize_url(url))
-        .collect();
+    let writer = connection
+        .get_output_stream()
+        .ok_or_else(|| "cannot get output stream")?;
+    let urls = urls.iter().map(|url| canonicalize_url(url)).collect();
     send(&writer, Message(0, Open(urls)), SendMode::Sync);
     Ok(())
 }

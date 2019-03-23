@@ -31,7 +31,7 @@ macro_rules! handle_app_error {
 mod settings;
 
 use std::cell::Cell;
-use std::fs::{File, read_dir};
+use std::fs::{read_dir, File};
 use std::io::Read;
 use std::rc::Rc;
 
@@ -40,47 +40,27 @@ use glib::Cast;
 use gtk::{WidgetExt, Window};
 use relm::{Relm, Widget};
 use relm_attributes::widget;
-use webkit2gtk::{
-    self,
-    CookieManagerExt,
-    CookiePersistentStorage,
-    FindController,
-    FindControllerExt,
-    FindOptions,
-    NavigationPolicyDecision,
-    NavigationPolicyDecisionExt,
-    PermissionRequest,
-    PolicyDecision,
-    PolicyDecisionExt,
-    PrintOperation,
-    PrintOperationExt,
-    ResponsePolicyDecision,
-    ResponsePolicyDecisionExt,
-    TLSErrorsPolicy,
-    URIRequestExt,
-    UserContentManager,
-    UserContentManagerExt,
-    UserScript,
-    UserStyleSheet,
-    WebContext,
-    WebContextExt,
-    WebInspector,
-    WebInspectorExt,
-    WebViewExt,
-};
 use webkit2gtk::NavigationType::{LinkClicked, Other};
 use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
 use webkit2gtk::ProcessModel::MultipleSecondaryProcesses;
 use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
+use webkit2gtk::{
+    self, CookieManagerExt, CookiePersistentStorage, FindController, FindControllerExt,
+    FindOptions, NavigationPolicyDecision, NavigationPolicyDecisionExt, PermissionRequest,
+    PolicyDecision, PolicyDecisionExt, PrintOperation, PrintOperationExt, ResponsePolicyDecision,
+    ResponsePolicyDecisionExt, TLSErrorsPolicy, URIRequestExt, UserContentManager,
+    UserContentManagerExt, UserScript, UserStyleSheet, WebContext, WebContextExt, WebInspector,
+    WebInspectorExt, WebViewExt,
+};
 
 use titanium_common::PageId;
 
+use self::Msg::*;
 use config_dir::ConfigDir;
 use errors::Result;
 use file;
-use self::Msg::*;
 use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
 
@@ -131,9 +111,18 @@ impl Widget for WebView {
 
         if let Some(inspector) = self.view.get_inspector() {
             let inspector_shown = self.model.inspector_shown.clone();
-            connect!(self.model.relm, inspector, connect_attach(inspector),
-                return WebView::handle_inspector_attach(&inspector_shown, inspector));
-            connect!(inspector, connect_closed(_), self.model.relm, InspectorClose);
+            connect!(
+                self.model.relm,
+                inspector,
+                connect_attach(inspector),
+                return WebView::handle_inspector_attach(&inspector_shown, inspector)
+            );
+            connect!(
+                inspector,
+                connect_closed(_),
+                self.model.relm,
+                InspectorClose
+            );
         }
     }
 
@@ -173,7 +162,9 @@ impl Widget for WebView {
             PermissionRequest(_) => (),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
             SendPageId => self.send_page_id(),
-            SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
+            SetOpenInNewWindow(open_in_new_window) => {
+                self.set_open_in_new_window(open_in_new_window)
+            }
             ShowInspector => self.show_inspector(),
             // To be listened by the user.
             WebPageId(_) => (),
@@ -226,7 +217,10 @@ impl WebView {
                 let mut content = String::new();
                 file.read_to_string(&mut content)?;
                 let (stylesheet, stylesheet_whitelist) = get_stylesheet_and_whitelist(&content);
-                let whitelist: Vec<_> = stylesheet_whitelist.iter().map(|url| url.as_ref()).collect();
+                let whitelist: Vec<_> = stylesheet_whitelist
+                    .iter()
+                    .map(|url| url.as_ref())
+                    .collect();
                 let stylesheet = UserStyleSheet::new(&stylesheet, AllFrames, User, &whitelist, &[]);
                 content_manager.add_style_sheet(&stylesheet);
             }
@@ -234,23 +228,25 @@ impl WebView {
         Ok(())
     }
 
-    fn decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
-        open_in_new_window: &Rc<Cell<bool>>, relm: &Relm<WebView>) -> bool
-    {
+    fn decide_policy(
+        policy_decision: &PolicyDecision,
+        policy_decision_type: &PolicyDecisionType,
+        open_in_new_window: &Rc<Cell<bool>>,
+        relm: &Relm<WebView>,
+    ) -> bool {
         if *policy_decision_type == NavigationAction {
             Self::handle_navigation_action(policy_decision, open_in_new_window, relm)
-        }
-        else if *policy_decision_type == Response {
+        } else if *policy_decision_type == Response {
             Self::handle_response(policy_decision)
-        }
-        else {
+        } else {
             false
         }
     }
 
     /// Get the find controller.
     fn find_controller(&self) -> Result<FindController> {
-        self.view.get_find_controller()
+        self.view
+            .get_find_controller()
             .ok_or_else(|| "cannot get find controller".into())
     }
 
@@ -267,16 +263,17 @@ impl WebView {
             inspector_shown.set(true);
             inspector.detach();
             true
-        }
-        else {
+        } else {
             false
         }
     }
 
     /// Handle follow link in new window.
-    fn handle_navigation_action(policy_decision: &PolicyDecision, open_in_new_window: &Rc<Cell<bool>>,
-        relm: &Relm<WebView>) -> bool
-    {
+    fn handle_navigation_action(
+        policy_decision: &PolicyDecision,
+        open_in_new_window: &Rc<Cell<bool>>,
+        relm: &Relm<WebView>,
+    ) -> bool {
         let policy_decision = policy_decision.clone();
         if let Ok(policy_decision) = policy_decision.downcast::<NavigationPolicyDecision>() {
             /*
@@ -285,8 +282,11 @@ impl WebView {
              * method is called, while it is not called when it is false.
              */
             let navigation_type = policy_decision.get_navigation_type();
-            if open_in_new_window.get() && (navigation_type == LinkClicked || navigation_type == Other) {
-                let url = policy_decision.get_request()
+            if open_in_new_window.get()
+                && (navigation_type == LinkClicked || navigation_type == Other)
+            {
+                let url = policy_decision
+                    .get_request()
                     .and_then(|request| request.get_uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
@@ -323,9 +323,11 @@ impl WebView {
         if let Ok(cookie_path) = config_dir.data_file("cookies") {
             let cookie_manager = context.get_cookie_manager().unwrap();
             // TODO: remove unwrap().
-            cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
-        }
-        else {
+            cookie_manager.set_persistent_storage(
+                cookie_path.to_str().unwrap(),
+                CookiePersistentStorage::Sqlite,
+            );
+        } else {
             // TODO: warn.
         }
 
@@ -341,7 +343,9 @@ impl WebView {
     /// Print the current page.
     fn print(&self) {
         let print_operation = PrintOperation::new(&self.view);
-        let window = self.view.get_toplevel()
+        let window = self
+            .view
+            .get_toplevel()
             .and_then(|toplevel| toplevel.downcast::<Window>().ok());
         print_operation.run_dialog(window.as_ref());
     }
@@ -349,7 +353,8 @@ impl WebView {
     /// Save a screenshot of the web view.
     fn screenshot(&self, path: String) {
         let allocation = self.view.get_allocation();
-        let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height).unwrap();
+        let surface =
+            ImageSurface::create(Format::ARgb32, allocation.width, allocation.height).unwrap();
         let context = Context::new(&surface);
         self.view.draw(&context);
         let mut file = File::create(path).unwrap();
@@ -359,16 +364,16 @@ impl WebView {
     /// Search some text.
     fn search(&self, input: String) -> Result<()> {
         let default_options = FindOptions::CASE_INSENSITIVE | FindOptions::WRAP_AROUND;
-        let other_options =
-            if self.model.search_backwards {
-                FindOptions::BACKWARDS
-            }
-            else {
-                FindOptions::empty()
-            };
+        let other_options = if self.model.search_backwards {
+            FindOptions::BACKWARDS
+        } else {
+            FindOptions::empty()
+        };
         let options = default_options | other_options;
-        self.find_controller()?.search("", options.bits(), ::std::u32::MAX); // Clear previous search.
-        self.find_controller()?.search(&input, options.bits(), ::std::u32::MAX);
+        self.find_controller()?
+            .search("", options.bits(), ::std::u32::MAX); // Clear previous search.
+        self.find_controller()?
+            .search(&input, options.bits(), ::std::u32::MAX);
         Ok(())
     }
 
@@ -376,8 +381,7 @@ impl WebView {
     fn search_next(&self) -> Result<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_previous();
-        }
-        else {
+        } else {
             self.find_controller()?.search_next();
         }
         Ok(())
@@ -387,8 +391,7 @@ impl WebView {
     fn search_previous(&self) -> Result<()> {
         if self.model.search_backwards {
             self.find_controller()?.search_next();
-        }
-        else {
+        } else {
             self.find_controller()?.search_previous();
         }
         Ok(())
@@ -396,7 +399,10 @@ impl WebView {
 
     /// Send the page ID to the application.
     fn send_page_id(&self) {
-        self.model.relm.stream().emit(WebPageId(self.view.get_page_id()));
+        self.model
+            .relm
+            .stream()
+            .emit(WebPageId(self.view.get_page_id()));
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
@@ -440,8 +446,7 @@ impl WebView {
 fn add_http_if_missing(url: &str) -> String {
     if !url.contains("://") {
         format!("http://{}", url)
-    }
-    else {
+    } else {
         url.to_string()
     }
 }

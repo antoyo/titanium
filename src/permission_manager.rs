@@ -20,17 +20,14 @@
  */
 
 use std::collections::HashSet;
+use std::fmt::{self, Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
-use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
 use glib::Cast;
 use webkit2gtk::{
-    self,
-    GeolocationPermissionRequest,
-    NotificationPermissionRequest,
-    UserMediaPermissionRequest,
+    self, GeolocationPermissionRequest, NotificationPermissionRequest, UserMediaPermissionRequest,
     UserMediaPermissionRequestExt,
 };
 
@@ -69,19 +66,17 @@ impl PermissionDescription {
     fn from_request(request: &webkit2gtk::PermissionRequest) -> Option<Self> {
         if request.is::<GeolocationPermissionRequest>() {
             Some(Geolocation)
-        }
-        else if request.is::<NotificationPermissionRequest>() {
+        } else if request.is::<NotificationPermissionRequest>() {
             Some(Notification)
-        }
-        else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
+        } else if let Ok(media_permission) =
+            request.clone().downcast::<UserMediaPermissionRequest>()
+        {
             if media_permission.get_property_is_for_video_device() {
                 Some(Webcam)
-            }
-            else {
+            } else {
                 Some(Microphone)
             }
-        }
-        else {
+        } else {
             None
         }
     }
@@ -89,13 +84,12 @@ impl PermissionDescription {
 
 impl Display for PermissionDescription {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        let string =
-            match *self {
-                Geolocation => "geolocation",
-                Microphone => "microphone",
-                Notification => "notification",
-                Webcam => "webcam",
-            };
+        let string = match *self {
+            Geolocation => "geolocation",
+            Microphone => "microphone",
+            Notification => "notification",
+            Webcam => "webcam",
+        };
         write!(formatter, "{}", string)
     }
 }
@@ -120,24 +114,32 @@ impl PermissionManager {
     }
 
     /// Blacklist the specified url.
-    pub fn blacklist(&mut self, url: &str, permission: &webkit2gtk::PermissionRequest) -> Result<()> {
-        match (get_base_url(url), PermissionDescription::from_request(permission)) {
+    pub fn blacklist(
+        &mut self,
+        url: &str,
+        permission: &webkit2gtk::PermissionRequest,
+    ) -> Result<()> {
+        match (
+            get_base_url(url),
+            PermissionDescription::from_request(permission),
+        ) {
             (Some(url), Some(permission)) => {
                 self.blacklisted_urls.insert((url.to_string(), permission));
                 self.save_blacklist()
-            },
+            }
             _ => {
                 warn!("Not blacklisting {}", url);
                 Ok(())
-            },
+            }
         }
     }
 
     /// Check if the specified url is blacklisted.
     pub fn is_blacklisted(&self, url: &str, permission: &webkit2gtk::PermissionRequest) -> bool {
         match PermissionDescription::from_request(permission) {
-            Some(permission) =>
-                self.blacklisted_urls.contains(&(get_base_url(url).unwrap_or_else(String::new), permission)),
+            Some(permission) => self
+                .blacklisted_urls
+                .contains(&(get_base_url(url).unwrap_or_else(String::new), permission)),
             None => false,
         }
     }
@@ -145,8 +147,9 @@ impl PermissionManager {
     /// Check if the specified url is whitelisted.
     pub fn is_whitelisted(&self, url: &str, permission: &webkit2gtk::PermissionRequest) -> bool {
         match PermissionDescription::from_request(permission) {
-            Some(permission) =>
-                self.whitelisted_urls.contains(&(get_base_url(url).unwrap_or_else(String::new), permission)),
+            Some(permission) => self
+                .whitelisted_urls
+                .contains(&(get_base_url(url).unwrap_or_else(String::new), permission)),
             None => false,
         }
     }
@@ -163,15 +166,19 @@ impl PermissionManager {
         let mut file = file::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        let set = content.lines()
+        let set = content
+            .lines()
             .filter(|s| !s.is_empty())
             .filter_map(|s| {
                 let mut words = s.split_whitespace();
                 match (words.next(), words.next()) {
-                    (Some(url), Some(permission)) => Some((url.to_string(), PermissionDescription::from(permission)?)),
+                    (Some(url), Some(permission)) => {
+                        Some((url.to_string(), PermissionDescription::from(permission)?))
+                    }
                     _ => None,
                 }
-            }).collect();
+            })
+            .collect();
         Ok(set)
     }
 
@@ -195,16 +202,23 @@ impl PermissionManager {
     }
 
     /// Whitelist the specified url.
-    pub fn whitelist(&mut self, url: &str, permission: &webkit2gtk::PermissionRequest) -> Result<()> {
-        match (get_base_url(url), PermissionDescription::from_request(permission)) {
+    pub fn whitelist(
+        &mut self,
+        url: &str,
+        permission: &webkit2gtk::PermissionRequest,
+    ) -> Result<()> {
+        match (
+            get_base_url(url),
+            PermissionDescription::from_request(permission),
+        ) {
             (Some(url), Some(permission)) => {
                 self.whitelisted_urls.insert((url.to_string(), permission));
                 self.save_whitelist()
-            },
+            }
             _ => {
                 warn!("Not whitelisting {}", url);
                 Ok(())
-            },
+            }
         }
     }
 }
@@ -213,8 +227,7 @@ impl PermissionManager {
 pub fn create_permission_manager(config_dir: &ConfigDir) -> Option<PermissionManager> {
     if let (Ok(whitelist_path), Ok(blacklist_path)) = App::permission_path(config_dir) {
         Some(PermissionManager::new(whitelist_path, blacklist_path))
-    }
-    else {
+    } else {
         None
     }
 }

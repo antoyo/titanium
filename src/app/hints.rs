@@ -27,14 +27,7 @@ use gdk::EventKey;
 
 use super::App;
 
-use titanium_common::Action::{
-    self,
-    CopyLink,
-    DownloadLink,
-    FileInput,
-    GoInInsertMode,
-    NoAction,
-};
+use titanium_common::Action::{self, CopyLink, DownloadLink, FileInput, GoInInsertMode, NoAction};
 
 impl App {
     pub fn activate_action(&mut self, action: Action) {

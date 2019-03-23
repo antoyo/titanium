@@ -54,8 +54,7 @@ impl PopupManager {
         if let Some(url) = get_base_url(url) {
             self.blacklisted_urls.insert(url.to_string());
             self.save_blacklist()
-        }
-        else {
+        } else {
             warn!("Not blacklisting {}", url);
             Ok(())
         }
@@ -63,12 +62,14 @@ impl PopupManager {
 
     /// Check if the specified url is blacklisted.
     pub fn is_blacklisted(&self, url: &str) -> bool {
-        self.blacklisted_urls.contains(&get_base_url(url).unwrap_or_else(String::new))
+        self.blacklisted_urls
+            .contains(&get_base_url(url).unwrap_or_else(String::new))
     }
 
     /// Check if the specified url is whitelisted.
     pub fn is_whitelisted(&self, url: &str) -> bool {
-        self.whitelisted_urls.contains(&get_base_url(url).unwrap_or_else(String::new))
+        self.whitelisted_urls
+            .contains(&get_base_url(url).unwrap_or_else(String::new))
     }
 
     /// Load the urls from the files.
@@ -83,9 +84,11 @@ impl PopupManager {
         let mut file = file::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        let set = content.lines()
+        let set = content
+            .lines()
             .filter(|s| !s.is_empty())
-            .map(|s| s.to_string()).collect();
+            .map(|s| s.to_string())
+            .collect();
         Ok(set)
     }
 
@@ -113,8 +116,7 @@ impl PopupManager {
         if let Some(url) = get_base_url(url) {
             self.whitelisted_urls.insert(url.to_string());
             self.save_whitelist()
-        }
-        else {
+        } else {
             warn!("Not whitelisting {}", url);
             Ok(())
         }
@@ -125,8 +127,7 @@ impl PopupManager {
 pub fn create_popup_manager(config_dir: &ConfigDir) -> Option<PopupManager> {
     if let (Ok(whitelist_path), Ok(blacklist_path)) = App::popup_path(config_dir) {
         Some(PopupManager::new(whitelist_path, blacklist_path))
-    }
-    else {
+    } else {
         None
     }
 }

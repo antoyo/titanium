@@ -30,26 +30,23 @@ use std::borrow::Cow;
 pub fn get_stylesheet_and_whitelist(content: &str) -> (Cow<str>, Vec<String>) {
     let mut whitelist = vec![];
     let mut words = content.split_whitespace();
-    let stylesheet =
-        if let Some(first_word) = words.next() {
-            if first_word == "@document" {
-                let document_parameters = words.take_while(|&word| word != "{");
-                for parameter in document_parameters {
-                    let parameter = parameter.trim_matches(',');
-                    whitelist.append(&mut get_urls_from_parameter(parameter));
-                }
-                let stylesheet: String = content.chars().skip_while(|&c| c != '{').skip(1).collect();
-                let mut lines: Vec<_> = stylesheet.lines().collect();
-                lines.pop(); // Remove the last line which contains }.
-                lines.join("\n").into()
+    let stylesheet = if let Some(first_word) = words.next() {
+        if first_word == "@document" {
+            let document_parameters = words.take_while(|&word| word != "{");
+            for parameter in document_parameters {
+                let parameter = parameter.trim_matches(',');
+                whitelist.append(&mut get_urls_from_parameter(parameter));
             }
-            else {
-                content.into()
-            }
-        }
-        else {
+            let stylesheet: String = content.chars().skip_while(|&c| c != '{').skip(1).collect();
+            let mut lines: Vec<_> = stylesheet.lines().collect();
+            lines.pop(); // Remove the last line which contains }.
+            lines.join("\n").into()
+        } else {
             content.into()
-        };
+        }
+    } else {
+        content.into()
+    };
     (stylesheet, whitelist)
 }
 
@@ -59,11 +56,14 @@ fn get_urls_from_parameter(parameter: &str) -> Vec<String> {
     if parameter.starts_with('"') {
         //Remove the surrounding quotes.
         whitelist.push(parameter.trim_matches('"').to_string());
-    }
-    else {
+    } else {
         let function: String = parameter.chars().take_while(|&c| c != '(').collect();
         if function == "domain" {
-            let mut domain: String = parameter.chars().skip_while(|&c| c != '(').skip(1).collect();
+            let mut domain: String = parameter
+                .chars()
+                .skip_while(|&c| c != '(')
+                .skip(1)
+                .collect();
             domain.pop(); // Remove the ) at the end.
             let domain = domain.trim_matches('"'); //Remove the surrounding quotes.
             whitelist.push(format!("http://*.{}/*", domain));

@@ -20,27 +20,17 @@
  */
 
 use std::fs::{File, OpenOptions};
-use std::io::{
-    BufRead,
-    BufReader,
-    Read,
-    Write,
-};
+use std::io::{BufRead, BufReader, Read, Write};
 
-use webkit2gtk::{
-    Download,
-    DownloadExt,
-    URIResponseExt,
-    WebViewExt,
-};
+use webkit2gtk::{Download, DownloadExt, URIResponseExt, WebViewExt};
 use zip::ZipArchive;
 
+use super::App;
 use app::download::find_destination;
 use app::Msg::HostfileDownloaded;
 use download_list_view::Msg::DownloadRemove;
 use errors::{Error, Result};
 use file;
-use super::App;
 use urls::get_filename;
 
 const WHITELIST: &[&str] = &[
@@ -53,7 +43,8 @@ const WHITELIST: &[&str] = &[
 impl App {
     pub fn adblock_update(&self) -> Result<()> {
         let hostfile = self.model.config_dir.data_file("hosts")?;
-        let hostfile = hostfile.to_str()
+        let hostfile = hostfile
+            .to_str()
             .ok_or_else(|| Error::new("Cannot get hostfile"))?;
         // Clear the current hosts file.
         File::create(hostfile)?;
@@ -67,22 +58,26 @@ impl App {
         ];
         for url in &urls {
             if let Some(download) = self.webview.widget().download_uri(url) {
-                let suggested_filename =
-                    download.get_response()
-                        .and_then(|response| response.get_suggested_filename())
-                        .unwrap_or_else(|| get_filename(url).unwrap_or_default());
-                if let Ok(destination) = find_destination(&self.model.config_dir, &suggested_filename) {
+                let suggested_filename = download
+                    .get_response()
+                    .and_then(|response| response.get_suggested_filename())
+                    .unwrap_or_else(|| get_filename(url).unwrap_or_default());
+                if let Ok(destination) =
+                    find_destination(&self.model.config_dir, &suggested_filename)
+                {
                     download.set_destination(&destination);
                     let destination = destination[7..].to_string(); // Remove file://
                     let down = download.clone();
-                    connect!(self.model.relm, download, connect_finished(_),
-                        HostfileDownloaded(destination.clone(), down.clone()));
-                }
-                else {
+                    connect!(
+                        self.model.relm,
+                        download,
+                        connect_finished(_),
+                        HostfileDownloaded(destination.clone(), down.clone())
+                    );
+                } else {
                     warn!("Cannot choose destination for file {}", suggested_filename);
                 }
-            }
-            else {
+            } else {
                 warn!("Cannot download file {}", url);
             }
         }
@@ -94,23 +89,20 @@ impl App {
         let just_domains = filename.contains("justdomains");
         info!("Processing host file {}", filename);
         let hostfile = self.model.config_dir.data_file("hosts")?;
-        let hostfile = hostfile.to_str()
+        let hostfile = hostfile
+            .to_str()
             .ok_or_else(|| Error::new("Cannot get hostfile"))?;
         if filename.ends_with(".zip") {
             let mut archive = ZipArchive::new(file::open(filename)?)?;
-            let mut file =
-                if filename.contains("/hosts") {
-                    archive.by_name("HOSTS")?
-                }
-                else if just_domains {
-                    archive.by_name("justdomains")?
-                }
-                else {
-                    return Err(Error::new(&format!("Unknown host zip file: {}", filename)));
-                };
+            let mut file = if filename.contains("/hosts") {
+                archive.by_name("HOSTS")?
+            } else if just_domains {
+                archive.by_name("justdomains")?
+            } else {
+                return Err(Error::new(&format!("Unknown host zip file: {}", filename)));
+            };
             copy_file(hostfile, just_domains, &mut file)?;
-        }
-        else {
+        } else {
             let mut file = file::open(filename)?;
             copy_file(hostfile, just_domains, &mut file)?;
         }
@@ -121,10 +113,7 @@ impl App {
 
 fn copy_file<R: Read>(hostfile: &str, just_domains: bool, file: &mut R) -> Result<()> {
     let mut buffer = [0; 4096];
-    let mut hostfile = OpenOptions::new()
-        .append(true)
-        .write(true)
-        .open(hostfile)?;
+    let mut hostfile = OpenOptions::new().append(true).write(true).open(hostfile)?;
     if just_domains {
         while let Ok(size) = file.read(&mut buffer) {
             if size == 0 {
@@ -132,8 +121,7 @@ fn copy_file<R: Read>(hostfile: &str, just_domains: bool, file: &mut R) -> Resul
             }
             hostfile.write(&buffer[..size])?;
         }
-    }
-    else {
+    } else {
         let file = BufReader::new(file);
         for line in file.lines() {
             let mut line = line?;

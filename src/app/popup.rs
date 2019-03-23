@@ -21,29 +21,35 @@
 
 //! Popup management in the application.
 
-use mg::{Warning, question};
+use mg::{question, Warning};
 
-use message_server::Privacy;
 use app::App;
 use app::Msg::PopupDecision;
+use message_server::Privacy;
 use urls::get_base_url;
 
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
     pub fn ask_open_popup(&self, url: String, base_url: String) {
-        question(&self.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
-                char_slice!['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone()));
+        question(
+            &self.mg,
+            &self.model.relm,
+            format!(
+                "A popup from {} was blocked. Do you want to open it?",
+                base_url
+            ),
+            char_slice!['y', 'n', 'a', 'e'],
+            move |answer| PopupDecision(answer, url.clone()),
+        );
     }
 
     /// Save the specified url in the popup blacklist.
     pub fn blacklist_popup(&mut self, url: &str) {
-        let result =
-            if let Some(ref mut popup_manager) = self.model.popup_manager {
-                popup_manager.blacklist(url)
-            }
-            else {
-                Ok(())
-            };
+        let result = if let Some(ref mut popup_manager) = self.model.popup_manager {
+            popup_manager.blacklist(url)
+        } else {
+            Ok(())
+        };
         self.handle_error(result);
     }
 
@@ -57,7 +63,7 @@ impl App {
             Some("a") => {
                 self.open_in_new_window(url, Privacy::Normal);
                 self.whitelist_popup(url);
-            },
+            }
             Some("y") => self.open_in_new_window(url, Privacy::Normal),
             Some("e") => self.blacklist_popup(url),
             _ => (),
@@ -75,34 +81,32 @@ impl App {
             if let Some(ref popup_manager) = self.model.popup_manager {
                 if !popup_manager.is_whitelisted(url) {
                     if popup_manager.is_blacklisted(url) {
-                        self.mg.emit(Warning(format!("Not opening popup from {} since it is blacklisted.", base_url)));
-                    }
-                    else {
+                        self.mg.emit(Warning(format!(
+                            "Not opening popup from {} since it is blacklisted.",
+                            base_url
+                        )));
+                    } else {
                         self.ask_open_popup(url.to_string(), base_url);
                     }
-                }
-                else {
+                } else {
                     open = true;
                 }
             }
             if open {
                 self.open_in_new_window(url, Privacy::Normal);
             }
-        }
-        else {
+        } else {
             warn!("Not opening the popup {}", url);
         }
     }
 
     /// Save the specified url in the popup whitelist.
     pub fn whitelist_popup(&mut self, url: &str) {
-        let result =
-            if let Some(ref mut popup_manager) = self.model.popup_manager {
-                popup_manager.whitelist(url)
-            }
-            else {
-                Ok(())
-            };
+        let result = if let Some(ref mut popup_manager) = self.model.popup_manager {
+            popup_manager.whitelist(url)
+        } else {
+            Ok(())
+        };
         self.handle_error(result);
     }
 }

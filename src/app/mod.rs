@@ -50,130 +50,82 @@ use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle, RGBA};
 use glib::Cast;
-use gtk::{
-    self,
-    Inhibit,
-    OrientableExt,
-    WidgetExt,
-};
 use gtk::Orientation::Vertical;
+use gtk::{self, Inhibit, OrientableExt, WidgetExt};
 use mg::{
-    AppClose,
-    CloseWin,
-    Color,
-    Completers,
-    CompletionViewChange,
-    CustomCommand,
-    DarkTheme,
-    DialogResult,
-    Error,
-    Info,
-    Message,
-    Mg,
-    Mode,
-    ModeChanged,
-    Modes,
-    SetMode,
-    SettingChanged,
-    StatusBarItem,
-    Text,
-    Title,
-    question,
-    yes_no_question,
+    question, yes_no_question, AppClose, CloseWin, Color, Completers, CompletionViewChange,
+    CustomCommand, DarkTheme, DialogResult, Error, Info, Message, Mg, Mode, ModeChanged, Modes,
+    SetMode, SettingChanged, StatusBarItem, Text, Title,
 };
 use relm::{Relm, Widget};
 use relm_attributes::widget;
-use webkit2gtk::{
-    self,
-    Download,
-    GeolocationPermissionRequest,
-    HitTestResult,
-    HitTestResultExt,
-    NavigationAction,
-    NotificationPermissionRequest,
-    PermissionRequestExt,
-    URIRequestExt,
-    UserMediaPermissionRequest,
-    UserMediaPermissionRequestExt,
-    WebContext,
-    WebViewExt,
-};
 use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
+use webkit2gtk::{
+    self, Download, GeolocationPermissionRequest, HitTestResult, HitTestResultExt,
+    NavigationAction, NotificationPermissionRequest, PermissionRequestExt, URIRequestExt,
+    UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContext, WebViewExt,
+};
 
-use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
 use titanium_common::Percentage::{self, All, Percent};
+use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
 
-use bookmarks::BookmarkManager;
-use commands::AppCommand;
-use commands::AppCommand::*;
-use completers::{
-    BookmarkCompleter,
-    FileCompleter,
-    TagCompleter,
-    UserAgentCompleter,
-};
-use config_dir::ConfigDir;
-use download_list_view::DownloadListView;
-use download_list_view::Msg::{
-    ActiveDownloads,
-    DownloadListError,
-};
-use errors::Result;
-use message_server::Privacy;
-use pass_manager::PasswordManager;
-use permission_manager::{Permission, PermissionManager, create_permission_manager};
-use popup_manager::{PopupManager, create_popup_manager};
 use self::config::default_config;
 use self::dialog::handle_script_dialog;
 use self::file_chooser::handle_file_chooser;
-use self::Msg::*;
 use self::user_agent::UserAgentManager;
+use self::Msg::*;
+use bookmarks::BookmarkManager;
+use commands::AppCommand;
+use commands::AppCommand::*;
+use completers::{BookmarkCompleter, FileCompleter, TagCompleter, UserAgentCompleter};
+use config_dir::ConfigDir;
+use download_list_view::DownloadListView;
+use download_list_view::Msg::{ActiveDownloads, DownloadListError};
+use errors::Result;
+use message_server::Privacy;
+use pass_manager::PasswordManager;
+use permission_manager::{create_permission_manager, Permission, PermissionManager};
+use popup_manager::{create_popup_manager, PopupManager};
 use settings::AppSettings;
-use settings::AppSettingsVariant::{
-    self,
-    HintChars,
-    HomePage,
-    WebkitUserAgent,
-};
+use settings::AppSettingsVariant::{self, HintChars, HomePage, WebkitUserAgent};
 use urls::canonicalize_url;
-use webview::WebView;
 use webview::Msg::{
-    AddScripts,
-    AddStylesheets,
-    AppError,
-    Close,
-    EndSearch,
-    NewWindow,
-    PageFinishSearch,
-    PageOpen,
-    PagePrint,
-    PageScreenshot,
-    PageSearch,
-    PageSearchNext,
-    PageSearchPrevious,
-    PageZoomIn,
-    PageZoomNormal,
-    PageZoomOut,
-    PermissionRequest,
-    SearchBackward,
-    SetOpenInNewWindow,
-    ShowInspector,
-    WebPageId,
-    WebViewSettingChanged,
-    ZoomChange,
+    AddScripts, AddStylesheets, AppError, Close, EndSearch, NewWindow, PageFinishSearch, PageOpen,
+    PagePrint, PageScreenshot, PageSearch, PageSearchNext, PageSearchPrevious, PageZoomIn,
+    PageZoomNormal, PageZoomOut, PermissionRequest, SearchBackward, SetOpenInNewWindow,
+    ShowInspector, WebPageId, WebViewSettingChanged, ZoomChange,
 };
+use webview::WebView;
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const INIT_SCROLL_TEXT: &str = "[top]";
-const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
-const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
+const RED: RGBA = RGBA {
+    red: 1.0,
+    green: 0.3,
+    blue: 0.2,
+    alpha: 1.0,
+};
+const YELLOW: RGBA = RGBA {
+    red: 1.0,
+    green: 1.0,
+    blue: 0.0,
+    alpha: 1.0,
+};
 const TAG_COMPLETER: &str = "__tag";
 pub const USER_AGENT_COMPLETER: &str = "select-user-agent";
 
 static MODES: Modes = &[
-    Mode { name: "follow", prefix: "f", show_count: false },
-    Mode { name: "insert", prefix: "i", show_count: false },
+    Mode {
+        name: "follow",
+        prefix: "f",
+        show_count: false,
+    },
+    Mode {
+        name: "insert",
+        prefix: "i",
+        show_count: false,
+    },
 ];
 
 pub struct Model {
@@ -257,8 +209,7 @@ impl Widget for App {
             if self.model.mode == "insert" || self.model.mode == "follow" {
                 self.go_in_normal_mode();
             }
-        }
-        else {
+        } else {
             if let Some((_, cert_flags)) = self.webview.widget().get_tls_info() {
                 // If there's a certificate error, show the URL in red.
                 if !cert_flags.is_empty() {
@@ -292,7 +243,10 @@ impl Widget for App {
         }
     }
 
-    fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
+    fn model(
+        relm: &Relm<Self>,
+        (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext),
+    ) -> Model {
         let permission_manager = create_permission_manager(&config_dir);
         let popup_manager = create_popup_manager(&config_dir);
         Model {
@@ -337,8 +291,7 @@ impl Widget for App {
         let progress = (self.webview.widget().get_estimated_load_progress() * 100.0) as i32;
         if progress == 100 {
             self.set_title_without_progress();
-        }
-        else {
+        } else {
             let title = self.get_title();
             self.model.title = format!("[{}%]{} {}{}", progress, private, title, APP_NAME);
         }
@@ -353,13 +306,12 @@ impl Widget for App {
 
     /// Show the scroll percentage.
     fn show_scroll(&mut self, scroll_percentage: Percentage) {
-        self.model.scroll_text =
-            match scroll_percentage {
-                All => "[all]".to_string(),
-                Percent(0) => "[top]".to_string(),
-                Percent(100) => "[bot]".to_string(),
-                Percent(percent) => format!("[{}%]", percent),
-            };
+        self.model.scroll_text = match scroll_percentage {
+            All => "[all]".to_string(),
+            Percent(0) => "[top]".to_string(),
+            Percent(100) => "[bot]".to_string(),
+            Percent(percent) => format!("[{}%]", percent),
+        };
     }
 
     fn update(&mut self, event: Msg) {
@@ -367,20 +319,24 @@ impl Widget for App {
             AppSetMode(mode) => {
                 self.adjust_in_follow_mode(&mode);
                 self.model.mode = mode
-            },
+            }
             AppSettingChanged(setting) => self.setting_changed(setting),
             AskPermission(request) => self.handle_permission_request(&request),
             Create(navigation_action) => self.handle_create(navigation_action),
             Command(ref command) => self.handle_command(command),
             CommandText(text) => self.model.command_text = text,
-            DecideDownloadDestination(download, suggested_filename) =>
-                self.download_input(download, suggested_filename),
-            DownloadDestination(destination, download, suggested_filename) =>
-                handle_error!(self.download_destination_chosen(destination, download, suggested_filename)),
+            DecideDownloadDestination(download, suggested_filename) => {
+                self.download_input(download, suggested_filename)
+            }
+            DownloadDestination(destination, download, suggested_filename) => handle_error!(
+                self.download_destination_chosen(destination, download, suggested_filename)
+            ),
             Exit(can_quit) => self.quit(can_quit),
             FileDialogSelection(file) => self.file_dialog_selection(file),
             HasActiveDownloads(active) => self.model.has_active_downloads = active,
-            HostfileDownloaded(file, download) => handle_error!(self.process_hostfile(&file, download)),
+            HostfileDownloaded(file, download) => {
+                handle_error!(self.process_hostfile(&file, download))
+            }
             InsecureContent => self.insecure_content_detected(),
             KeyPress(event_key) => self.handle_key_press(event_key),
             LoadChanged(load_event) => self.handle_load_changed(load_event),
@@ -388,10 +344,15 @@ impl Widget for App {
             MouseTargetChanged(hit_test_result) => self.mouse_target_changed(hit_test_result),
             // To be listened by the user.
             CreateWindow(_, _) => (),
-            OverwriteDownload(download, download_destination, overwrite) =>
-                self.overwrite_download(download, download_destination, overwrite),
-            PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
-            PermissionResponse(request, choice) => self.handle_permission_response(&request, choice),
+            OverwriteDownload(download, download_destination, overwrite) => {
+                self.overwrite_download(download, download_destination, overwrite)
+            }
+            PopupDecision(answer, url) => {
+                self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url)
+            }
+            PermissionResponse(request, choice) => {
+                self.handle_permission_response(&request, choice)
+            }
             // To be listened by the user.
             Remove(_) => (),
             // To be listened by the user.
@@ -485,7 +446,9 @@ impl App {
     fn add_user_agent(&mut self, user_agent: &str) {
         let mut params = user_agent.splitn(2, ' ');
         if let (Some(name), Some(user_agent)) = (params.next(), params.next()) {
-            self.model.user_agents.insert(name.to_string(), user_agent.to_string());
+            self.model
+                .user_agents
+                .insert(name.to_string(), user_agent.to_string());
             self.model.user_agent_manager.add(name);
         }
     }
@@ -503,14 +466,22 @@ impl App {
 
     fn connect_dialog_events(&self) {
         let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
-            return handle_script_dialog(script_dialog, &mg));
+        connect!(
+            self.model.relm,
+            self.webview.widget(),
+            connect_script_dialog(_, script_dialog),
+            return handle_script_dialog(script_dialog, &mg)
+        );
 
         // TODO: add a #[stream(mg)] attribute in relm to support connecting an event to a
         // function while getting the stream (for use in view! {})?
         let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_run_file_chooser(_, file_chooser_request),
-            return handle_file_chooser(&mg, file_chooser_request));
+        connect!(
+            self.model.relm,
+            self.webview.widget(),
+            connect_run_file_chooser(_, file_chooser_request),
+            return handle_file_chooser(&mg, file_chooser_request)
+        );
     }
 
     /// Show an error from a string.
@@ -539,20 +510,14 @@ impl App {
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
         let webview = self.webview.widget();
-        let title = webview.get_title()
-            .and_then(|title|
-                if title.is_empty() {
-                    None
-                }
-                else {
-                    Some(title)
-                })
+        let title = webview
+            .get_title()
+            .and_then(|title| if title.is_empty() { None } else { Some(title) })
             .or_else(|| webview.get_uri())
             .unwrap_or_default();
         if title.is_empty() {
             String::new()
-        }
-        else {
+        } else {
             format!("{} - ", title)
         }
     }
@@ -588,7 +553,7 @@ impl App {
             BackwardSearch(ref input) => {
                 self.webview.emit(SearchBackward(true));
                 self.webview.emit(PageSearch(input.clone()));
-            },
+            }
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
             BookmarkEditTags => self.edit_bookmark_tags(),
@@ -642,7 +607,7 @@ impl App {
             Search(ref input) => {
                 self.webview.emit(SearchBackward(false));
                 self.webview.emit(PageSearch(input.clone()));
-            },
+            }
             SearchEngine(ref args) => self.add_search_engine(args),
             SearchNext => self.webview.emit(PageSearchNext),
             SearchPrevious => self.webview.emit(PageSearchPrevious),
@@ -708,32 +673,38 @@ impl App {
                 }
             }
 
-            let msg =
-                if request.is::<GeolocationPermissionRequest>() {
-                    "This page wants to know your location."
+            let msg = if request.is::<GeolocationPermissionRequest>() {
+                "This page wants to know your location."
+            } else if request.is::<NotificationPermissionRequest>() {
+                "This page wants to show desktop notifications."
+            } else if let Ok(media_permission) =
+                request.clone().downcast::<UserMediaPermissionRequest>()
+            {
+                if media_permission.get_property_is_for_video_device() {
+                    "This page wants to use your webcam."
+                } else {
+                    "This page wants to use your microphone."
                 }
-                else if request.is::<NotificationPermissionRequest>() {
-                    "This page wants to show desktop notifications."
-                }
-                else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
-                    if media_permission.get_property_is_for_video_device() {
-                        "This page wants to use your webcam."
-                    }
-                    else {
-                        "This page wants to use your microphone."
-                    }
-                }
-                else {
-                    // TODO: log.
-                    return;
-                };
+            } else {
+                // TODO: log.
+                return;
+            };
             let request = request.clone();
-            question(&self.mg, &self.model.relm, msg.to_string(),
-                char_slice!['y', 'n', 'a', 'e'], move |choice| PermissionResponse(request.clone(), choice));
+            question(
+                &self.mg,
+                &self.model.relm,
+                msg.to_string(),
+                char_slice!['y', 'n', 'a', 'e'],
+                move |choice| PermissionResponse(request.clone(), choice),
+            );
         }
     }
 
-    fn handle_permission_response(&mut self, request: &webkit2gtk::PermissionRequest, choice: Option<String>) {
+    fn handle_permission_response(
+        &mut self,
+        request: &webkit2gtk::PermissionRequest,
+        choice: Option<String>,
+    ) {
         if let Some(url) = self.webview.widget().get_uri() {
             match choice.as_ref().map(String::as_str) {
                 Some("y") | Some("a") => request.allow(),
@@ -748,17 +719,20 @@ impl App {
         }
     }
 
-    fn remember_permission(&mut self, permission: Permission, request: &webkit2gtk::PermissionRequest, url: &str) {
-        let result =
-            if let Some(ref mut permission_manager) = self.model.permission_manager {
-                match permission {
-                    Permission::Always => permission_manager.whitelist(url, request),
-                    Permission::Never => permission_manager.blacklist(url, request),
-                }
+    fn remember_permission(
+        &mut self,
+        permission: Permission,
+        request: &webkit2gtk::PermissionRequest,
+        url: &str,
+    ) {
+        let result = if let Some(ref mut permission_manager) = self.model.permission_manager {
+            match permission {
+                Permission::Always => permission_manager.whitelist(url, request),
+                Permission::Never => permission_manager.blacklist(url, request),
             }
-            else {
-                Ok(())
-            };
+        } else {
+            Ok(())
+        };
         self.handle_error(result);
     }
 
@@ -788,24 +762,20 @@ impl App {
     }
 
     fn init_permission_manager(&mut self) {
-        let result =
-            if let Some(ref mut permission_manager) = self.model.permission_manager {
-                permission_manager.load()
-            }
-            else {
-                Ok(())
-            };
+        let result = if let Some(ref mut permission_manager) = self.model.permission_manager {
+            permission_manager.load()
+        } else {
+            Ok(())
+        };
         self.handle_error(result);
     }
 
     fn init_popup_manager(&mut self) {
-        let result =
-            if let Some(ref mut popup_manager) = self.model.popup_manager {
-                popup_manager.load()
-            }
-            else {
-                Ok(())
-            };
+        let result = if let Some(ref mut popup_manager) = self.model.popup_manager {
+            popup_manager.load()
+        } else {
+            Ok(())
+        };
         self.handle_error(result);
     }
 
@@ -822,8 +792,7 @@ impl App {
     fn private_text(&self) -> &'static str {
         if self.webview.widget().is_ephemeral() {
             "[PV] "
-        }
-        else {
+        } else {
             ""
         }
     }
@@ -852,11 +821,11 @@ impl App {
         match setting {
             HintChars(chars) => self.model.hint_chars = chars,
             HomePage(url) => {
-                if  self.model.init_url.is_none() {
+                if self.model.init_url.is_none() {
                     self.webview.emit(PageOpen(url.clone()));
                 }
                 self.model.home_page = Some(url);
-            },
+            }
             _ => self.webview.emit(WebViewSettingChanged(setting)),
         }
     }
@@ -873,8 +842,7 @@ impl App {
         if self.model.has_active_downloads {
             let msg = "There are active downloads. Do you want to quit?".to_string();
             yes_no_question(&self.mg, &self.model.relm, msg, Exit)
-        }
-        else {
+        } else {
             self.quit(true);
         }
     }
@@ -909,8 +877,5 @@ impl App {
 }
 
 fn mark_from_str(mark: &str) -> u8 {
-    mark.as_bytes().get(0)
-            .cloned()
-            .unwrap_or(LAST_MARK)
-
+    mark.as_bytes().get(0).cloned().unwrap_or(LAST_MARK)
 }

@@ -26,8 +26,8 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::result;
 
-use rusqlite::Connection;
 use rusqlite::types::ToSql;
+use rusqlite::Connection;
 
 use errors::{Error, Result};
 
@@ -55,14 +55,12 @@ impl Bookmark {
 }
 
 /// A bookmark manager is use to add, search and remove bookmarks.
-pub struct BookmarkManager {
-}
+pub struct BookmarkManager {}
 
 impl BookmarkManager {
     /// Create a new bookmark manager.
     pub fn new() -> Self {
-        BookmarkManager {
-        }
+        BookmarkManager {}
     }
 
     /// Add a bookmark.
@@ -70,11 +68,13 @@ impl BookmarkManager {
     pub fn add(&self, url: String, title: Option<String>) -> Result<bool> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(inserted_count) = connection.execute("
+                if let Ok(inserted_count) = connection.execute(
+                    "
                     INSERT INTO bookmarks (title, url)
                     VALUES ($1, $2)
-                    ", &[&title.unwrap_or_default(), &url])
-                {
+                    ",
+                    &[&title.unwrap_or_default(), &url],
+                ) {
                     return Ok(inserted_count > 0);
                 }
             }
@@ -100,28 +100,37 @@ impl BookmarkManager {
     pub fn create_tables(&self) -> Result<()> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                connection.execute("
+                connection.execute(
+                    "
                 CREATE TABLE IF NOT EXISTS bookmarks
                 ( id INTEGER PRIMARY KEY
                 , title TEXT NOT NULL
                 , url TEXT NOT NULL UNIQUE
                 , visit_count INTEGER NOT NULL DEFAULT 0
-                )", &[])?;
+                )",
+                    &[],
+                )?;
 
-                connection.execute("
+                connection.execute(
+                    "
                 CREATE TABLE IF NOT EXISTS tags
                 ( id INTEGER PRIMARY KEY
                 , name TEXT NOT NULL UNIQUE
-                )", &[])?;
+                )",
+                    &[],
+                )?;
 
-                connection.execute("
+                connection.execute(
+                    "
                 CREATE TABLE IF NOT EXISTS bookmarks_tags
                 ( bookmark_id INTEGER NOT NULL
                 , tag_id INTEGER NOT NULL
                 , PRIMARY KEY (bookmark_id, tag_id)
                 , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
                 , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
-                )", &[])?;
+                )",
+                    &[],
+                )?;
             }
             Ok(())
         })
@@ -132,11 +141,13 @@ impl BookmarkManager {
     pub fn delete(&self, url: &str) -> Result<bool> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(deleted_count) = connection.execute("
+                if let Ok(deleted_count) = connection.execute(
+                    "
                     DELETE FROM bookmarks
                     WHERE url = $1
-                    ", &[&url.to_string()])
-                {
+                    ",
+                    &[&url.to_string()],
+                ) {
                     return Ok(deleted_count > 0);
                 }
             }
@@ -145,18 +156,25 @@ impl BookmarkManager {
     }
 
     /// Delete the tags that are in `original_tags` but not in `tags`.
-    fn delete_tags(&self, connection: &Connection, bookmark_id: i32, original_tags: &[String], tags: &[String])
-        -> Result<()>
-    {
+    fn delete_tags(
+        &self,
+        connection: &Connection,
+        bookmark_id: i32,
+        original_tags: &[String],
+        tags: &[String],
+    ) -> Result<()> {
         let original_tags: HashSet<_> = original_tags.iter().collect();
         let tags: HashSet<_> = tags.iter().collect();
         let tags_to_delete = &original_tags - &tags;
         for tag in tags_to_delete {
             let tag_id = self.get_tag_id(connection, tag)?;
-            connection.execute("
+            connection.execute(
+                "
                 DELETE FROM bookmarks_tags
                 WHERE bookmark_id = $1 AND tag_id = $2
-            ", &[&bookmark_id, &tag_id])?;
+            ",
+                &[&bookmark_id, &tag_id],
+            )?;
         }
         Ok(())
     }
@@ -170,14 +188,14 @@ impl BookmarkManager {
     pub fn get_id(&self, url: &str) -> Option<i32> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(mut statement) = connection.prepare("
+                if let Ok(mut statement) = connection.prepare(
+                    "
                         SELECT id
                         FROM bookmarks
                         WHERE url = $1
-                    ")
-                {
-                    if let Ok(mut rows) = statement.query(&[&url.to_string()])
-                    {
+                    ",
+                ) {
+                    if let Ok(mut rows) = statement.query(&[&url.to_string()]) {
                         return rows.next().and_then(|row| row.ok().map(|row| row.get(0)));
                     }
                 }
@@ -188,13 +206,17 @@ impl BookmarkManager {
 
     /// Get the tag ID of a bookmark.
     pub fn get_tag_id(&self, connection: &Connection, tag: &str) -> Result<i32> {
-        let mut statement = connection.prepare("
+        let mut statement = connection.prepare(
+            "
             SELECT id
             FROM tags
             WHERE name = $1
-        ")?;
+        ",
+        )?;
         let mut rows = statement.query(&[&tag.to_string()])?;
-        let row = rows.next().ok_or_else(|| Error::from_string("tag not found".to_string()))?;
+        let row = rows
+            .next()
+            .ok_or_else(|| Error::from_string("tag not found".to_string()))?;
         let id = row.map(|row| row.get(0))?;
         Ok(id)
     }
@@ -203,7 +225,8 @@ impl BookmarkManager {
     pub fn get_tags(&self, url: &str) -> Result<Vec<String>> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(mut statement) = connection.prepare("
+                if let Ok(mut statement) = connection.prepare(
+                    "
                         SELECT name
                         FROM tags
                         INNER JOIN bookmarks_tags
@@ -211,13 +234,11 @@ impl BookmarkManager {
                         INNER JOIN bookmarks
                             ON bookmarks_tags.bookmark_id = bookmarks.id
                         WHERE url = $1
-                    ")
-                {
-                    if let Ok(rows) = statement.query_map(&[&url.to_string()], |row| {
-                            row.get(0)
-                        })
-                    {
-                        return rows.collect::<result::Result<Vec<_>, _>>()
+                    ",
+                ) {
+                    if let Ok(rows) = statement.query_map(&[&url.to_string()], |row| row.get(0)) {
+                        return rows
+                            .collect::<result::Result<Vec<_>, _>>()
                             .map_err(Into::into);
                     }
                 }
@@ -235,18 +256,20 @@ impl BookmarkManager {
                 let mut title_idents = vec![];
                 for title in &input.words {
                     let index = params.len();
-                    title_idents.push(format!("(title LIKE '%' || ${} || '%' OR url LIKE '%' || ${} || '%')", index, index + 1));
+                    title_idents.push(format!(
+                        "(title LIKE '%' || ${} || '%' OR url LIKE '%' || ${} || '%')",
+                        index,
+                        index + 1
+                    ));
                     params.push(title);
                     params.push(title);
                 }
                 let title_idents = title_idents.join(" AND ");
-                let where_clause =
-                    if !title_idents.is_empty() {
-                        format!("WHERE {}", title_idents)
-                    }
-                    else {
-                        String::new()
-                    };
+                let where_clause = if !title_idents.is_empty() {
+                    format!("WHERE {}", title_idents)
+                } else {
+                    String::new()
+                };
 
                 let delta = params.len();
                 let mut tag_idents = vec![];
@@ -255,15 +278,18 @@ impl BookmarkManager {
                     params.push(tag);
                 }
                 let tag_idents = tag_idents.join(" OR ");
-                let having_clause =
-                    if !tag_idents.is_empty() {
-                        format!("HAVING COUNT(CASE WHEN {} THEN 1 END) = {}", tag_idents, input.tags.len())
-                    }
-                    else {
-                        String::new()
-                    };
+                let having_clause = if !tag_idents.is_empty() {
+                    format!(
+                        "HAVING COUNT(CASE WHEN {} THEN 1 END) = {}",
+                        tag_idents,
+                        input.tags.len()
+                    )
+                } else {
+                    String::new()
+                };
 
-                if let Ok(mut statement) = connection.prepare(&format!("
+                if let Ok(mut statement) = connection.prepare(&format!(
+                    "
                             SELECT title, url, COALESCE(GROUP_CONCAT(tags.name, ' #'), '')
                             FROM bookmarks
                             LEFT OUTER JOIN bookmarks_tags
@@ -273,13 +299,15 @@ impl BookmarkManager {
                             {}
                             GROUP BY url
                             {}
-                        ", where_clause, having_clause))
-                {
+                        ",
+                    where_clause, having_clause
+                )) {
                     if let Ok(rows) = statement.query_map(&params, |row| {
                         Bookmark::new(row.get(1), row.get(0), row.get(2))
-                    })
-                    {
-                        return rows.collect::<result::Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
+                    }) {
+                        return rows
+                            .collect::<result::Result<Vec<_>, _>>()
+                            .unwrap_or_else(|_| vec![]);
                     }
                 }
             }
@@ -290,17 +318,16 @@ impl BookmarkManager {
     pub fn search_tags(&self, tag_name: &str) -> Result<Vec<String>> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                if let Ok(mut statement) = connection.prepare("
+                if let Ok(mut statement) = connection.prepare(
+                    "
                         SELECT name
                         FROM tags
                         WHERE name LIKE '%' || $1 || '%'
-                    ")
-                {
-                    if let Ok(rows) = statement.query_map(&[&tag_name], |row| {
-                            row.get(0)
-                        })
-                    {
-                        return rows.collect::<result::Result<Vec<_>, _>>()
+                    ",
+                ) {
+                    if let Ok(rows) = statement.query_map(&[&tag_name], |row| row.get(0)) {
+                        return rows
+                            .collect::<result::Result<Vec<_>, _>>()
                             .map_err(Into::into);
                     }
                 }
@@ -317,15 +344,22 @@ impl BookmarkManager {
                 if let Some(ref connection) = *connection.borrow() {
                     for tag in &tags {
                         let tag = tag.to_lowercase();
-                        connection.execute("
+                        connection.execute(
+                            "
                             INSERT OR IGNORE INTO tags (name)
                             VALUES ($1)
-                        ", &[&tag])?;
+                        ",
+                            &[&tag],
+                        )?;
                         let tag_id = self.get_tag_id(connection, &tag)?;
-                        connection.execute("
+                        connection
+                            .execute(
+                                "
                             INSERT OR IGNORE INTO bookmarks_tags (bookmark_id, tag_id)
                             VALUES ($1, $2)
-                        ", &[&bookmark_id, &tag_id])
+                        ",
+                                &[&bookmark_id, &tag_id],
+                            )
                             .map(|_| ())?
                     }
                     self.delete_tags(connection, bookmark_id, &original_tags, &tags)?;

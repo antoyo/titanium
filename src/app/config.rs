@@ -21,20 +21,21 @@
 
 //! Manage the configuration of the application.
 
-use mg::Variables;
 use mg::DefaultConfig::{self, Dir, File};
+use mg::Variables;
 use webkit2gtk::WebViewExt;
 
-use config_dir::ConfigDir;
 use super::App;
+use config_dir::ConfigDir;
 
 impl App {
     /// Create the variables accessible from the config files.
     pub fn create_variables(&mut self) {
         let webview = self.webview.widget().clone();
-        self.mg.emit(Variables(vec![("url", Box::new(move || {
-            webview.get_uri().unwrap_or_default()
-        }))]));
+        self.mg.emit(Variables(vec![(
+            "url",
+            Box::new(move || webview.get_uri().unwrap_or_default()),
+        )]));
     }
 }
 
@@ -52,18 +53,22 @@ pub fn default_config(config_dir: &ConfigDir) -> Vec<DefaultConfig> {
     let (popup_whitelist_path, popup_blacklist_path) = App::popup_path(config_dir);
     let (permission_whitelist_path, permission_blacklist_path) = App::permission_path(config_dir);
 
-    vec![Dir(downloads_path),
-         Dir(stylesheets_path),
-         Dir(scripts_path),
-         Dir(popups_path),
-         Dir(Ok(config_dir.data_home())),
-         File(keys_path, include_str!("../../config/keys")),
-         File(config_path, include_str!("../../config/config")),
-         File(webkit_config_path, include_str!("../../config/webkit")),
-         File(hints_css_path, include_str!("../../config/stylesheets/hints.css")),
-         File(popup_whitelist_path, ""),
-         File(popup_blacklist_path, ""),
-         File(permission_whitelist_path, ""),
-         File(permission_blacklist_path, ""),
-        ]
+    vec![
+        Dir(downloads_path),
+        Dir(stylesheets_path),
+        Dir(scripts_path),
+        Dir(popups_path),
+        Dir(Ok(config_dir.data_home())),
+        File(keys_path, include_str!("../../config/keys")),
+        File(config_path, include_str!("../../config/config")),
+        File(webkit_config_path, include_str!("../../config/webkit")),
+        File(
+            hints_css_path,
+            include_str!("../../config/stylesheets/hints.css"),
+        ),
+        File(popup_whitelist_path, ""),
+        File(popup_blacklist_path, ""),
+        File(permission_whitelist_path, ""),
+        File(permission_blacklist_path, ""),
+    ]
 }

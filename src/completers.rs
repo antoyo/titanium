@@ -23,11 +23,11 @@ use std::cmp::Ordering::{Greater, Less};
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
-use mg::completion::{Completer, CompletionCell, CompletionResult};
 use mg::completion::Column::{self, AllVisible, Expand};
+use mg::completion::{Completer, CompletionCell, CompletionResult};
 
-use app::USER_AGENT_COMPLETER;
 use app::user_agent::UserAgentManager;
+use app::USER_AGENT_COMPLETER;
 use bookmarks::{BookmarkInput, BookmarkManager};
 use download::download_dir;
 
@@ -59,8 +59,7 @@ impl BookmarkCompleter {
                 if !tag.is_empty() {
                     tags.push(tag);
                 }
-            }
-            else {
+            } else {
                 words.push(word);
             }
         }
@@ -86,16 +85,16 @@ impl Completer for BookmarkCompleter {
         let query = BookmarkCompleter::parse_input(input);
 
         for bookmark in self.bookmarks.query(query) {
-            let tags =
-                if !bookmark.tags.is_empty() {
-                    format!("#{}", bookmark.tags)
-                }
-                else {
-                    String::new()
-                };
-            results.push(CompletionResult::from_cells(
-                &[&bookmark.title, &CompletionCell::new(&tags).foreground("#33DD00"), &bookmark.url],
-            ));
+            let tags = if !bookmark.tags.is_empty() {
+                format!("#{}", bookmark.tags)
+            } else {
+                String::new()
+            };
+            results.push(CompletionResult::from_cells(&[
+                &bookmark.title,
+                &CompletionCell::new(&tags).foreground("#33DD00"),
+                &bookmark.url,
+            ]));
         }
 
         results
@@ -132,7 +131,11 @@ impl Completer for FileCompleter {
         // directory when selecting a directory.
         // This means the user needs to type the slash to trigger the completion of the new
         // directory.
-        absolute_path.to_str().unwrap().trim_right_matches('/').to_string()
+        absolute_path
+            .to_str()
+            .unwrap()
+            .trim_right_matches('/')
+            .to_string()
     }
 
     fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
@@ -140,15 +143,14 @@ impl Completer for FileCompleter {
         let input_path = Path::new(input).to_path_buf();
         // If the input ends with /, complete within this directory.
         // Otherwise, complete the files from the parent directory.
-        let path =
-            if !input.ends_with('/') {
-                input_path.parent()
-                    .map(Path::to_path_buf)
-                    .unwrap_or(input_path)
-            }
-            else {
-                input_path
-            };
+        let path = if !input.ends_with('/') {
+            input_path
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or(input_path)
+        } else {
+            input_path
+        };
         self.current_directory = path.clone();
         if let Ok(entries) = read_dir(path) {
             for entry in entries {
@@ -167,22 +169,22 @@ impl Completer for FileCompleter {
             }
         }
         // Sort directories first, then sort by name.
-        paths.sort_by(|path1, path2| {
-            match (path1.is_dir(), path2.is_dir()) {
-                (true, false) => Less,
-                (false, true) => Greater,
-                _ => path1.cmp(path2),
-            }
+        paths.sort_by(|path1, path2| match (path1.is_dir(), path2.is_dir()) {
+            (true, false) => Less,
+            (false, true) => Greater,
+            _ => path1.cmp(path2),
         });
-        paths.iter()
+        paths
+            .iter()
             .map(|path| {
                 let filename = path.file_name().unwrap().to_str().unwrap();
                 if path.is_dir() {
                     let mut filename = filename.to_string();
                     filename.push('/');
-                    CompletionResult::from_cells(&[&CompletionCell::new(&filename).foreground("#33FF33")])
-                }
-                else {
+                    CompletionResult::from_cells(&[
+                        &CompletionCell::new(&filename).foreground("#33FF33")
+                    ])
+                } else {
                     CompletionResult::new(&[&filename.to_string()])
                 }
             })
@@ -213,24 +215,20 @@ impl Completer for TagCompleter {
     fn complete_result(&self, value: &str) -> String {
         if self.current_tags.is_empty() {
             value.to_string()
-        }
-        else {
+        } else {
             format!("{} {}", self.current_tags, value)
         }
     }
 
     fn completions(&mut self, input: &str) -> Vec<CompletionResult> {
-        let index = input.rfind(',')
-            .map(|index| index + 1)
-            .unwrap_or(0);
+        let index = input.rfind(',').map(|index| index + 1).unwrap_or(0);
         let query = input[index..].trim();
         self.current_tags = input[..index].to_string();
         if let Ok(tags) = self.bookmarks.search_tags(query) {
             tags.iter()
                 .map(|tag| CompletionResult::new(&[&tag]))
                 .collect()
-        }
-        else {
+        } else {
             vec![]
         }
     }
@@ -286,14 +284,12 @@ fn split_whitespace_and_hash(input: &str) -> Vec<String> {
                 buffer.clear();
             }
             buffer.push('#');
-        }
-        else if character == ' ' {
+        } else if character == ' ' {
             if !buffer.is_empty() {
                 words.push(buffer.clone());
                 buffer.clear();
             }
-        }
-        else {
+        } else {
             buffer.push(character);
         }
     }

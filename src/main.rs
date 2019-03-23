@@ -353,7 +353,7 @@
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
-    unused_qualifications,
+    unused_qualifications
 )]
 
 extern crate cairo;
@@ -401,8 +401,8 @@ mod commands;
 mod completers;
 mod config_dir;
 mod download;
-mod download_view;
 mod download_list_view;
+mod download_view;
 mod errors;
 mod file;
 mod gio_ext;
@@ -429,11 +429,11 @@ const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
 #[derive(Debug, Default, Options)]
 struct Args {
-    #[options(help="The configuration directory.")]
+    #[options(help = "The configuration directory.")]
     config: Option<String>,
-    #[options(help="Print help message.")]
+    #[options(help = "Print help message.")]
     help: bool,
-    #[options(help="Show the log messages.")]
+    #[options(help = "Show the log messages.")]
     log: bool,
     #[options(free)]
     url: Vec<String>,
@@ -451,15 +451,14 @@ fn main() {
             println!();
             println!("{}", Args::usage());
             return;
-        },
+        }
     };
 
     if args.help {
         println!("Usage: {} [OPTIONS] [ARGUMENTS]", APP_NAME);
         println!();
         println!("{}", Args::usage());
-    }
-    else {
+    } else {
         init_logging(args.log);
 
         let _message_server = create_message_server(args.url, args.config);
@@ -477,8 +476,7 @@ fn init_logging(log_to_term: bool) {
             time_format: None,
         };
         TermLogger::init(LevelFilter::max(), config).unwrap();
-    }
-    else {
+    } else {
         syslog::init_unix(Facility::LOG_USER, LevelFilter::max()).unwrap();
     }
     log_panics::init();

@@ -26,42 +26,38 @@ use std::fs::File;
 use std::path::Path;
 use std::thread;
 
-use INVALID_UTF8_ERROR;
 use errors::{Error, Result};
 use open;
 use tempfile::Builder as TempFileBuilder;
+use INVALID_UTF8_ERROR;
 
 /// Generate a unique filename from `filename`.
 pub fn gen_unique_filename(filename: &str) -> Result<String> {
-    let (prefix, suffix) =
-        if let Some(index) = filename.rfind('.') {
-            (&filename[..index], &filename[index..])
-        }
-        else {
-            (filename, "")
-        };
+    let (prefix, suffix) = if let Some(index) = filename.rfind('.') {
+        (&filename[..index], &filename[index..])
+    } else {
+        (filename, "")
+    };
     let file = TempFileBuilder::new()
         .prefix(prefix)
         .suffix(suffix)
         .tempfile()?;
-    let filename =
-        file.path().file_name()
-            .ok_or_else(|| Error::new("generated file name has no file name"))?
-            .to_str()
-            .ok_or_else(|| Error::new(INVALID_UTF8_ERROR))?
-            .to_string();
+    let filename = file
+        .path()
+        .file_name()
+        .ok_or_else(|| Error::new("generated file name has no file name"))?
+        .to_str()
+        .ok_or_else(|| Error::new(INVALID_UTF8_ERROR))?
+        .to_string();
     Ok(filename)
 }
 
 pub fn open<P: AsRef<Path> + AsRef<OsStr>>(path: P) -> Result<File> {
     let string = AsRef::<OsStr>::as_ref(&path).to_string_lossy();
-    File::open(&path)
-        .map_err(|err| Error::new(&format!("Cannot open file {}: {}", string, err)))
+    File::open(&path).map_err(|err| Error::new(&format!("Cannot open file {}: {}", string, err)))
 }
 
 /// Open a file in a new process.
 pub fn open_app_for_file(url: String) {
-    thread::spawn(move ||
-        open::that(url).ok()
-    );
+    thread::spawn(move || open::that(url).ok());
 }

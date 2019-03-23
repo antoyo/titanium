@@ -35,9 +35,9 @@ impl App {
 
     /// Delete all the cookies.
     pub fn delete_all_cookies(&self) {
-        let cookie_manager =
-            self.get_webview_context()
-                .and_then(|context| context.get_cookie_manager());
+        let cookie_manager = self
+            .get_webview_context()
+            .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_all_cookies();
             self.mg.emit(Info("All cookies deleted".to_string()));
@@ -46,12 +46,13 @@ impl App {
 
     /// Delete the cookies for the specified domain.
     pub fn delete_cookies(&self, domain: &str) {
-        let cookie_manager =
-            self.get_webview_context()
-                .and_then(|context| context.get_cookie_manager());
+        let cookie_manager = self
+            .get_webview_context()
+            .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_cookies_for_domain(domain);
-            self.mg.emit(Info(format!("Cookies deleted for domain {}", domain)));
+            self.mg
+                .emit(Info(format!("Cookies deleted for domain {}", domain)));
         }
     }
 }

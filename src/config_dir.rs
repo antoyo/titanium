@@ -24,8 +24,8 @@ use std::path::PathBuf;
 
 use xdg::{BaseDirectories, BaseDirectoriesError};
 
-use app::APP_NAME;
 use self::ConfigDirOption::{Path, Xdg};
+use app::APP_NAME;
 
 #[derive(Clone)]
 enum ConfigDirOption {
@@ -42,16 +42,12 @@ pub struct ConfigDir {
 
 impl ConfigDir {
     pub fn new(config_dir: &Option<String>) -> Result<Self, BaseDirectoriesError> {
-        let dir =
-            if let Some(ref config_dir) = *config_dir {
-                Path(PathBuf::from(config_dir))
-            }
-            else {
-                Xdg(BaseDirectories::with_prefix(APP_NAME)?)
-            };
-        Ok(ConfigDir {
-            dir: dir,
-        })
+        let dir = if let Some(ref config_dir) = *config_dir {
+            Path(PathBuf::from(config_dir))
+        } else {
+            Xdg(BaseDirectories::with_prefix(APP_NAME)?)
+        };
+        Ok(ConfigDir { dir: dir })
     }
 
     /// Get a path to the config file.
@@ -62,7 +58,7 @@ impl ConfigDir {
                 path.push("config");
                 path.push(filename);
                 Ok(path)
-            },
+            }
             Xdg(ref xdg) => xdg.place_config_file(filename),
         }
     }
@@ -74,7 +70,7 @@ impl ConfigDir {
                 let mut path = path.clone();
                 path.push("config");
                 path
-            },
+            }
             Xdg(ref xdg) => xdg.get_config_home(),
         }
     }
@@ -87,7 +83,7 @@ impl ConfigDir {
                 path.push("data");
                 path.push(filename);
                 Ok(path)
-            },
+            }
             Xdg(ref xdg) => xdg.place_data_file(filename),
         }
     }
@@ -99,7 +95,7 @@ impl ConfigDir {
                 let mut path = path.clone();
                 path.push("data");
                 path
-            },
+            }
             Xdg(ref xdg) => xdg.get_data_home(),
         }
     }

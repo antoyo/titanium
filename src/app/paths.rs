@@ -34,15 +34,17 @@ impl App {
 
     /// Get the permission whitelist and blacklist path.
     pub fn permission_path(config_dir: &ConfigDir) -> (io::Result<PathBuf>, io::Result<PathBuf>) {
-        ( config_dir.config_file("permissions/whitelist"),
-          config_dir.config_file("permissions/blacklist")
+        (
+            config_dir.config_file("permissions/whitelist"),
+            config_dir.config_file("permissions/blacklist"),
         )
     }
 
     /// Get the popup whitelist and blacklist path.
     pub fn popup_path(config_dir: &ConfigDir) -> (io::Result<PathBuf>, io::Result<PathBuf>) {
-        ( config_dir.config_file("popups/whitelist"),
-          config_dir.config_file("popups/blacklist")
+        (
+            config_dir.config_file("popups/whitelist"),
+            config_dir.config_file("popups/blacklist"),
         )
     }
 }

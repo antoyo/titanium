@@ -21,17 +21,11 @@
 
 //! Bookmark management in the application.
 
-use mg::{
-    CustomDialog,
-    DialogBuilder,
-    DeleteCompletionItem,
-    Info,
-    InputDialog,
-};
+use mg::{CustomDialog, DeleteCompletionItem, DialogBuilder, Info, InputDialog};
 use webkit2gtk::WebViewExt;
 
-use app::{App, TAG_COMPLETER};
 use app::Msg::TagEdit;
+use app::{App, TAG_COMPLETER};
 
 impl App {
     /// Add the current page to the bookmarks.
@@ -41,7 +35,9 @@ impl App {
             let message = format!("Added bookmark: {}", url);
             match self.model.bookmark_manager.add(url, title) {
                 Ok(true) => self.mg.emit(Info(message)),
-                Ok(false) => self.mg.emit(Info("The current page is already in the bookmarks".to_string())),
+                Ok(false) => self.mg.emit(Info(
+                    "The current page is already in the bookmarks".to_string(),
+                )),
                 Err(err) => self.error(&err.to_string()),
             }
         }
@@ -62,14 +58,15 @@ impl App {
     pub fn delete_selected_bookmark(&self) {
         let mut command = self.model.command_text.split_whitespace();
         match command.next() {
-            Some("open") | Some("win-open") | Some("private-win-open") =>
+            Some("open") | Some("win-open") | Some("private-win-open") => {
                 if let Some(url) = command.next() {
                     // Do not show message when deleting a bookmark in completion.
                     if let Err(err) = self.model.bookmark_manager.delete(url) {
                         self.error(&err.to_string());
                     }
                     self.mg.emit(DeleteCompletionItem);
-                },
+                }
+            }
             _ => (),
         }
     }
@@ -77,11 +74,16 @@ impl App {
     pub fn set_tags(&self, tags: Option<String>) {
         // Do not edit tags when the user press Escape.
         if let Some(tags) = tags {
-            let tags: Vec<_> = tags.split(',')
+            let tags: Vec<_> = tags
+                .split(',')
                 .map(|tag| tag.trim().to_lowercase())
                 .filter(|tag| !tag.is_empty())
                 .collect();
-            if let Err(err) = self.model.bookmark_manager.set_tags(&self.model.current_url, tags) {
+            if let Err(err) = self
+                .model
+                .bookmark_manager
+                .set_tags(&self.model.current_url, tags)
+            {
                 self.error(&err.to_string());
             }
         }
@@ -90,7 +92,11 @@ impl App {
     /// Edit the tags of the current page from the bookmarks.
     pub fn edit_bookmark_tags(&self) {
         if self.model.bookmark_manager.exists(&self.model.current_url) {
-            match self.model.bookmark_manager.get_tags(&self.model.current_url) {
+            match self
+                .model
+                .bookmark_manager
+                .get_tags(&self.model.current_url)
+            {
                 Ok(tags) => {
                     let default_answer = tags.join(", ");
                     let responder = Box::new(InputDialog::new(&self.model.relm, TagEdit));
@@ -101,17 +107,17 @@ impl App {
                         .message("Bookmark tags (separated by comma):".to_string())
                         .responder(responder);
                     self.mg.emit(CustomDialog(builder));
-                },
+                }
                 Err(err) => self.error(&err.to_string()),
             }
-        }
-        else {
+        } else {
             self.info_page_not_in_bookmarks();
         }
     }
 
     /// Show an information message to tell that the current page is not in the bookmarks.
     fn info_page_not_in_bookmarks(&self) {
-        self.mg.emit(Info("The current page is not in the bookmarks".to_string()));
+        self.mg
+            .emit(Info("The current page is not in the bookmarks".to_string()));
     }
 }

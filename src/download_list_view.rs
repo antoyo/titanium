@@ -22,40 +22,17 @@
 use std::collections::HashMap;
 
 use glib::Cast;
-use gtk::{
-    self,
-    Container,
-    ContainerExt,
-    FlowBoxExt,
-    IsA,
-    SelectionMode,
-    WidgetExt,
-};
-use relm::{
-    Component,
-    ContainerWidget,
-    Relm,
-    Widget,
-    timeout,
-};
+use gtk::{self, Container, ContainerExt, FlowBoxExt, IsA, SelectionMode, WidgetExt};
+use relm::{timeout, Component, ContainerWidget, Relm, Widget};
 use relm_attributes::widget;
-use webkit2gtk::{
-    Download,
-    DownloadExt,
-    Error,
-};
 use webkit2gtk::DownloadError::CancelledByUser;
+use webkit2gtk::{Download, DownloadExt, Error};
 
+use self::Msg::*;
 use download_view::DownloadView;
 use download_view::Msg::{
-    Cancel,
-    Destination,
-    DownloadError,
-    OriginalDestination,
-    Remove,
-    SetToOpen,
+    Cancel, Destination, DownloadError, OriginalDestination, Remove, SetToOpen,
 };
-use self::Msg::*;
 
 const DOWNLOAD_TIME_BEFORE_HIDE: u32 = 2000;
 
@@ -98,12 +75,15 @@ impl Widget for DownloadListView {
             AddFileToOpen(download) => self.add_file_to_open(download),
             DelayedRemove(download) => self.delayed_remove(download),
             DownloadCancel(download) => self.download_cancel(download),
-            DownloadDestination(download, destination) => self.download_destination(download, destination),
+            DownloadDestination(download, destination) => {
+                self.download_destination(download, destination)
+            }
             DownloadFailed(error, download) => self.handle_failed(&error, download),
             DownloadFinished(_) => self.handle_finished(),
             DownloadListError(_) => (), // To be listened by the user.
-            DownloadOriginalDestination(download, destination) =>
-                self.download_original_destination(download, destination),
+            DownloadOriginalDestination(download, destination) => {
+                self.download_original_destination(download, destination)
+            }
             DownloadRemove(download) => self.delete(download),
         }
     }
@@ -122,9 +102,18 @@ impl DownloadListView {
         self.model.download_count += 1;
         self.model.relm.stream().emit(ActiveDownloads(true));
 
-        connect!(self.model.relm, download, connect_failed(download, error),
-            DownloadFailed(error.clone(), download.clone()));
-        connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone()));
+        connect!(
+            self.model.relm,
+            download,
+            connect_failed(download, error),
+            DownloadFailed(error.clone(), download.clone())
+        );
+        connect!(
+            self.model.relm,
+            download,
+            connect_finished(download),
+            DownloadFinished(download.clone())
+        );
 
         let download_view = self.view.add_widget::<DownloadView>(download.clone());
         if let Some(flow_child) = self.view.get_children().last() {
@@ -147,7 +136,11 @@ impl DownloadListView {
 
     fn delayed_remove(&self, download: Download) {
         // Delete the view after a certain amount of time after the download finishes.
-        timeout(self.model.relm.stream(), DOWNLOAD_TIME_BEFORE_HIDE, move || DownloadRemove(download.clone()));
+        timeout(
+            self.model.relm.stream(),
+            DOWNLOAD_TIME_BEFORE_HIDE,
+            move || DownloadRemove(download.clone()),
+        );
     }
 
     /// Delete a view and remove it from its parent.
@@ -201,7 +194,8 @@ impl DownloadListView {
 
 /// Remove the progress bar from its `FlowBox` parent.
 fn remove_from_flow_box<W: IsA<gtk::Widget> + WidgetExt>(widget: &W) {
-    let child: Option<Container> = widget.get_parent()
+    let child: Option<Container> = widget
+        .get_parent()
         .and_then(|parent| parent.downcast().ok());
     // FlowBox children are wrapped inside FlowBoxChild, so we need to destroy this
     // FlowBoxChild (which is the parent of the widget) in order to remove it from
