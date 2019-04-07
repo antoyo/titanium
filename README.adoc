@@ -5,6 +5,7 @@ A keyboard-driven web browser written in Rust
 //image:https://img.shields.io/crates/v/titanium.svg[link="https://crates.io/crates/titanium"]
 //image:https://img.shields.io/crates/d/titanium.svg[link="https://crates.io/crates/titanium"]
 image:https://img.shields.io/crates/l/titanium.svg[link="LICENSE"]
+image:https://img.shields.io/badge/Donate-Patreon-orange.svg[link="https://www.patreon.com/antoyo"]
 
 Titanium is written in Rust and uses WebKit2GTK to render web pages.
 
@@ -53,3 +54,10 @@ cd titanium-web-extension
 cargo build --release
 sudo cp target/release/libtitanium_web_extension.so /usr/local/lib/titanium/web-extensions/
 ----
+
+== Donations
+
+If you appreciate this project and want new features to be
+implemented, please support me on Patreon.
+
+image:https://c5.patreon.com/external/logo/become_a_patron_button.png[link="https://www.patreon.com/antoyo"]

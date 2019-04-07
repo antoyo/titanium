@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: pages full on links freeze when using follow.
+ *
  * TODO: add shortcut to scroll by paragraph (like { and } in vim).
  *
  * FIXME: enabling webkit-mediasource breaks some youtube videos.
