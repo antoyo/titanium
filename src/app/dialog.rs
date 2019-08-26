@@ -105,7 +105,7 @@ impl App {
     }
 
     /// Show a input dialog with file completion.
-    fn file_input(&self, responder: Box<Responder>, message: String, default_answer: String) {
+    fn file_input(&self, responder: Box<dyn Responder>, message: String, default_answer: String) {
         let builder = DialogBuilder::new()
             .completer("file")
             .default_answer(default_answer)

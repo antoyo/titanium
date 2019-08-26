@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html freezes titanium
+ *
  * FIXME: pages full on links freeze when using follow.
  *
  * TODO: add shortcut to scroll by paragraph (like { and } in vim).

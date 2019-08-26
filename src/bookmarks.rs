@@ -89,7 +89,7 @@ impl BookmarkManager {
             if connection.is_none() {
                 let db = Connection::open(filename)?;
                 // Activate foreign key contraints in SQLite.
-                db.execute("PRAGMA foreign_keys = ON", &[])?;
+                db.execute::<&[i32; 0]>("PRAGMA foreign_keys = ON", &[])?;
                 *connection = Some(db);
             }
             Ok(())
@@ -100,7 +100,7 @@ impl BookmarkManager {
     pub fn create_tables(&self) -> Result<()> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                connection.execute("
+                connection.execute::<&[i32; 0]>("
                 CREATE TABLE IF NOT EXISTS bookmarks
                 ( id INTEGER PRIMARY KEY
                 , title TEXT NOT NULL
@@ -108,13 +108,13 @@ impl BookmarkManager {
                 , visit_count INTEGER NOT NULL DEFAULT 0
                 )", &[])?;
 
-                connection.execute("
+                connection.execute::<&[i32; 0]>("
                 CREATE TABLE IF NOT EXISTS tags
                 ( id INTEGER PRIMARY KEY
                 , name TEXT NOT NULL UNIQUE
                 )", &[])?;
 
-                connection.execute("
+                connection.execute::<&[i32; 0]>("
                 CREATE TABLE IF NOT EXISTS bookmarks_tags
                 ( bookmark_id INTEGER NOT NULL
                 , tag_id INTEGER NOT NULL
@@ -178,7 +178,7 @@ impl BookmarkManager {
                 {
                     if let Ok(mut rows) = statement.query(&[&url.to_string()])
                     {
-                        return rows.next().and_then(|row| row.ok().map(|row| row.get(0)));
+                        return rows.next().ok().and_then(|row| row.and_then(|row| row.get(0).ok()));
                     }
                 }
             }
@@ -194,9 +194,9 @@ impl BookmarkManager {
             WHERE name = $1
         ")?;
         let mut rows = statement.query(&[&tag.to_string()])?;
-        let row = rows.next().ok_or_else(|| Error::from_string("tag not found".to_string()))?;
-        let id = row.map(|row| row.get(0))?;
-        Ok(id)
+        let row = rows.next()?;
+        let row = row.ok_or_else(|| Error::from_string("tag not found".to_string()))?;
+        Ok(row.get(0)?)
     }
 
     /// Get the tags of a bookmark.
@@ -230,7 +230,7 @@ impl BookmarkManager {
     pub fn query(&self, input: BookmarkInput) -> Vec<Bookmark> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                let mut params: Vec<&ToSql> = vec![];
+                let mut params: Vec<&dyn ToSql> = vec![];
 
                 let mut title_idents = vec![];
                 for title in &input.words {
@@ -276,10 +276,15 @@ impl BookmarkManager {
                         ", where_clause, having_clause))
                 {
                     if let Ok(rows) = statement.query_map(&params, |row| {
-                        Bookmark::new(row.get(1), row.get(0), row.get(2))
+                        if let (Ok(title), Ok(url), Ok(tags)) = (row.get(1), row.get(0), row.get(2)) {
+                            Ok(Some(Bookmark::new(title, url, tags)))
+                        }
+                        else {
+                            Ok(None)
+                        }
                     })
                     {
-                        return rows.collect::<result::Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
+                        return rows.filter_map(|row| row.transpose()).collect::<result::Result<Vec<_>, _>>().unwrap_or_else(|_| vec![]);
                     }
                 }
             }
