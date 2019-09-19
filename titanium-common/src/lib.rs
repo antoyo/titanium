@@ -34,6 +34,7 @@ extern crate gio;
 extern crate glib;
 #[macro_use]
 extern crate log;
+extern crate relm;
 #[macro_use]
 extern crate relm_derive_state;
 #[macro_use]

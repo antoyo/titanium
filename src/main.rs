@@ -20,7 +20,14 @@
  */
 
 /*
- * FIXME: https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html freezes titanium
+ * TODO: this URL (https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html)
+ * freezes the window.
+ *
+ * TODO: implement the buster extension to automatically solve google recaptcha (https://addons.mozilla.org/fr/firefox/addon/buster-captcha-solver/).
+ *
+ * TODO: command to paste a multiline URL (with +) from the clipboard.
+ *
+ * TODO: add shortcut to go to next input field?
  *
  * FIXME: pages full on links freeze when using follow.
  *
@@ -38,6 +45,7 @@
  * Maybe we can get the URL of the video and play it instead of the ads and hide the Skip ad
  * button.
  *
+ * TODO: maybe use https://github.com/brave/adblock-rust
  * https://github.com/adblockplus/adblockpluschrome/blob/ed07aad42e52fe169ef160c67571842525cf3692/safari/include.youtube.js
  * Might be able to change the content of the request to:
  * https://www.youtube.com/watch?v=RvnkAtWcKYg&list=RDEMCEY_ml9yV206dEgRXEKSkg&start_radio=1&pbj=1
@@ -215,6 +223,7 @@
  * FIXME: scroll percentage wrong on:
  * file:///home/bouanto
  * http://www.expressionsofchange.org/reification-of-interaction/
+ * https://www.snellman.net/blog/archive/2017-04-17-xxx-fixme/
  *
  * FIXME: too many redirections: https://www.cavendre.com/fr/annonce/login.php
  *
