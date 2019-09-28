@@ -25,8 +25,6 @@
  *
  * TODO: implement the buster extension to automatically solve google recaptcha (https://addons.mozilla.org/fr/firefox/addon/buster-captcha-solver/).
  *
- * TODO: command to paste a multiline URL (with +) from the clipboard.
- *
  * TODO: add shortcut to go to next input field?
  *
  * FIXME: pages full on links freeze when using follow.

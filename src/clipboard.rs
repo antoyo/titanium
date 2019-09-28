@@ -38,7 +38,12 @@ impl App {
             let url = urls.pop()
                 .or_else(|| {
                     let text = clipboard.wait_for_text();
-                    text.and_then(|text| Url::parse(&text).ok().map(|_| text))
+                    text.and_then(|text| {
+                        // NOTE: do the following replacements to allow copy-pasting URLs from mutt.
+                        let text = text.trim_start_matches("+");
+                        let text = text.replace("\n+", "");
+                        Url::parse(&text).ok().map(|_| text)
+                    })
                 });
             if let Some(url) = url {
                 return Some(url);
