@@ -20,6 +20,10 @@
  */
 
 /*
+ * TODO: save the current URLs of every window in case of a crash.
+ *
+ * TODO: Incrementing this URL segfaults: https://www.mexicoinmykitchen.com/page/2/?s=spicy
+ *
  * TODO: this URL (https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html)
  * freezes the window.
  *
@@ -224,8 +228,6 @@
  * https://www.snellman.net/blog/archive/2017-04-17-xxx-fixme/
  *
  * FIXME: too many redirections: https://www.cavendre.com/fr/annonce/login.php
- *
- * TODO: save the current URLs of every window in case of a crash.
  *
  * TODO: add command (;f) to change the active element.
  *
