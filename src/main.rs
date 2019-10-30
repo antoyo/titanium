@@ -20,8 +20,6 @@
  */
 
 /*
- * TODO: Incrementing this URL segfaults: https://www.mexicoinmykitchen.com/page/2/?s=spicy
- *
  * TODO: this URL (https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html)
  * freezes the window.
  *

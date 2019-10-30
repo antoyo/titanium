@@ -78,10 +78,17 @@ pub fn is_url(input: &str) -> bool {
 
 /// Take url and increment the first number with offset.
 pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
-    if let Ok(url) = Url::parse(url) {
+    let url =
+        if url.ends_with('?') {
+            url.trim_end_matches('?')
+        }
+        else {
+            url
+        };
+    if let Ok(url) = Url::parse(&url) {
         let mut updated = false;
 
-        if let Some(query) = url.query(){
+        if let Some(query) = url.query() {
             let pairs = url.query_pairs().into_owned();
 
             // ParseIntoOwned lacks DoubleEndedIterator for rev(), must be parsed left to right
@@ -108,8 +115,10 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
             if updated {
                 return Some(url[..Position::BeforeQuery].to_string() + &next);
             }
-            else if let Some(page) = offset(&url[..Position::BeforeQuery], inc_offset) {
-                return Some(page + query);
+            else {
+                if let Some(page) = offset(&url[..Position::BeforeQuery], inc_offset) {
+                    return Some(page + "?" + query);
+                }
             }
         }
         else if let Some(path_segments) = url.path_segments() {
@@ -138,4 +147,15 @@ pub fn offset(url: &str, inc_offset: i32) -> Option<String> {
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::offset;
+
+    #[test]
+    fn test_offset() {
+        assert_eq!(offset("https://www.mexicoinmykitchen.com/page/2/", 1), Some("https://www.mexicoinmykitchen.com/page/3/".to_string()));
+        assert_eq!(offset("https://www.mexicoinmykitchen.com/page/2/?s=spicy", 1), Some("https://www.mexicoinmykitchen.com/page/3/?s=spicy".to_string()));
+    }
 }
