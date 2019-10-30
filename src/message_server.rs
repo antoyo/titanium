@@ -21,7 +21,10 @@
 
 //! Message server interface.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::io::{self, Write};
 use std::marker;
 use std::process;
 
@@ -63,11 +66,12 @@ use titanium_common::protocol::{
     SendMode,
     send,
 };
-use titanium_common::protocol::Msg::{MsgRead, Write};
+use titanium_common::protocol::Msg::{MsgRead, WriteMsg};
 
 use app::{self, App};
 use app::Msg::{
     MessageRecv,
+    ChangeUrl,
     CreateWindow,
     Remove,
     ServerSend,
@@ -113,6 +117,8 @@ pub struct Model {
     extension_page: HashMap<PageId, ExtensionId>,
     listener: ListenerAsync,
     private_web_context: WebContext,
+    opened_urls: BTreeSet<String>,
+    previous_opened_urls: BTreeSet<String>,
     relm: Relm<MessageServer>,
     // TODO: save the widgets somewhere allowing to remove them when its window is closed.
     wins: Vec<Component<App>>,
@@ -124,11 +130,12 @@ pub struct Model {
 #[derive(Msg)]
 pub enum Msg {
     AppPageId(EventStream<app::Msg>, PageId),
+    ChangeOpenedPage(String, String),
     ClientConnect(SocketConnection),
     MsgRecv(usize, Message),
     MsgError(Error),
     NewApp(Option<String>, Privacy),
-    RemoveApp(PageId),
+    RemoveApp(PageId, String),
     Send(PageId, InnerMessage),
 }
 
@@ -158,6 +165,8 @@ impl Update for MessageServer {
             config_dir,
             extension_page: HashMap::new(),
             listener,
+            opened_urls: BTreeSet::new(),
+            previous_opened_urls: BTreeSet::new(),
             private_web_context,
             relm: relm.clone(),
             wins: vec![],
@@ -181,6 +190,11 @@ impl Update for MessageServer {
                     self.connect_app_and_extension(extension_id, page_id, protocol_counter);
                 }
             },
+            ChangeOpenedPage(old, new) => {
+                self.model.opened_urls.remove(&old);
+                self.model.opened_urls.insert(new);
+                self.save_urls();
+            },
             ClientConnect(stream) => {
                 self.accept();
                 let protocol = execute::<PluginProtocol>(stream.upcast());
@@ -195,7 +209,7 @@ impl Update for MessageServer {
             MsgError(_) => (),
             MsgRecv(protocol_counter, Message(page_id, message)) => self.msg_recv(protocol_counter, page_id, message),
             NewApp(url, privacy) => self.add_app(url, privacy),
-            RemoveApp(page_id) => self.remove_app(page_id),
+            RemoveApp(page_id, url) => self.remove_app(page_id, url),
             Send(page_id, message) => self.send(page_id, message),
         }
     }
@@ -252,12 +266,21 @@ impl MessageServer {
             else {
                 self.model.web_context.clone()
             };
-        let app = init::<App>((url, self.model.config_dir.clone(), web_context)).unwrap(); // TODO: remove unwrap().
+
+        self.load_opened_urls();
+
+        if let Some(url) = url.as_ref() {
+            self.model.opened_urls.insert(url.clone());
+            self.save_urls();
+        }
+
+        let app = init::<App>((url, self.model.config_dir.clone(), web_context, self.model.previous_opened_urls.clone())).unwrap(); // TODO: remove unwrap().
         let app_stream = app.stream().clone();
         connect!(app@SetPageId(page_id), self.model.relm, AppPageId(app_stream.clone(), page_id));
         connect!(app@ServerSend(page_id, ref message), self.model.relm, Send(page_id, message.clone()));
         connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
-        connect!(app@Remove(page_id), self.model.relm, RemoveApp(page_id));
+        connect!(app@Remove(page_id, ref url), self.model.relm, RemoveApp(page_id, url.clone()));
+        connect!(app@ChangeUrl(ref old, ref new), self.model.relm, ChangeOpenedPage(old.clone(), new.clone()));
         self.model.wins.push(app);
     }
 
@@ -277,6 +300,24 @@ impl MessageServer {
     fn error(&self, page_id: PageId, error: Error) {
         if let Some(app) = self.model.apps.get(&page_id) {
             app.stream.emit(ShowError(error.to_string()));
+        }
+    }
+
+    fn load_opened_urls(&mut self) {
+        let mut restore = || -> io::Result<()> {
+            let filename = self.model.config_dir.data_file("urls")?;
+            let file = BufReader::new(File::open(filename)?);
+            for line in file.lines() {
+                let url = line?;
+                self.model.opened_urls.insert(url.clone());
+                self.model.previous_opened_urls.insert(url.clone());
+            }
+
+            Ok(())
+        };
+
+        if let Err(error) = restore() {
+            error!("Load opened urls error: {}", error);
         }
     }
 
@@ -310,7 +351,10 @@ impl MessageServer {
         }
     }
 
-    fn remove_app(&mut self, page_id: PageId) {
+    fn remove_app(&mut self, page_id: PageId, url: String) {
+        self.model.opened_urls.remove(&url);
+        self.save_urls();
+
         self.model.app_count -= 1;
         if let Some(extension_id) = self.model.extension_page.get(&page_id).cloned() {
             if page_id != extension_id {
@@ -327,12 +371,28 @@ impl MessageServer {
         }
     }
 
+    fn save_urls(&self) {
+        let save = || -> io::Result<()> {
+            let filename = self.model.config_dir.data_file("urls")?;
+            let mut file = File::create(filename)?;
+            for url in &self.model.opened_urls {
+                writeln!(file, "{}", url)?;
+            }
+
+            Ok(())
+        };
+
+        if let Err(error) = save() {
+            error!("Cannot save opened urls: {}", error);
+        }
+    }
+
     pub fn send(&mut self, page_id: PageId, message: InnerMessage) {
         let mut error = None;
         if let Some(extension_id) = self.model.extension_page.get(&page_id) {
             if let Some(app) = self.model.apps.get_mut(&extension_id) {
                 if let Some(ref mut protocol) = app.protocol {
-                    protocol.emit(Write(Message(page_id, message)));
+                    protocol.emit(WriteMsg(Message(page_id, message)));
                 }
                 else {
                     error = Some(Error::new("message protocol does not exist"));

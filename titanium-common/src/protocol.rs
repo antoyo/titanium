@@ -71,7 +71,7 @@ pub enum Msg {
     MsgRead(Message),
     Read((Vec<u8>, usize)),
     IOError(Error),
-    Write(Message),
+    WriteMsg(Message),
     Wrote,
 }
 
@@ -156,7 +156,7 @@ impl Update for PluginProtocol {
                     }
                 }
             },
-            Write(msg) => {
+            WriteMsg(msg) => {
                 self.model.queue.push_back(msg);
                 self.send();
             },

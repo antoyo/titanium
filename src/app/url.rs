@@ -38,7 +38,7 @@ impl App {
     }
 
     /// Open the given URL in a new window.
-    pub fn open_in_new_window(&mut self, url: &str, privacy: Privacy) {
+    pub fn open_in_new_window(&self, url: &str, privacy: Privacy) {
         let privacy =
             if self.webview.widget().is_ephemeral() {
                 Privacy::Private

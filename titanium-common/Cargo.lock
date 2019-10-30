@@ -297,6 +297,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "relm"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "cairo-rs 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glib 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gobject-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gtk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "relm-core 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "relm-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "relm-core"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -387,6 +400,7 @@ dependencies = [
  "gio 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "relm 0.15.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-derive-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "relm-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serialize 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -447,6 +461,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
 "checksum proc-macro2 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)" = "ffe022fb8c8bd254524b0b3305906c1921fa37a84a644e29079a9e62200c3901"
 "checksum quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)" = "dd636425967c33af890042c483632d33fa7a18f19ad1d7ea72e8998c6ef8dea5"
+"checksum relm 0.15.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e337844252456c28d63ab834d573873caae8c9aee3865a59a3a73d50306320ab"
 "checksum relm-core 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9f0b2155c285ae2ae4c111a1b9b22fdbd1aa7f45194474e62a092e5025dcccdd"
 "checksum relm-derive-common 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0ffcfd0e3a79304cdb1f744021dc1c6bcb2b55f8c232ca6b2a859ed294cf08f9"
 "checksum relm-derive-state 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "296de4df689ffabe607c52ce71b5c4e8e8a25c06b68637c36ca7ea03559247b7"

@@ -132,7 +132,7 @@ impl Completer for FileCompleter {
         // directory when selecting a directory.
         // This means the user needs to type the slash to trigger the completion of the new
         // directory.
-        absolute_path.to_str().unwrap().trim_right_matches('/').to_string()
+        absolute_path.to_str().unwrap().trim_end_matches('/').to_string()
     }
 
     fn completions(&mut self, input: &str) -> Vec<CompletionResult> {

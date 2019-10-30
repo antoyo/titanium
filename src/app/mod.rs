@@ -45,7 +45,7 @@ mod url;
 pub mod user_agent;
 
 use std::cell::Cell;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle, RGBA};
@@ -194,6 +194,7 @@ pub struct Model {
     overridden_color: Option<RGBA>,
     permission_manager: Option<PermissionManager>,
     popup_manager: Option<PopupManager>,
+    previous_opened_urls: BTreeSet<String>,
     relm: Relm<App>,
     scroll_text: String,
     search_engines: HashMap<String, String>,
@@ -208,6 +209,7 @@ pub enum Msg {
     AppSetMode(String),
     AppSettingChanged(AppSettingsVariant),
     AskPermission(webkit2gtk::PermissionRequest),
+    ChangeUrl(String, String),
     Create(NavigationAction),
     Command(AppCommand),
     CommandText(String),
@@ -227,7 +229,7 @@ pub enum Msg {
     SetPageId(PageId),
     PermissionResponse(webkit2gtk::PermissionRequest, Option<String>),
     PopupDecision(Option<String>, String),
-    Remove(PageId),
+    Remove(PageId, String),
     ServerSend(PageId, InnerMessage),
     ShowError(String),
     ShowZoom(i32),
@@ -292,7 +294,7 @@ impl Widget for App {
         }
     }
 
-    fn model(relm: &Relm<Self>, (init_url, config_dir, web_context): (Option<String>, ConfigDir, WebContext)) -> Model {
+    fn model(relm: &Relm<Self>, (init_url, config_dir, web_context, previous_opened_urls): (Option<String>, ConfigDir, WebContext, BTreeSet<String>)) -> Model {
         let permission_manager = create_permission_manager(&config_dir);
         let popup_manager = create_popup_manager(&config_dir);
         Model {
@@ -313,6 +315,7 @@ impl Widget for App {
             overridden_color: None,
             permission_manager,
             popup_manager,
+            previous_opened_urls,
             relm: relm.clone(),
             scroll_text: INIT_SCROLL_TEXT.to_string(),
             search_engines: HashMap::new(),
@@ -323,7 +326,7 @@ impl Widget for App {
         }
     }
 
-    fn open_init_url(&self) {
+    fn open_init_url(&mut self) {
         if let Some(ref url) = self.model.init_url {
             // Open as a file if the path exist, otherwise open as a normal URL.
             let url = canonicalize_url(url);
@@ -392,12 +395,6 @@ impl Widget for App {
                 self.overwrite_download(download, download_destination, overwrite),
             PopupDecision(answer, url) => self.handle_answer(answer.as_ref().map(|str| str.as_str()), &url),
             PermissionResponse(request, choice) => self.handle_permission_response(&request, choice),
-            // To be listened by the user.
-            Remove(_) => (),
-            // To be listened by the user.
-            ServerSend(_, _) => (),
-            // To be listened by the user.
-            SetPageId(_) => (),
             ShowError(error) => self.error(&error),
             ShowZoom(level) => self.show_zoom(level),
             TagEdit(tags) => self.set_tags(tags),
@@ -406,12 +403,16 @@ impl Widget for App {
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
             WebViewClose => self.close_webview(),
+
+            // To be listened by the user.
+            ChangeUrl(_, _) | Remove(_, _) | ServerSend(_, _) | SetPageId(_) => (),
         }
     }
 
     /// Handle the URI changed event.
     fn uri_changed(&mut self) {
         if let Some(url) = self.webview.widget().get_uri() {
+            self.model.relm.stream().emit(ChangeUrl(self.model.current_url.clone(), url.clone()));
             self.model.current_url = url;
         }
     }
@@ -496,7 +497,7 @@ impl App {
 
     fn close_webview(&self) {
         let page_id = self.webview.widget().get_page_id();
-        self.model.relm.stream().emit(Remove(page_id));
+        self.model.relm.stream().emit(Remove(page_id, self.model.current_url.clone()));
 
         self.mg.stream().emit(CloseWin);
     }
@@ -627,6 +628,7 @@ impl App {
             Quit => self.try_quit(),
             Reload => self.webview.widget().reload(),
             ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
+            RestoreUrls => self.restore_urls(),
             SaveLink => self.save_link(),
             Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
             ScrollDown => self.scroll_down_page(),
@@ -833,6 +835,12 @@ impl App {
     fn quit(&self, can_quit: bool) {
         if can_quit {
             self.webview.widget().try_close();
+        }
+    }
+
+    fn restore_urls(&mut self) {
+        for url in &self.model.previous_opened_urls {
+            self.open_in_new_window(url, Privacy::Normal);
         }
     }
 

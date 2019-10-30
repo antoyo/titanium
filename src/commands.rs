@@ -108,6 +108,8 @@ pub enum AppCommand {
     Reload,
     #[help(text="Reload the current page without using the cache")]
     ReloadBypassCache,
+    #[help(text="Restore the opened pages after a crash")]
+    RestoreUrls,
     #[completion(hidden)]
     SaveLink,
     #[completion(hidden)]

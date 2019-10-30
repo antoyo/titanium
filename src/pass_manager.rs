@@ -65,7 +65,7 @@ impl PasswordManager {
     /// Get the usernames for a `url`.
     pub fn get_usernames(&self, url: &str) -> Result<Vec<String>> {
         if let Some(url) = host(url) {
-            let mut usernames = PasswordStore::get_usernames(&path(&url))?;
+            let usernames = PasswordStore::get_usernames(&path(&url))?;
             Ok(usernames)
         }
         else {

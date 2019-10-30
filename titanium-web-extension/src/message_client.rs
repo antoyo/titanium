@@ -43,7 +43,7 @@ use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 use titanium_common::protocol::{self, PluginProtocol};
-use titanium_common::protocol::Msg::{IOError, MsgRead, Write};
+use titanium_common::protocol::Msg::{IOError, MsgRead, WriteMsg};
 
 use adblocker::Adblocker;
 use executor::Executor;
@@ -162,7 +162,7 @@ impl MessageClient {
     // Send a message to the server.
     fn send(&mut self, page_id: PageId, msg: InnerMessage) {
         if let Some(ref mut protocol) = self.model.protocol {
-            protocol.emit(Write(Message(page_id, msg)));
+            protocol.emit(WriteMsg(Message(page_id, msg)));
         }
         else {
             error!("No protocol");
