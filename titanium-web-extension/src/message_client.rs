@@ -50,8 +50,8 @@ use executor::Executor;
 use executor::Msg::{DocumentLoaded, MessageRecv, ServerSend};
 use self::Msg::*;
 
-lazy_static! {
-    static ref ADBLOCKER: Adblocker = Adblocker::new();
+thread_local! {
+    static ADBLOCKER: Adblocker = Adblocker::new();
 }
 
 pub struct MessageClient {
@@ -181,7 +181,7 @@ impl MessageClient {
 
 fn block_request(request: &URIRequest) -> bool {
     if let Some(url) = request.get_uri() {
-        return ADBLOCKER.should_block(&url);
+        return ADBLOCKER.with(|adblocker| adblocker.should_block(&url));
     }
     false
 }

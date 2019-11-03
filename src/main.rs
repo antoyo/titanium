@@ -20,6 +20,8 @@
  */
 
 /*
+ * TODO: update the easylist instead of the former hosts-based lists.
+ *
  * TODO: this URL (https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html)
  * freezes the window.
  *
@@ -38,15 +40,6 @@
  * TODO: command to change user agent (with a set of default).
  *
  * TODO: command to input username?
- *
- * TODO: Block ads on youtube:
- * Maybe we can get the URL of the video and play it instead of the ads and hide the Skip ad
- * button.
- *
- * TODO: maybe use https://github.com/brave/adblock-rust
- * https://github.com/adblockplus/adblockpluschrome/blob/ed07aad42e52fe169ef160c67571842525cf3692/safari/include.youtube.js
- * Might be able to change the content of the request to:
- * https://www.youtube.com/watch?v=RvnkAtWcKYg&list=RDEMCEY_ml9yV206dEgRXEKSkg&start_radio=1&pbj=1
  *
  * normal video: videoplayback?clen=26562312&itag=43&mime=video%2Fwebm&gir=yes&key=yt6&mv=m&c=web&ei=yE8ZW--bBoqH-QOR7ZjIAw&initcwndbps=867500&lmt=1516735696905984&mm=31,29&mn=sn-4pcgxovpgx-t0ae,sn-t0a7sn7d&id=o-AOM1kOpaVnUns1y_vIkM0Xxe-TssoxptbMiah5HPg
  * ads: videoplayback?ip=70.35.215.109&lmt=1526332905241335&itag=43&requiressl=yes&id=o-AICQD28nyUKvGo_q-p47C57Yq_MvY3o78bQ3yYn1nVFu&pcm2cms=yes&source=youtube&dur=0.000&key=yt6&mn=sn-4pcgxovpgx-t0ae,sn-t0a7sn7d&mm=31,29&pl=25&mv=m&mt=152838538

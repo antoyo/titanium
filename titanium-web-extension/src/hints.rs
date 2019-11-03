@@ -145,7 +145,7 @@ pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElem
 
         let mut hint_map = Hints::new(elements_to_hint.len(), hint_chars);
         for element in elements_to_hint {
-            if let Some(mut pos) = get_position(&element) {
+            if let Some(pos) = get_position(&element) {
                 // FIXME: adjust the position to avoid showing the hint outside the viewport.
                 let hint = wtry_opt!(create_hint(document, &pos, &hint_map.add(&element)));
                 check_err_opt!(hints.append_child(&hint).ok());

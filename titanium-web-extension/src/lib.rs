@@ -31,6 +31,7 @@
     unused_qualifications,
 )]
 
+extern crate adblock;
 extern crate gio;
 extern crate glib;
 #[macro_use]

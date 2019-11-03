@@ -7,6 +7,7 @@ repository = "https://github.com/antoyo/titanium"
 version = "0.1.0"
 
 [dependencies]
+adblock = "0.1.35"
 gio = "^0.5.0"
 glib = "^0.6.0"
 lazy_static = "^0.2.8"
