@@ -438,7 +438,7 @@ impl Widget for App {
                 TAG_COMPLETER => Box::new(TagCompleter::new()),
                 USER_AGENT_COMPLETER => Box::new(UserAgentCompleter::new()),
             },
-            DarkTheme: true,
+            //DarkTheme: true, // TODO: reenable when the webkit2gtk issue with dark theme is fixed.
             Title: self.model.title.clone(),
             gtk::Box {
                 orientation: Vertical,
