@@ -368,6 +368,8 @@ impl MessageServer {
         }
         // TODO: remove from self.model.wins.
         if self.model.app_count == 0 {
+            self.model.opened_urls.clear();
+            self.save_urls();
             gtk::main_quit();
         }
     }
