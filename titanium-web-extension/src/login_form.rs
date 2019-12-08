@@ -56,7 +56,7 @@ fn find_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
             let mut form_element = None;
             let mut element = Some(input_element);
             while let Some(el) = element {
-                if el.get_tag_name().unwrap_or_default().to_lowercase() == "form" {
+                if el.get_tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
                     form_element = Some(el);
                     break;
                 }
@@ -81,12 +81,12 @@ pub fn get_credentials(document: &DOMDocument) -> Option<Credential> {
         let username_element = login_form.query_selector("input[type='text']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = username_element {
-            username = element.get_value().unwrap_or_default();
+            username = element.get_value().map(Into::into).unwrap_or_default();
         }
         let password_element = login_form.query_selector("input[type='password']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = password_element {
-            password = element.get_value().unwrap_or_default();
+            password = element.get_value().map(Into::into).unwrap_or_default();
         }
     }
     if username.is_empty() || password.is_empty() {
@@ -108,7 +108,7 @@ fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
             let mut form_element = None;
             let mut element = Some(active_element);
             while let Some(el) = element {
-                if el.get_tag_name().unwrap_or_default().to_lowercase() == "form" {
+                if el.get_tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
                     form_element = Some(el);
                     break;
                 }

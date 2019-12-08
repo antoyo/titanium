@@ -22,7 +22,7 @@
 //! Application clipboard utility functions.
 
 use gdk::Display;
-use gtk::{Clipboard, ClipboardExt};
+use gtk::Clipboard;
 use url::Url;
 
 use app::App;
@@ -35,7 +35,7 @@ impl App {
             .and_then(|display| Clipboard::get_default(&display));
         if let Some(clipboard) = clipboard {
             let mut urls = clipboard.wait_for_uris();
-            let url = urls.pop()
+            let url = urls.pop().map(Into::into)
                 .or_else(|| {
                     let text = clipboard.wait_for_text();
                     text.and_then(|text| {
@@ -46,7 +46,7 @@ impl App {
                     })
                 });
             if let Some(url) = url {
-                return Some(url);
+                return Some(url.into());
             }
             else {
                 self.error("No URLs in the clipboard");

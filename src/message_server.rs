@@ -29,6 +29,7 @@ use std::marker;
 use std::process;
 
 use gio::{
+    Cancellable,
     IOErrorEnum,
     IOStreamExt,
     Socket,
@@ -435,7 +436,7 @@ fn dialog_and_exit(message: &str) -> ! {
 fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
     let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
-    let connection = client.connect(&address, None)?;
+    let connection = client.connect(&address, None::<&Cancellable>)?;
     let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
     let urls = urls.iter()
         .map(|url| canonicalize_url(url))

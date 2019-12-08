@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use glib::Cast;
+use glib::{Cast, ObjectExt};
 use regex::Regex;
 
 use webkit2gtk_webextension::{
@@ -197,7 +197,7 @@ pub fn get_hints_container(page: &WebPage) -> Option<DOMNode> {
 /// Get the href attribute of an anchor element.
 pub fn get_href(element: &DOMHTMLElement) -> Option<String> {
     if let Ok(input_element) = element.clone().downcast::<DOMHTMLAnchorElement>() {
-        input_element.get_href()
+        input_element.get_href().map(Into::into)
     }
     else {
         None
@@ -253,7 +253,7 @@ pub fn get_position(element: &DOMElement) -> Option<Pos> {
 /// Hide an element.
 pub fn hide(element: &DOMElement) {
     let style = wtry_opt_no_ret!(element.get_style());
-    wtry!(style.set_property("display", "none", ""));
+    wtry!(DOMCSSStyleDeclarationExt::set_property(&style, "display", "none", ""));
 }
 
 /// Check if an input element is enabled.
@@ -267,7 +267,7 @@ pub fn is_enabled(element: &DOMElement) -> bool {
     if is_form_element {
         let mut element = Some(element.clone());
         while let Some(el) = element {
-            if el.get_tag_name() == Some("BODY".to_string()) {
+            if el.get_tag_name().map(Into::into) == Some("BODY".to_string()) {
                 break;
             }
             return_if_disabled!(DOMHTMLButtonElement, el);
@@ -288,13 +288,13 @@ pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
     let window = unwrap_opt_or_ret!(document.get_default_view(), true);
     let mut element = Some(element.clone());
     while let Some(el) = element {
-        if el.get_tag_name() == Some("BODY".to_string()) {
+        if el.get_tag_name().map(Into::into) == Some("BODY".to_string()) {
             return false;
         }
         let style = unwrap_opt_or_ret!(window.get_computed_style(&el, None), true);
-        if style.get_property_value("display") == Some("none".to_string()) ||
-            style.get_property_value("visibility") == Some("hidden".to_string()) ||
-            style.get_property_value("opacity") == Some("0".to_string())
+        if style.get_property_value("display").map(Into::into) == Some("none".to_string()) ||
+            style.get_property_value("visibility").map(Into::into) == Some("hidden".to_string()) ||
+            style.get_property_value("opacity").map(Into::into) == Some("0".to_string())
         {
             return true;
         }
@@ -308,6 +308,7 @@ pub fn is_hidden(document: &DOMDocument, element: &DOMElement) -> bool {
 pub fn is_text_input(element: &DOMElement) -> bool {
     let input_type = element.clone().downcast::<DOMHTMLInputElement>().ok()
         .and_then(|input_element| input_element.get_input_type())
+        .map(Into::into)
         .unwrap_or_else(|| "text".to_string());
     match input_type.as_ref() {
         "button" | "checkbox" | "color" | "file" | "hidden" | "image" | "radio" | "reset" | "submit" => false,

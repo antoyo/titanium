@@ -21,7 +21,7 @@
 
 //! Handle copy/paste of URLs withing the application.
 
-use gtk::{Clipboard, ClipboardExt, WidgetExt};
+use gtk::{Clipboard, WidgetExt};
 use webkit2gtk::WebViewExt;
 
 use titanium_common::FollowMode;

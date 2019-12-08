@@ -212,7 +212,7 @@ fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
     for element in form_elements {
         if is_visible(document, &element) && is_enabled(&element) &&
             // Do not show hints for hidden form elements.
-            element.get_attribute("type") != Some("hidden".to_string())
+            element.get_attribute("type").map(Into::into) != Some("hidden".to_string())
         {
             elements_to_hint.push(element);
         }

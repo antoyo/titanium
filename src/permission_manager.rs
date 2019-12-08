@@ -25,7 +25,7 @@ use std::io::{Read, Write};
 use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
-use glib::Cast;
+use glib::{Cast, ObjectExt};
 use webkit2gtk::{
     self,
     GeolocationPermissionRequest,

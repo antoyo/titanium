@@ -38,9 +38,9 @@ use std::collections::HashMap;
 use std::f32;
 use std::sync::Mutex;
 
-use glib::{Cast, Closure};
+use glib::{Cast, Closure, ObjectExt};
 use regex::Regex;
-use relm_state::{Relm, Update, UpdateNew};
+use relm::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
     DOMDocumentExt,
     DOMDOMSelectionExt,
@@ -71,7 +71,6 @@ use titanium_common::Action::{
 use titanium_common::InnerMessage::*;
 
 use dom::{
-    NodeIter,
     get_body,
     get_elements_by_tag_name_in_all_frames,
     get_hints_container,
@@ -233,7 +232,7 @@ impl Executor {
 
     fn click(&mut self, element: DOMHTMLElement, ctrl_key: bool) -> Action {
         if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
-            let input_type = input_element.get_input_type().unwrap_or_default();
+            let input_type = input_element.get_input_type().map(|string| string.to_string()).unwrap_or_default();
             match input_type.as_ref() {
                 "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => {
                     click(&element.upcast(), ctrl_key);
@@ -343,7 +342,7 @@ impl Executor {
             for tag_name in &tag_names {
                 let iter = get_elements_by_tag_name_in_all_frames(&document, tag_name);
                 for (document, element) in iter {
-                    let tabindex = element.get_attribute("tabindex");
+                    let tabindex = element.get_attribute("tabindex").map(Into::into);
                     if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
                         && tabindex != Some("-1".to_string())
                     {

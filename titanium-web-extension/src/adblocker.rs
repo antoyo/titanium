@@ -21,13 +21,10 @@
 
 //! Host-based adblocker.
 
-use std::collections::HashSet;
 use std::fs::{File, read_dir};
 use std::io::{self, BufRead, BufReader};
-use std::mem;
 
 use adblock::engine::Engine;
-use url::Url;
 use xdg::BaseDirectories;
 
 use super::APP_NAME;
@@ -69,6 +66,8 @@ impl Adblocker {
     /// Check if the specified url should be blocked.
     pub fn should_block(&self, url: &str) -> bool {
         let blocker_result = self.engine.check_network_urls(url, "", ""); // TODO: add missing parameters?
+        // TODO: check the exception field to make whitelist working?
+        // @@||github.com/adgear/^$document
         blocker_result.matched
     }
 }

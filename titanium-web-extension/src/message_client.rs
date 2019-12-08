@@ -31,7 +31,16 @@ use gio::{
     UnixSocketAddressPath,
 };
 use glib::Cast;
-use relm_state::{EventStream, Relm, Update, UpdateNew, execute};
+use relm::{
+    EventStream,
+    Relm,
+    Update,
+    UpdateNew,
+    connect,
+    connect_async_full,
+    connect_stream,
+    execute,
+};
 use webkit2gtk_webextension::{
     URIRequest,
     URIRequestExt,

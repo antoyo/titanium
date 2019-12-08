@@ -34,7 +34,7 @@ use gtk;
 use gtk::ProgressBarExt;
 use number_prefix::{Prefixed, Standalone, binary_prefix};
 use relm::{Relm, Widget};
-use relm_attributes::widget;
+use relm_derive::widget;
 use webkit2gtk::{Download, DownloadExt, URIRequestExt};
 
 use urls;
@@ -185,7 +185,7 @@ impl Widget for DownloadView {
         gtk::ProgressBar {
             fraction: self.model.progress,
             show_text: true,
-            text: self.model.text.as_ref(),
+            text: Some(self.model.text.as_ref()),
         }
     }
 }

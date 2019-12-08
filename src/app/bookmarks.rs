@@ -39,7 +39,7 @@ impl App {
         if let Some(url) = self.webview.widget().get_uri() {
             let title = self.webview.widget().get_title();
             let message = format!("Added bookmark: {}", url);
-            match self.model.bookmark_manager.add(url, title) {
+            match self.model.bookmark_manager.add(url.into(), title.map(Into::into)) {
                 Ok(true) => self.mg.emit(Info(message)),
                 Ok(false) => self.mg.emit(Info("The current page is already in the bookmarks".to_string())),
                 Err(err) => self.error(&err.to_string()),

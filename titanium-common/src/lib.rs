@@ -36,9 +36,7 @@ extern crate glib;
 extern crate log;
 extern crate relm;
 #[macro_use]
-extern crate relm_derive_state;
-#[macro_use]
-extern crate relm_state;
+extern crate relm_derive;
 extern crate rmp_serialize;
 extern crate rustc_serialize;
 

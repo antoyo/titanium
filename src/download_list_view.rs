@@ -38,7 +38,7 @@ use relm::{
     Widget,
     timeout,
 };
-use relm_attributes::widget;
+use relm_derive::widget;
 use webkit2gtk::{
     Download,
     DownloadExt,

@@ -33,7 +33,7 @@ impl App {
     pub fn create_variables(&mut self) {
         let webview = self.webview.widget().clone();
         self.mg.emit(Variables(vec![("url", Box::new(move || {
-            webview.get_uri().unwrap_or_default()
+            webview.get_uri().map(Into::into).unwrap_or_default()
         }))]));
     }
 }

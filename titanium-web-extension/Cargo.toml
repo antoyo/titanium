@@ -8,19 +8,16 @@ version = "0.1.0"
 
 [dependencies]
 adblock = "0.1.35"
-gio = "^0.5.0"
-glib = "^0.6.0"
-lazy_static = "^0.2.8"
+gio = "^0.7.0"
+glib = "^0.8.0"
 log = "^0.3"
 regex = "^0.2.2"
-relm-derive = "^0.15.0"
-relm-derive-state = "^0.15.0"
-relm-state = "^0.15.0"
+relm = "^0.18.0"
+relm-derive = "^0.18.0"
 send-cell = "^0.1.2"
 simplelog = "^0.4"
 syslog = "^3.2.0"
-url = "^1.2"
-webkit2gtk-webextension = "^0.7.0"
+webkit2gtk-webextension = "^0.8.0"
 xdg = "^2.0"
 
 [dependencies.titanium-common]
@@ -29,7 +26,6 @@ version = "0.1.0"
 
 [features]
 default = [
-    "relm-derive-state/unstable",
     "webkit2gtk-webextension/v2_18",
     "webkit2gtk-webextension/gio",
 ]

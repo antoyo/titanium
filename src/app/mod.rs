@@ -49,7 +49,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 
 use gdk::{EventKey, Rectangle, RGBA};
-use glib::Cast;
+use glib::{Cast, ObjectExt};
 use gtk::{
     self,
     Inhibit,
@@ -76,13 +76,14 @@ use mg::{
     SetMode,
     SettingChanged,
     StatusBarItem,
+    StatusBarVisible,
     Text,
     Title,
     question,
     yes_no_question,
 };
 use relm::{Relm, Widget};
-use relm_attributes::widget;
+use relm_derive::widget;
 use webkit2gtk::{
     self,
     Download,
@@ -144,6 +145,8 @@ use webview::Msg::{
     AppError,
     Close,
     EndSearch,
+    EnterFullScreen,
+    LeaveFullScreen,
     NewWindow,
     PageFinishSearch,
     PageOpen,
@@ -188,6 +191,7 @@ pub struct Model {
     home_page: Option<String>,
     in_follow_mode: Rc<Cell<bool>>,
     init_url: Option<String>,
+    is_fullscreen: bool,
     mode: String,
     open_in_new_window: bool,
     password_manager: PasswordManager,
@@ -239,6 +243,7 @@ pub enum Msg {
     UriChanged,
     WebProcessCrashed,
     WebViewClose,
+    WebViewFullscreen(bool),
 }
 
 #[widget]
@@ -309,6 +314,7 @@ impl Widget for App {
             home_page: None,
             in_follow_mode: Rc::new(Cell::new(false)),
             init_url,
+            is_fullscreen: false,
             mode: "normal".to_string(),
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
@@ -403,6 +409,7 @@ impl Widget for App {
             UriChanged => self.uri_changed(),
             WebProcessCrashed => self.web_process_crashed(),
             WebViewClose => self.close_webview(),
+            WebViewFullscreen(fullscreen) => self.model.is_fullscreen = fullscreen,
 
             // To be listened by the user.
             ChangeUrl(_, _) | Remove(_, _) | ServerSend(_, _) | SetPageId(_) => (),
@@ -412,6 +419,7 @@ impl Widget for App {
     /// Handle the URI changed event.
     fn uri_changed(&mut self) {
         if let Some(url) = self.webview.widget().get_uri() {
+            let url = url.to_string();
             self.model.relm.stream().emit(ChangeUrl(self.model.current_url.clone(), url.clone()));
             self.model.current_url = url;
         }
@@ -443,6 +451,8 @@ impl Widget for App {
                 WebView((self.model.config_dir.clone(), self.model.web_context.clone())) {
                     AppError(ref error) => ShowError(error.clone()),
                     Close => WebViewClose,
+                    EnterFullScreen => WebViewFullscreen(true),
+                    LeaveFullScreen => WebViewFullscreen(false),
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     PermissionRequest(ref request) => AskPermission(request.clone()),
                     WebPageId(page_id) => SetPageId(page_id),
@@ -470,6 +480,7 @@ impl Widget for App {
             CustomCommand(ref command) => Command(command.clone()),
             ModeChanged(ref mode) => AppSetMode(mode.clone()),
             SettingChanged(ref setting) => AppSettingChanged(setting.clone()),
+            StatusBarVisible: !self.model.is_fullscreen,
             key_press_event(_, event_key) with (in_follow_mode) =>
                 (KeyPress(event_key.clone()), App::inhibit_key_press(&in_follow_mode)),
         }
@@ -546,9 +557,9 @@ impl App {
                     None
                 }
                 else {
-                    Some(title)
+                    Some(title.to_string())
                 })
-            .or_else(|| webview.get_uri())
+            .or_else(|| webview.get_uri().map(Into::into))
             .unwrap_or_default();
         if title.is_empty() {
             String::new()
@@ -814,7 +825,7 @@ impl App {
     /// Handle the mouse target changed event of the webview to show the hovered URL and save it
     /// for use when using Ctrl-click.
     fn mouse_target_changed(&mut self, hit_test_result: HitTestResult) {
-        let link = hit_test_result.get_link_uri();
+        let link = hit_test_result.get_link_uri().map(Into::into);
         {
             let text = link.unwrap_or_else(String::new);
             self.mg.emit(Message(text));

@@ -39,7 +39,7 @@ use cairo::{Context, Format, ImageSurface};
 use glib::Cast;
 use gtk::{WidgetExt, Window};
 use relm::{Relm, Widget};
-use relm_attributes::widget;
+use relm_derive::widget;
 use webkit2gtk::{
     self,
     CookieManagerExt,
@@ -100,7 +100,9 @@ pub enum Msg {
     AppError(String),
     Close,
     EndSearch,
+    EnterFullScreen,
     InspectorClose,
+    LeaveFullScreen,
     NewWindow(String),
     PageFinishSearch,
     PageOpen(String),
@@ -156,7 +158,11 @@ impl Widget for WebView {
             // To be listened by the user.
             Close => (),
             EndSearch => handle_app_error!(self.finish_search()),
+            // To be listened by the user.
+            EnterFullScreen => (),
             InspectorClose => self.model.inspector_shown.set(false),
+            // To be listened by the user.
+            LeaveFullScreen => (),
             // To be listened by the user.
             NewWindow(_) => (),
             PageFinishSearch => handle_app_error!(self.finish_search()),
@@ -193,6 +199,8 @@ impl Widget for WebView {
             vexpand: true,
             decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window, relm) =>
                 return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window, &relm),
+            enter_fullscreen => (EnterFullScreen, false),
+            leave_fullscreen => (LeaveFullScreen, false),
             permission_request(_, request) => (PermissionRequest(request.clone()), true),
         }
     }

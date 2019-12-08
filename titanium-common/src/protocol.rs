@@ -32,14 +32,14 @@ use gio::{
     IOStream,
     IOStreamExt,
     OutputStream,
-    OutputStreamExt,
     OutputStreamExtManual,
 };
 use glib::PRIORITY_DEFAULT;
-use relm_state::{
+use relm::{
     Relm,
     Update,
     UpdateNew,
+    connect_async_full,
 };
 use rmp_serialize::{Decoder, Encoder};
 use rustc_serialize::{Decodable, Encodable};

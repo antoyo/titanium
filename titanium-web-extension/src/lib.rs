@@ -35,18 +35,14 @@ extern crate adblock;
 extern crate gio;
 extern crate glib;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate log;
 extern crate simplelog;
 extern crate regex;
+extern crate relm;
 #[macro_use]
-extern crate relm_state;
-#[macro_use]
-extern crate relm_derive_state;
+extern crate relm_derive;
 extern crate send_cell;
 extern crate titanium_common;
-extern crate url;
 extern crate xdg;
 #[macro_use]
 extern crate webkit2gtk_webextension;
@@ -149,6 +145,7 @@ mod option_util;
 use std::mem::forget;
 
 use log::LogLevel::Error;
+use relm::connect_stream;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
 use webkit2gtk_webextension::{WebExtension, WebExtensionExt};

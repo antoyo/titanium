@@ -20,6 +20,10 @@
  */
 
 /*
+ * TODO: disable youtube auto-play.
+ * FIXME: G (go to bottom) does not work anymore.
+ * FIXME: the restored urls file is not cleaned up on exit.
+ *
  * TODO: update the easylist instead of the former hosts-based lists.
  *
  * TODO: this URL (https://smallbusiness.chron.com/hide-things-certain-people-facebook-29815.html)
@@ -98,9 +102,6 @@
  * TODO: default window size.
  *
  * FIXME: config file marks not created.
- *
- * TODO: may need to enable fullscreen API (in config) to allow real fullscreen.
- * Most probably needs to hide the status bar in the signal enter_fullscreen.
  *
  * TODO: save mark when focusing the first input.
  * TODO: save current scroll position in ' register before starting a search.
@@ -379,7 +380,6 @@ extern crate open;
 extern crate password_store;
 #[macro_use]
 extern crate relm;
-extern crate relm_attributes;
 #[macro_use]
 extern crate relm_derive;
 extern crate rusqlite;

@@ -70,7 +70,7 @@ impl App {
         let exists = download_path.exists() &&
             // Check that it is not the path chosen before (because the download is already started
             // at this point).
-            Some(format!("file://{}", download_destination)) != download.get_destination();
+            Some(format!("file://{}", download_destination)) != download.get_destination().map(Into::into);
         if exists {
             let message = format!("Do you want to overwrite {}?", download_destination);
             let download_destination = download_destination.to_string();
