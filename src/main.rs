@@ -21,7 +21,6 @@
 
 /*
  * TODO: disable youtube auto-play.
- * FIXME: G (go to bottom) does not work anymore.
  * FIXME: the restored urls file is not cleaned up on exit.
  *
  * TODO: update the easylist instead of the former hosts-based lists.

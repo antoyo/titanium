@@ -79,7 +79,7 @@ impl Executor {
         let document = unwrap_opt_or_ret!(self.model.page.get_dom_document(), default);
         let window = unwrap_opt_or_ret!(document.get_default_view(), default);
         let document = unwrap_opt_or_ret!(get_document(&self.model.page), default);
-        let height = document.get_client_height();
+        let height = window.get_inner_height() as f64;
         let scroll_height = document.get_scroll_height();
         info!("height: {}", height);
         info!("scroll_height: {}", scroll_height);
@@ -108,7 +108,7 @@ impl Executor {
         let window = wtry_opt_no_ret!(document.get_default_view());
         let element = wtry_opt_no_ret!(self.model.scroll_element.as_ref());
         let document = wtry_opt_no_ret!(get_document(&self.model.page));
-        let height = document.get_client_height() as i64;
+        let height = window.get_inner_height();
         let scroll_height = document.get_scroll_height();
         let scroll_height = (percent as i64) * (scroll_height - height) / 100;
         window.scroll_to(0.0, scroll_height as f64);
