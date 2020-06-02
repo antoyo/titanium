@@ -20,6 +20,17 @@
  */
 
 /*
+ * FIXME: many popups in alibaba.com.
+ * TODO: Use HitTarget for right-click to automatically allow these popups to open.
+ *
+ * FIXME: cannot enter username/password on https://us-redhat.icims.com/jobs/75775/software-engineer---llvm-%26--go-toolchain/login?loginOnly=1&redirect=job&hashed=-435800245
+ * TODO: switch to https://github.com/anlumo/cef ?
+ * FIXME: ads on https://www.webmd.com/mental-health/what-are-symptoms-ptsd
+ *
+ * TODO: shortcut to show the URL of a link.
+ *
+ * TODO: whitelist ads in hydro québec to allow login.
+ *
  * TODO: disable youtube auto-play.
  *
  * TODO: update the easylist instead of the former hosts-based lists.
