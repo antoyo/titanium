@@ -26,15 +26,15 @@ use std::io::{Cursor, Seek};
 use std::io::SeekFrom::Start;
 
 use gio::{
-    Error,
+    prelude::InputStreamExtManual,
+    prelude::OutputStreamExtManual,
+    Cancellable,
     InputStream,
-    InputStreamExtManual,
     IOStream,
     IOStreamExt,
     OutputStream,
-    OutputStreamExtManual,
 };
-use glib::PRIORITY_DEFAULT;
+use glib::{Error, PRIORITY_DEFAULT};
 use relm::{
     Relm,
     Update,
@@ -238,7 +238,7 @@ pub fn send(writer: &OutputStream, msg: Message, send_mode: SendMode) {
                         );
                     },
                     Sync =>
-                        if let Err(error) = writer.write_all(&buffer, None) {
+                        if let Err(error) = writer.write_all(&buffer, None::<&Cancellable>) {
                             // TODO: send these errors back to the web extension?
                             error!("Send error: {}", error);
                         }

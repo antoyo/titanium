@@ -151,7 +151,8 @@ pub fn load_username(document: &DOMDocument, username: &str) {
         find_login_form(document)
             .and_then(|login_form|
                 // FIXME: check for more types than just text and email.
-                login_form.query_selector_all("input[type='text'], input[type='email']").ok()
+                // TODO: allow no type attribute.
+                login_form.query_selector_all("input[type='text'], input[type='email'], input:not([type])").ok()
             );
     let inputs = NodeIter::new(username_inputs);
     for input in inputs {

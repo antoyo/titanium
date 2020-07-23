@@ -2,11 +2,11 @@ use std::ptr;
 
 use gio::{
     Cancellable,
-    Error,
     SocketConnection,
     SocketListener,
 };
 use gio_sys;
+use glib::Error;
 use glib::translate::{
     ToGlibPtr,
     from_glib_full,

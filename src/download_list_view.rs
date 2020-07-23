@@ -21,13 +21,13 @@
 
 use std::collections::HashMap;
 
-use glib::Cast;
+use glib::{Cast, IsA};
 use gtk::{
     self,
     Container,
     ContainerExt,
+    FlowBox,
     FlowBoxExt,
-    IsA,
     SelectionMode,
     WidgetExt,
 };
@@ -153,7 +153,7 @@ impl DownloadListView {
     /// Delete a view and remove it from its parent.
     fn delete(&mut self, download: Download) {
         if let Some(download_view) = self.model.download_views.remove(&download) {
-            remove_from_flow_box(download_view.widget());
+            remove_from_flow_box(&self.view, download_view.widget());
         }
     }
 
@@ -200,13 +200,13 @@ impl DownloadListView {
 }
 
 /// Remove the progress bar from its `FlowBox` parent.
-fn remove_from_flow_box<W: IsA<gtk::Widget> + WidgetExt>(widget: &W) {
+fn remove_from_flow_box<W: IsA<gtk::Widget> + WidgetExt>(flow_box: &FlowBox, widget: &W) {
     let child: Option<Container> = widget.get_parent()
         .and_then(|parent| parent.downcast().ok());
     // FlowBox children are wrapped inside FlowBoxChild, so we need to destroy this
     // FlowBoxChild (which is the parent of the widget) in order to remove it from
     // the FlowBox.
     if let Some(child) = child {
-        child.destroy();
+        flow_box.remove(&child);
     }
 }

@@ -24,11 +24,11 @@ use std::marker;
 
 use gio::{
     self,
+    prelude::UnixSocketAddressPath,
     SocketClient,
     SocketClientExt,
     SocketConnection,
     UnixSocketAddress,
-    UnixSocketAddressPath,
 };
 use glib::Cast;
 use relm::{
@@ -77,10 +77,10 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    ConnectErr(gio::Error),
+    ConnectErr(glib::Error),
     Connection(SocketConnection),
     MsgRecv(Message),
-    MsgError(gio::Error),
+    MsgError(glib::Error),
     PageCreated(WebPage),
     Send(PageId, InnerMessage),
 }
@@ -95,7 +95,7 @@ impl Update for MessageClient {
 
     fn model(relm: &Relm<Self>, (): ()) -> Model {
         let client = SocketClient::new();
-        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
+        let address = UnixSocketAddress::with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
         connect_async_full!(client, connect_async(&address), relm, Connection, ConnectErr);
         Model {
             executors: HashMap::new(),

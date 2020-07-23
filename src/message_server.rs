@@ -29,6 +29,7 @@ use std::marker;
 use std::process;
 
 use gio::{
+    prelude::UnixSocketAddressPath,
     Cancellable,
     IOErrorEnum,
     IOStreamExt,
@@ -43,7 +44,6 @@ use gio::{
     SocketProtocol,
     SocketType,
     UnixSocketAddress,
-    UnixSocketAddressPath,
 };
 use glib;
 use glib::Cast;
@@ -227,7 +227,7 @@ impl UpdateNew for MessageServer {
 impl MessageServer {
     pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
         let listener = SocketListener::new();
-        let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
+        let address = UnixSocketAddress::with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
         let socket = Socket::new(SocketFamily::Unix, SocketType::Stream, SocketProtocol::Default)?;
         if let Err(error) = socket.bind(&address, false) {
             if error.kind::<IOErrorEnum>() == Some(IOErrorEnum::AddressInUse) {
@@ -437,7 +437,7 @@ fn dialog_and_exit(message: &str) -> ! {
 
 fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
-    let address = UnixSocketAddress::new_with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
+    let address = UnixSocketAddress::with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
     let connection = client.connect(&address, None::<&Cancellable>)?;
     let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
     let urls = urls.iter()
