@@ -20,6 +20,8 @@
  */
 
 /*
+ * FIXME: auto-login on https://www.iga.net/fr/mon_compte/se_connecter
+ *
  * FIXME: many popups in alibaba.com.
  * TODO: Use HitTarget for right-click to automatically allow these popups to open.
  *
