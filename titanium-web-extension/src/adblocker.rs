@@ -25,6 +25,7 @@ use std::fs::{File, read_dir};
 use std::io::{self, BufRead, BufReader};
 
 use adblock::engine::Engine;
+use adblock::lists::FilterFormat;
 use xdg::BaseDirectories;
 
 use super::APP_NAME;
@@ -37,7 +38,7 @@ impl Adblocker {
     /// Create a new adblocker.
     pub fn new() -> Self {
         Adblocker {
-            engine: Engine::from_rules(&Adblocker::load_lists_urls()),
+            engine: Engine::from_rules(&Adblocker::load_lists_urls(), FilterFormat::Standard),
         }
     }
 
