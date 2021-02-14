@@ -66,7 +66,7 @@ impl App {
             "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&mimetype=plaintext",
         ];
         for url in &urls {
-            if let Some(download) = self.webview.widget().download_uri(url) {
+            if let Some(download) = self.widgets.webview.download_uri(url) {
                 let suggested_filename =
                     download.get_response()
                         .and_then(|response| response.get_suggested_filename().map(Into::into))
@@ -114,7 +114,7 @@ impl App {
             let mut file = file::open(filename)?;
             copy_file(hostfile, just_domains, &mut file)?;
         }
-        self.download_list_view.emit(DownloadRemove(download));
+        self.components.download_list_view.emit(DownloadRemove(download));
         Ok(())
     }
 }

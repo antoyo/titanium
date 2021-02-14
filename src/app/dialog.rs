@@ -44,7 +44,7 @@ use mg_settings::{
     SpecialCommand,
 };
 use mg_settings::key::Key::{Char, Control};
-use relm::{EventStream, Relm, Update, Widget};
+use relm::{Relm, StreamHandle, Update, Widget};
 use webkit2gtk::{Download, ScriptDialog};
 use webkit2gtk::ScriptDialogType::{Alert, BeforeUnloadConfirm, Confirm, Prompt};
 
@@ -59,7 +59,7 @@ const SELECT_FILE: &str = "Select file";
 pub struct DownloadInputDialog<WIDGET: Widget> {
     callback: fn(DialogResult, Download, String) -> WIDGET::Msg,
     download: Download,
-    stream: EventStream<WIDGET::Msg>,
+    stream: StreamHandle<WIDGET::Msg>,
     suggested_filename: String,
 }
 
@@ -101,7 +101,7 @@ impl App {
             .message("Save file to: (<C-x> to open)".to_string())
             .responder(responder)
             .shortcut(Control(Box::new(Char('x'))), "download");
-        self.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
+        self.components.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
     }
 
     /// Show a input dialog with file completion.
@@ -111,7 +111,7 @@ impl App {
             .default_answer(default_answer)
             .message(message)
             .responder(responder);
-        self.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
+        self.components.mg.emit(CustomDialog(builder)); // TODO: without shortcuts.
     }
 
     /// Show a file input dialog.
@@ -123,7 +123,7 @@ impl App {
 }
 
 /// Show a blocking input dialog with file completion.
-fn blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>, message: String, default_answer: String)
+fn blocking_file_input<COMM, SETT>(stream: &StreamHandle<<Mg<COMM, SETT> as Update>::Msg>, message: String, default_answer: String)
     -> Option<String>
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
@@ -147,7 +147,7 @@ fn default_directory() -> String {
 
 /// Handle the script dialog event.
 pub fn handle_script_dialog<COMM, SETT>(script_dialog: &ScriptDialog,
-    mg: &EventStream<<Mg<COMM, SETT> as Update>::Msg>) -> bool
+    mg: &StreamHandle<<Mg<COMM, SETT> as Update>::Msg>) -> bool
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + mg_settings::settings::Settings + EnumMetaData + SettingCompletion + 'static,
 {
@@ -178,7 +178,7 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
 }
 
 /// Show a blocking file input dialog.
-pub fn show_blocking_file_input<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>,
+pub fn show_blocking_file_input<COMM, SETT>(stream: &StreamHandle<<Mg<COMM, SETT> as Update>::Msg>,
     selected_files: &[String])
     -> Result<String, FileInputError>
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,

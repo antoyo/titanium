@@ -31,7 +31,7 @@ use super::App;
 impl App {
     /// Copy the specified url to the clipboard.
     pub fn copy_link(&self, url: &str) {
-        let display = self.webview.widget().get_display();
+        let display = self.widgets.webview.get_display();
         let clipboard = Clipboard::get_default(&display);
         if let Some(clipboard) = clipboard {
             clipboard.set_text(url);
@@ -51,7 +51,7 @@ impl App {
 
     /// Copy the current webview URL in the system clipboard.
     pub fn copy_current_url(&self) {
-        if let Some(url) = self.webview.widget().get_uri() {
+        if let Some(url) = self.widgets.webview.get_uri() {
             self.copy_link(&url);
         }
         else {

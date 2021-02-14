@@ -31,7 +31,7 @@ use urls::get_base_url;
 impl App {
     /// Ask to the user whether to open the popup or not (with option to whitelist or blacklist).
     pub fn ask_open_popup(&self, url: String, base_url: String) {
-        question(&self.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
+        question(&self.streams.mg, &self.model.relm, format!("A popup from {} was blocked. Do you want to open it?", base_url),
                 char_slice!['y', 'n', 'a', 'e'], move |answer| PopupDecision(answer, url.clone()));
     }
 
@@ -75,7 +75,7 @@ impl App {
             if let Some(ref popup_manager) = self.model.popup_manager {
                 if !popup_manager.is_whitelisted(url) {
                     if popup_manager.is_blacklisted(url) {
-                        self.mg.emit(Warning(format!("Not opening popup from {} since it is blacklisted.", base_url)));
+                        self.components.mg.emit(Warning(format!("Not opening popup from {} since it is blacklisted.", base_url)));
                     }
                     else {
                         self.ask_open_popup(url.to_string(), base_url);

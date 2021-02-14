@@ -21,8 +21,6 @@
 
 //! Manage hints within the application.
 
-use std::char;
-
 use gdk::EventKey;
 
 use super::App;

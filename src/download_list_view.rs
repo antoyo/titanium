@@ -126,8 +126,8 @@ impl DownloadListView {
             DownloadFailed(error.clone(), download.clone()));
         connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone()));
 
-        let download_view = self.view.add_widget::<DownloadView>(download.clone());
-        if let Some(flow_child) = self.view.get_children().last() {
+        let download_view = self.widgets.view.add_widget::<DownloadView>(download.clone());
+        if let Some(flow_child) = self.widgets.view.get_children().last() {
             flow_child.set_can_focus(false);
         }
         let down = download.clone();
@@ -153,7 +153,7 @@ impl DownloadListView {
     /// Delete a view and remove it from its parent.
     fn delete(&mut self, download: Download) {
         if let Some(download_view) = self.model.download_views.remove(&download) {
-            remove_from_flow_box(&self.view, download_view.widget());
+            remove_from_flow_box(&self.widgets.view, download_view.widget());
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2020 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,9 +20,11 @@
  */
 
 /*
+ * FIXME: the adblocker seems to block good URL like https://blog.mozilla.org/security/2021/01/26/supercookie-protections/
+ *
  * FIXME: auto-login on https://www.iga.net/fr/mon_compte/se_connecter
  *
- * FIXME: many popups in alibaba.com.
+ * FIXME: many popups in alibaba.com/google.com.
  * TODO: Use HitTarget for right-click to automatically allow these popups to open.
  *
  * FIXME: cannot enter username/password on https://us-redhat.icims.com/jobs/75775/software-engineer---llvm-%26--go-toolchain/login?loginOnly=1&redirect=job&hashed=-435800245

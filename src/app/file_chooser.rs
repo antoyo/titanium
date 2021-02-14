@@ -27,7 +27,7 @@ use mg_settings::{
     SettingCompletion,
     SpecialCommand,
 };
-use relm::{EventStream, Update};
+use relm::{StreamHandle, Update};
 use webkit2gtk::{FileChooserRequest, FileChooserRequestExt};
 
 use app::App;
@@ -43,7 +43,7 @@ impl App {
 }
 
 /// Show a non-modal file chooser dialog when the user activates a file input.
-pub fn handle_file_chooser<COMM, SETT>(stream: &EventStream<<Mg<COMM, SETT> as Update>::Msg>,
+pub fn handle_file_chooser<COMM, SETT>(stream: &StreamHandle<<Mg<COMM, SETT> as Update>::Msg>,
     file_chooser_request: &FileChooserRequest) -> bool
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,

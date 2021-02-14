@@ -155,7 +155,7 @@ impl App {
     }
 
     pub fn server_send(&mut self, message: InnerMessage) {
-        let page_id = self.webview.widget().get_page_id();
+        let page_id = self.widgets.webview.get_page_id();
         self.model.relm.stream().emit(ServerSend(page_id, message));
     }
 }

@@ -256,9 +256,9 @@ impl Widget for App {
         if load_event == Started {
             self.model.overridden_color = None;
             self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
-            self.webview.emit(EndSearch);
-            self.webview.emit(AddStylesheets);
-            self.webview.emit(AddScripts);
+            self.components.webview.emit(EndSearch);
+            self.components.webview.emit(AddStylesheets);
+            self.components.webview.emit(AddScripts);
 
             // Check to mode to avoid going back to normal mode if the user is in command mode.
             if self.model.mode == "insert" || self.model.mode == "follow" {
@@ -266,7 +266,7 @@ impl Widget for App {
             }
         }
         else {
-            if let Some((_, cert_flags)) = self.webview.widget().get_tls_info() {
+            if let Some((_, cert_flags)) = self.widgets.webview.get_tls_info() {
                 // If there's a certificate error, show the URL in red.
                 if !cert_flags.is_empty() {
                     self.model.overridden_color = Some(RED);
@@ -336,14 +336,14 @@ impl Widget for App {
         if let Some(ref url) = self.model.init_url {
             // Open as a file if the path exist, otherwise open as a normal URL.
             let url = canonicalize_url(url);
-            self.webview.emit(PageOpen(url));
+            self.components.webview.emit(PageOpen(url));
         }
     }
 
     /// Set the title of the window as the progress and the web page title.
     fn set_title(&mut self) {
         let private = self.private_text();
-        let progress = (self.webview.widget().get_estimated_load_progress() * 100.0) as i32;
+        let progress = (self.widgets.webview.get_estimated_load_progress() * 100.0) as i32;
         if progress == 100 {
             self.set_title_without_progress();
         }
@@ -418,7 +418,7 @@ impl Widget for App {
 
     /// Handle the URI changed event.
     fn uri_changed(&mut self) {
-        if let Some(url) = self.webview.widget().get_uri() {
+        if let Some(url) = self.widgets.webview.get_uri() {
             let url = url.to_string();
             self.model.relm.stream().emit(ChangeUrl(self.model.current_url.clone(), url.clone()));
             self.model.current_url = url;
@@ -491,7 +491,7 @@ impl App {
     fn add_mark(&mut self, mark: &str) {
         let mark = mark_from_str(mark);
         self.server_send(InnerMessage::Mark(mark));
-        self.mg.emit(Info(format!("Added mark {}", mark as char)));
+        self.components.mg.emit(Info(format!("Added mark {}", mark as char)));
     }
 
     fn add_user_agent(&mut self, user_agent: &str) {
@@ -507,50 +507,50 @@ impl App {
     }
 
     fn close_webview(&self) {
-        let page_id = self.webview.widget().get_page_id();
+        let page_id = self.widgets.webview.get_page_id();
         self.model.relm.stream().emit(Remove(page_id, self.model.current_url.clone()));
 
-        self.mg.stream().emit(CloseWin);
+        self.components.mg.emit(CloseWin);
     }
 
     fn connect_dialog_events(&self) {
-        let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_script_dialog(_, script_dialog),
+        let mg = self.streams.mg.clone();
+        connect!(self.model.relm, self.widgets.webview, connect_script_dialog(_, script_dialog),
             return handle_script_dialog(script_dialog, &mg));
 
         // TODO: add a #[stream(mg)] attribute in relm to support connecting an event to a
         // function while getting the stream (for use in view! {})?
-        let mg = self.mg.stream().clone();
-        connect!(self.model.relm, self.webview.widget(), connect_run_file_chooser(_, file_chooser_request),
+        let mg = self.streams.mg.clone();
+        connect!(self.model.relm, self.widgets.webview, connect_run_file_chooser(_, file_chooser_request),
             return handle_file_chooser(&mg, file_chooser_request));
     }
 
     /// Show an error from a string.
     pub fn error(&self, error: &str) {
-        self.mg.emit(Error(error.into()));
+        self.components.mg.emit(Error(error.into()));
     }
 
     /// Give the focus to the webview.
     fn focus_webview(&self) {
-        self.webview.widget().grab_focus();
+        self.widgets.webview.grab_focus();
     }
 
     fn follow(&mut self) {
         self.model.follow_mode = FollowMode::Click;
         self.model.open_in_new_window = false;
-        self.webview.emit(SetOpenInNewWindow(false));
+        self.components.webview.emit(SetOpenInNewWindow(false));
         self.set_mode("follow");
         self.follow_link();
     }
 
     /// Get the size of the webview.
     fn get_webview_allocation(&self) -> Rectangle {
-        self.webview.widget().get_allocation()
+        self.widgets.webview.get_allocation()
     }
 
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
-        let webview = self.webview.widget();
+        let webview = &self.widgets.webview;
         let title = webview.get_title()
             .and_then(|title|
                 if title.is_empty() {
@@ -570,7 +570,7 @@ impl App {
     }
 
     fn get_webview_context(&self) -> Option<WebContext> {
-        let context = self.webview.widget().get_context();
+        let context = self.widgets.webview.get_context();
         if context.is_none() {
             self.error("Cannot retrieve web view context");
         }
@@ -598,8 +598,8 @@ impl App {
             AddUserAgent(ref user_agent) => self.add_user_agent(user_agent),
             Back => self.history_back(),
             BackwardSearch(ref input) => {
-                self.webview.emit(SearchBackward(true));
-                self.webview.emit(PageSearch(input.clone()));
+                self.components.webview.emit(SearchBackward(true));
+                self.components.webview.emit(PageSearch(input.clone()));
             },
             Bookmark => self.bookmark(),
             BookmarkDel => self.delete_bookmark(),
@@ -612,7 +612,7 @@ impl App {
             DeleteAllCookies => self.delete_all_cookies(),
             DeleteCookies(ref domain) => self.delete_cookies(domain),
             DeleteSelectedBookmark => self.delete_selected_bookmark(),
-            FinishSearch => self.webview.emit(PageFinishSearch),
+            FinishSearch => self.components.webview.emit(PageFinishSearch),
             FocusInput => self.focus_input(),
             Follow => self.follow(),
             Forward => self.history_forward(),
@@ -622,7 +622,7 @@ impl App {
             HideHints => self.hide_hints(),
             Hover => self.hover(),
             Insert => self.go_in_insert_mode(),
-            Inspector => self.webview.emit(ShowInspector),
+            Inspector => self.components.webview.emit(ShowInspector),
             KillWin => self.close_webview(),
             Mark(ref mark) => self.add_mark(mark),
             Normal => self.go_in_normal_mode(),
@@ -634,14 +634,14 @@ impl App {
             PasswordSave => self.save_password(),
             PasswordSubmit => handle_error!(self.submit_login_form()),
             PasteUrl => self.paste_url(),
-            Print => self.webview.emit(PagePrint),
+            Print => self.components.webview.emit(PagePrint),
             PrivateWinOpen(ref url) => self.open_in_new_window(url, Privacy::Private),
             Quit => self.try_quit(),
-            Reload => self.webview.widget().reload(),
-            ReloadBypassCache => self.webview.widget().reload_bypass_cache(),
+            Reload => self.widgets.webview.reload(),
+            ReloadBypassCache => self.widgets.webview.reload_bypass_cache(),
             RestoreUrls => self.restore_urls(),
             SaveLink => self.save_link(),
-            Screenshot(ref path) => self.webview.emit(PageScreenshot(path.clone())),
+            Screenshot(ref path) => self.components.webview.emit(PageScreenshot(path.clone())),
             ScrollDown => self.scroll_down_page(),
             ScrollDownHalf => self.scroll_down_half_page(),
             ScrollDownLine => self.scroll_down_line(),
@@ -653,14 +653,14 @@ impl App {
             ScrollUpHalf => self.scroll_up_half_page(),
             ScrollUpLine => self.scroll_up_line(),
             Search(ref input) => {
-                self.webview.emit(SearchBackward(false));
-                self.webview.emit(PageSearch(input.clone()));
+                self.components.webview.emit(SearchBackward(false));
+                self.components.webview.emit(PageSearch(input.clone()));
             },
             SearchEngine(ref args) => self.add_search_engine(args),
-            SearchNext => self.webview.emit(PageSearchNext),
-            SearchPrevious => self.webview.emit(PageSearchPrevious),
+            SearchNext => self.components.webview.emit(PageSearchNext),
+            SearchPrevious => self.components.webview.emit(PageSearchPrevious),
             SelectUserAgent(ref name) => self.select_user_agent(name),
-            Stop => self.webview.widget().stop_loading(),
+            Stop => self.widgets.webview.stop_loading(),
             UrlIncrement => self.url_increment(),
             UrlDecrement => self.url_decrement(),
             WinFollow => self.win_follow(),
@@ -709,7 +709,7 @@ impl App {
     }
 
     fn handle_permission_request(&mut self, request: &webkit2gtk::PermissionRequest) {
-        if let Some(url) = self.webview.widget().get_uri() {
+        if let Some(url) = self.widgets.webview.get_uri() {
             if let Some(ref mut permission_manager) = self.model.permission_manager {
                 if permission_manager.is_blacklisted(&url, request) {
                     request.deny();
@@ -741,13 +741,13 @@ impl App {
                     return;
                 };
             let request = request.clone();
-            question(&self.mg, &self.model.relm, msg.to_string(),
+            question(&self.streams.mg, &self.model.relm, msg.to_string(),
                 char_slice!['y', 'n', 'a', 'e'], move |choice| PermissionResponse(request.clone(), choice));
         }
     }
 
     fn handle_permission_response(&mut self, request: &webkit2gtk::PermissionRequest, choice: Option<String>) {
-        if let Some(url) = self.webview.widget().get_uri() {
+        if let Some(url) = self.widgets.webview.get_uri() {
             match choice.as_ref().map(String::as_str) {
                 Some("y") | Some("a") => request.allow(),
                 _ => request.deny(),
@@ -776,12 +776,12 @@ impl App {
     }
 
     fn history_back(&mut self) {
-        self.webview.widget().go_back();
+        self.widgets.webview.go_back();
         self.server_send(InnerMessage::ResetScrollElement());
     }
 
     fn history_forward(&mut self) {
-        self.webview.widget().go_forward();
+        self.widgets.webview.go_forward();
         self.server_send(InnerMessage::ResetScrollElement());
     }
 
@@ -797,7 +797,7 @@ impl App {
 
     /// Show an info.
     pub fn info(&self, info: String) {
-        self.mg.emit(Info(info));
+        self.components.mg.emit(Info(info));
     }
 
     fn init_permission_manager(&mut self) {
@@ -828,12 +828,12 @@ impl App {
         let link = hit_test_result.get_link_uri().map(Into::into);
         {
             let text = link.unwrap_or_else(String::new);
-            self.mg.emit(Message(text));
+            self.components.mg.emit(Message(text));
         }
     }
 
     fn private_text(&self) -> &'static str {
-        if self.webview.widget().is_ephemeral() {
+        if self.widgets.webview.is_ephemeral() {
             "[PV] "
         }
         else {
@@ -845,7 +845,7 @@ impl App {
     /// cancel them.
     fn quit(&self, can_quit: bool) {
         if can_quit {
-            self.webview.widget().try_close();
+            self.widgets.webview.try_close();
         }
     }
 
@@ -864,7 +864,7 @@ impl App {
 
     fn set_mode(&mut self, mode: &'static str) {
         self.adjust_in_follow_mode(mode);
-        self.mg.emit(SetMode(mode));
+        self.components.mg.emit(SetMode(mode));
     }
 
     fn setting_changed(&mut self, setting: AppSettingsVariant) {
@@ -872,11 +872,11 @@ impl App {
             HintChars(chars) => self.model.hint_chars = chars,
             HomePage(url) => {
                 if  self.model.init_url.is_none() {
-                    self.webview.emit(PageOpen(url.clone()));
+                    self.components.webview.emit(PageOpen(url.clone()));
                 }
                 self.model.home_page = Some(url);
             },
-            _ => self.webview.emit(WebViewSettingChanged(setting)),
+            _ => self.components.webview.emit(WebViewSettingChanged(setting)),
         }
     }
 
@@ -891,7 +891,7 @@ impl App {
         // downloads.
         if self.model.has_active_downloads {
             let msg = "There are active downloads. Do you want to quit?".to_string();
-            yes_no_question(&self.mg, &self.model.relm, msg, Exit)
+            yes_no_question(&self.streams.mg, &self.model.relm, msg, Exit)
         }
         else {
             self.quit(true);
@@ -906,24 +906,24 @@ impl App {
     fn win_follow(&mut self) {
         self.model.follow_mode = FollowMode::Click;
         self.model.open_in_new_window = true;
-        self.webview.emit(SetOpenInNewWindow(true));
+        self.components.webview.emit(SetOpenInNewWindow(true));
         self.set_mode("follow");
         self.follow_link();
     }
 
     /// Zoom in.
     fn zoom_in(&self) {
-        self.webview.emit(PageZoomIn);
+        self.components.webview.emit(PageZoomIn);
     }
 
     /// Zoom back to 100%.
     fn zoom_normal(&self) {
-        self.webview.emit(PageZoomNormal);
+        self.components.webview.emit(PageZoomNormal);
     }
 
     /// Zoom out.
     fn zoom_out(&self) {
-        self.webview.emit(PageZoomOut);
+        self.components.webview.emit(PageZoomOut);
     }
 }
 

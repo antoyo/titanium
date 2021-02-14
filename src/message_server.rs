@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2016-2020 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -56,7 +56,7 @@ use gtk::{
     MessageType,
     Window,
 };
-use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
+use relm::{Component, EventStream, Relm, StreamHandle, Update, UpdateNew, execute, init};
 use webkit2gtk::WebContext;
 
 use titanium_common::{ExtensionId, InnerMessage, Message, PageId, SOCKET_NAME};
@@ -87,12 +87,12 @@ use webview::WebView;
 use gio_ext::ListenerAsync;
 
 pub struct AppServer {
-    stream: EventStream<app::Msg>,
+    stream: StreamHandle<app::Msg>,
     protocol: Option<EventStream<protocol::Msg>>,
 }
 
 impl AppServer {
-    fn new(stream: EventStream<app::Msg>) -> Self {
+    fn new(stream: StreamHandle<app::Msg>) -> Self {
         AppServer {
             stream,
             protocol: None,
@@ -130,7 +130,7 @@ pub struct Model {
 
 #[derive(Msg)]
 pub enum Msg {
-    AppPageId(EventStream<app::Msg>, PageId),
+    AppPageId(StreamHandle<app::Msg>, PageId),
     ChangeOpenedPage(String, String),
     ClientConnect(SocketConnection),
     MsgRecv(usize, Message),

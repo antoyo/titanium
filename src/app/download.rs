@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 
 use mg::yes_no_question;
 use mg::DialogResult::{self, Answer, Shortcut};
-use relm::EventStream;
+use relm::StreamHandle;
 use webkit2gtk::{
     Download,
     DownloadExt,
@@ -74,7 +74,7 @@ impl App {
         if exists {
             let message = format!("Do you want to overwrite {}?", download_destination);
             let download_destination = download_destination.to_string();
-            yes_no_question(&self.mg, &self.model.relm, message,
+            yes_no_question(&self.streams.mg, &self.model.relm, message,
                 move |answer| OverwriteDownload(download.clone(), download_destination.clone(), answer));
         }
         else {
@@ -96,9 +96,9 @@ impl App {
     pub fn connect_download_events(&self) {
         if let Some(context) = self.get_webview_context() {
             let stream = self.model.relm.stream().clone();
-            let list_stream = self.download_list_view.stream().clone();
-            let webview = self.webview.widget().clone();
-            connect!(context, connect_download_started(_, download), self.download_list_view, {
+            let list_stream = self.streams.download_list_view.clone();
+            let webview = self.widgets.webview.clone();
+            connect!(context, connect_download_started(_, download), self.streams.download_list_view, {
                 if let Some(download_web_view) = download.get_web_view() {
                     if download_web_view == webview {
                         Self::handle_decide_destination(&stream, &list_stream, download);
@@ -127,24 +127,24 @@ impl App {
             Shortcut(shortcut) => {
                 if shortcut == "download" {
                     let destination = find_destination(&self.model.config_dir, &suggested_filename)?;
-                    self.download_list_view.emit(AddFileToOpen(download.clone()));
+                    self.components.download_list_view.emit(AddFileToOpen(download.clone()));
                     // DownloadDestination must be emitted after AddFileToOpen because this event
                     // will open the file in case the download is already finished.
-                    self.download_list_view.emit(DownloadDestination(download, destination));
+                    self.components.download_list_view.emit(DownloadDestination(download, destination));
                 }
             },
             Answer(None) => {
-                self.download_list_view.emit(DownloadCancel(download));
+                self.components.download_list_view.emit(DownloadCancel(download));
             },
         }
         Ok(())
     }
 
     pub fn download_link(&self, url: &str) {
-        self.webview.widget().download_uri(url);
+        self.widgets.webview.download_uri(url);
     }
 
-    fn handle_decide_destination(stream: &EventStream<app::Msg>, list_stream: &EventStream<download_list_view::Msg>,
+    fn handle_decide_destination(stream: &StreamHandle<app::Msg>, list_stream: &StreamHandle<download_list_view::Msg>,
         download: &Download)
     {
         let stream = stream.clone();
@@ -175,13 +175,13 @@ impl App {
             self.set_download_destination(download, &download_destination);
         }
         else {
-            self.download_list_view.emit(DownloadCancel(download));
+            self.components.download_list_view.emit(DownloadCancel(download));
         }
     }
 
     fn set_download_destination(&self, download: Download, download_destination: &str) {
         let destination = format!("file://{}", download_destination);
-        self.download_list_view.emit(DownloadDestination(download, destination));
+        self.components.download_list_view.emit(DownloadDestination(download, destination));
     }
 }
 

@@ -29,7 +29,7 @@ impl App {
     pub fn clear_cache(&self) {
         if let Some(context) = self.get_webview_context() {
             context.clear_cache();
-            self.mg.emit(Info("Cache cleared".to_string()));
+            self.components.mg.emit(Info("Cache cleared".to_string()));
         }
     }
 
@@ -40,7 +40,7 @@ impl App {
                 .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_all_cookies();
-            self.mg.emit(Info("All cookies deleted".to_string()));
+            self.components.mg.emit(Info("All cookies deleted".to_string()));
         }
     }
 
@@ -51,7 +51,7 @@ impl App {
                 .and_then(|context| context.get_cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_cookies_for_domain(domain);
-            self.mg.emit(Info(format!("Cookies deleted for domain {}", domain)));
+            self.components.mg.emit(Info(format!("Cookies deleted for domain {}", domain)));
         }
     }
 }

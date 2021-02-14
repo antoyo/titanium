@@ -36,12 +36,12 @@ use app::Msg::TagEdit;
 impl App {
     /// Add the current page to the bookmarks.
     pub fn bookmark(&self) {
-        if let Some(url) = self.webview.widget().get_uri() {
-            let title = self.webview.widget().get_title();
+        if let Some(url) = self.widgets.webview.get_uri() {
+            let title = self.widgets.webview.get_title();
             let message = format!("Added bookmark: {}", url);
             match self.model.bookmark_manager.add(url.into(), title.map(Into::into)) {
-                Ok(true) => self.mg.emit(Info(message)),
-                Ok(false) => self.mg.emit(Info("The current page is already in the bookmarks".to_string())),
+                Ok(true) => self.components.mg.emit(Info(message)),
+                Ok(false) => self.components.mg.emit(Info("The current page is already in the bookmarks".to_string())),
                 Err(err) => self.error(&err.to_string()),
             }
         }
@@ -49,9 +49,9 @@ impl App {
 
     /// Delete the current page from the bookmarks.
     pub fn delete_bookmark(&self) {
-        if let Some(url) = self.webview.widget().get_uri() {
+        if let Some(url) = self.widgets.webview.get_uri() {
             match self.model.bookmark_manager.delete(&url) {
-                Ok(true) => self.mg.emit(Info(format!("Deleted bookmark: {}", url))),
+                Ok(true) => self.components.mg.emit(Info(format!("Deleted bookmark: {}", url))),
                 Ok(false) => self.info_page_not_in_bookmarks(),
                 Err(err) => self.error(&err.to_string()),
             }
@@ -68,7 +68,7 @@ impl App {
                     if let Err(err) = self.model.bookmark_manager.delete(url) {
                         self.error(&err.to_string());
                     }
-                    self.mg.emit(DeleteCompletionItem);
+                    self.components.mg.emit(DeleteCompletionItem);
                 },
             _ => (),
         }
@@ -100,7 +100,7 @@ impl App {
                         .default_answer(default_answer)
                         .message("Bookmark tags (separated by comma):".to_string())
                         .responder(responder);
-                    self.mg.emit(CustomDialog(builder));
+                    self.components.mg.emit(CustomDialog(builder));
                 },
                 Err(err) => self.error(&err.to_string()),
             }
@@ -112,6 +112,6 @@ impl App {
 
     /// Show an information message to tell that the current page is not in the bookmarks.
     fn info_page_not_in_bookmarks(&self) {
-        self.mg.emit(Info("The current page is not in the bookmarks".to_string()));
+        self.components.mg.emit(Info("The current page is not in the bookmarks".to_string()));
     }
 }
