@@ -116,6 +116,8 @@ pub struct Model {
     apps: HashMap<PageId, AppServer>,
     config_dir: ConfigDir,
     extension_page: HashMap<PageId, ExtensionId>,
+    /// This listener is used to prevent two instances of Titanium to run at the same time.
+    // FIXME: switch to using gtk::Application to do this automatically for me.
     listener: ListenerAsync,
     private_web_context: WebContext,
     opened_urls: BTreeSet<String>,
@@ -334,7 +336,7 @@ impl MessageServer {
             }
         }
         else if let Open(urls) = msg {
-            self.model.protocols.remove(&protocol_counter);
+            //self.model.protocols.remove(&protocol_counter);
             if urls.is_empty() {
                 self.add_app(None, Privacy::Normal);
             }
