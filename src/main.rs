@@ -21,6 +21,9 @@
 
 /*
  * FIXME: the adblocker seems to block good URL like https://blog.mozilla.org/security/2021/01/26/supercookie-protections/
+ * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
+ * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069
+ * (that probably requires a MutationObserver: https://github.com/brave/adblock-rust/issues/152#issuecomment-771046487)
  *
  * FIXME: auto-login on https://www.iga.net/fr/mon_compte/se_connecter
  *
