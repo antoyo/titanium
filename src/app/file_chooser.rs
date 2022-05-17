@@ -49,13 +49,13 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + EnumMetaData + mg_settings::settings::Settings + SettingCompletion + 'static,
 {
     // TODO: filter entries with get_mime_types() (strikeout files not matching the mime types).
-    if file_chooser_request.get_select_multiple() {
+    if file_chooser_request.selects_multiple() {
         // TODO: support multiple files (use a boolean column that is converted to a pixmap).
         // or only show (selected) beside the file name since we don't support new columns.
         false
     }
     else {
-        let selected_files: Vec<_> = file_chooser_request.get_selected_files()
+        let selected_files: Vec<_> = file_chooser_request.selected_files()
             .into_iter()
             .map(Into::into)
             .collect();

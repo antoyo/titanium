@@ -151,12 +151,14 @@ pub fn handle_script_dialog<COMM, SETT>(script_dialog: &ScriptDialog,
 where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
       SETT: Default + mg_settings::settings::Settings + EnumMetaData + SettingCompletion + 'static,
 {
-    match script_dialog.get_dialog_type() {
+    match script_dialog.dialog_type() {
         Alert => {
-            mg.emit(mg::Alert(format!("[JavaScript] {}", script_dialog.get_message())));
+            let message = script_dialog.message().map(|string| string.to_string()).unwrap_or_default();
+            mg.emit(mg::Alert(format!("[JavaScript] {}", message)));
         }
         Confirm => {
-            let confirmed = blocking_yes_no_question(mg, format!("[JavaScript] {}", script_dialog.get_message()));
+            let message = script_dialog.message().map(|string| string.to_string()).unwrap_or_default();
+            let confirmed = blocking_yes_no_question(mg, format!("[JavaScript] {}", message));
             script_dialog.confirm_set_confirmed(confirmed);
         },
         BeforeUnloadConfirm => {
@@ -167,8 +169,9 @@ where COMM: Clone + EnumFromStr + EnumMetaData + SpecialCommand + 'static,
             script_dialog.confirm_set_confirmed(confirmed);
         },
         Prompt => {
-            let default_answer = script_dialog.prompt_get_default_text().to_string();
-            let input = blocking_input(mg, format!("[JavaScript] {}", script_dialog.get_message()), default_answer);
+            let default_answer = script_dialog.prompt_get_default_text().map(|string| string.to_string()).unwrap_or_default();
+            let message = script_dialog.message().map(|string| string.to_string()).unwrap_or_default();
+            let input = blocking_input(mg, format!("[JavaScript] {}", message), default_answer);
             let input = input.unwrap_or_default();
             script_dialog.prompt_set_text(&input);
         },

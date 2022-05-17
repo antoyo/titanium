@@ -27,11 +27,11 @@ use std::io::SeekFrom::Start;
 
 use gio::{
     prelude::InputStreamExtManual,
+    prelude::IOStreamExt,
     prelude::OutputStreamExtManual,
     Cancellable,
     InputStream,
     IOStream,
-    IOStreamExt,
     OutputStream,
 };
 use glib::{Error, PRIORITY_DEFAULT};
@@ -56,11 +56,11 @@ pub struct Model {
     buffer: Vec<u8>,
     current_msg_size: Option<u32>,
     queue: VecDeque<Message>,
-    reader: Option<InputStream>,
+    reader: InputStream,
     relm: Relm<PluginProtocol>,
     sending_message: bool,
     _stream: IOStream,
-    writer: Option<OutputStream>,
+    writer: OutputStream,
 }
 
 /// The variant MsgRead can be listened by the caller in order to get notified when a message is
@@ -89,12 +89,10 @@ impl Update for PluginProtocol {
     type Msg = Msg;
 
     fn model(relm: &Relm<Self>, stream: IOStream) -> Model {
-        let reader = stream.get_input_stream();
-        let writer = stream.get_output_stream();
-        if let Some(ref reader) = reader {
-            connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT), relm, Read,
-                |(_, error)| IOError(error));
-        }
+        let reader = stream.input_stream();
+        let writer = stream.output_stream();
+        connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT), relm, Read,
+            |(_, error)| IOError(error));
         Model {
             buffer: vec![],
             current_msg_size: None,
@@ -150,10 +148,8 @@ impl Update for PluginProtocol {
                     }
                 }
                 if size > 0 {
-                    if let Some(ref reader) = self.model.reader {
-                        connect_async_full!(reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT),
-                        self.model.relm, Read, |(_, error)| IOError(error));
-                    }
+                    connect_async_full!(self.model.reader, read_async(vec![0; BUFFER_SIZE], PRIORITY_DEFAULT),
+                    self.model.relm, Read, |(_, error)| IOError(error));
                 }
             },
             WriteMsg(msg) => {
@@ -178,17 +174,12 @@ impl UpdateNew for PluginProtocol {
 
 impl PluginProtocol {
     fn send(&mut self) {
-        if let Some(ref writer) = self.model.writer {
-            // TODO: implement back-pressure.
-            if !self.model.sending_message {
-                if let Some(msg) = self.model.queue.pop_front() {
-                    self.model.sending_message = true;
-                    send(writer, msg, Async(&self.model.relm));
-                }
+        // TODO: implement back-pressure.
+        if !self.model.sending_message {
+            if let Some(msg) = self.model.queue.pop_front() {
+                self.model.sending_message = true;
+                send(&self.model.writer, msg, Async(&self.model.relm));
             }
-        }
-        else {
-            error!("No writer for protocol");
         }
     }
 }

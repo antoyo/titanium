@@ -8,36 +8,36 @@ repository = "https://github.com/antoyo/titanium"
 version = "0.1.1"
 
 [dependencies]
-cairo-rs = "^0.9.0"
-gdk = "^0.13.0"
-gio = "^0.9.0"
-glib = "^0.10.0"
-gtk = "^0.9.0"
+cairo-rs = "^0.15.0"
+gdk = "^0.15.0"
+gio = "^0.15.0"
+glib = "^0.15.0"
+gtk = "^0.15.0"
 gumdrop = "0.4"
 log = "0.4"
 log-panics = "2"
-mg = "0.14"
+mg = "0.15"
 mg-settings = "^0.4.0"
 mg-settings-macros = "^0.4.0"
 number_prefix = "^0.2"
 open = "^1.1"
 password-store = "^0.4.0"
 percent-encoding = "^1.0.0"
-relm =  "0.21"
-relm-derive = "0.21"
+relm =  "0.23"
+relm-derive = "0.23"
 rusqlite = "0.20"
 simplelog = "0.5"
 syslog = "4"
 tempfile = "3"
 url = "^1.2"
-webkit2gtk = "^0.10.0"
+webkit2gtk = "^0.18.0"
 xdg = "^2.0"
 zip = "0.3"
 
 # TODO: remove since https://github.com/gtk-rs/gio/issues/99 is fixed.
-gio-sys = "^0.10.0"
-glib-sys = "^0.10.0"
-gobject-sys = "^0.10.0"
+gio-sys = "^0.15.0"
+glib-sys = "^0.15.0"
+gobject-sys = "^0.15.0"
 
 [dependencies.titanium-common]
 path = "titanium-common"
@@ -49,7 +49,6 @@ libxdo = "0.6"
 [features]
 default = [
     "cairo-rs/png",
-    "gtk/v3_16",
     "log-panics/with-backtrace",
-    "webkit2gtk/v2_16",
+    "webkit2gtk/v2_24",
 ]

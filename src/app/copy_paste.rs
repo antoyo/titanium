@@ -21,7 +21,7 @@
 
 //! Handle copy/paste of URLs withing the application.
 
-use gtk::{Clipboard, WidgetExt};
+use gtk::{Clipboard, traits::WidgetExt};
 use webkit2gtk::WebViewExt;
 
 use titanium_common::FollowMode;
@@ -31,8 +31,8 @@ use super::App;
 impl App {
     /// Copy the specified url to the clipboard.
     pub fn copy_link(&self, url: &str) {
-        let display = self.widgets.webview.get_display();
-        let clipboard = Clipboard::get_default(&display);
+        let display = self.widgets.webview.display();
+        let clipboard = Clipboard::default(&display);
         if let Some(clipboard) = clipboard {
             clipboard.set_text(url);
             self.info(format!("Copied URL to clipboard: {}", url));
@@ -51,7 +51,7 @@ impl App {
 
     /// Copy the current webview URL in the system clipboard.
     pub fn copy_current_url(&self) {
-        if let Some(url) = self.widgets.webview.get_uri() {
+        if let Some(url) = self.widgets.webview.uri() {
             self.copy_link(&url);
         }
         else {

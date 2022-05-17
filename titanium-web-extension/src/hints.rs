@@ -24,17 +24,19 @@ use std::i32;
 
 use glib::Cast;
 use webkit2gtk_webextension::{
-    DOMCSSStyleDeclarationExt,
+    traits::{
+        DOMCSSStyleDeclarationExt,
+        DOMDocumentExt,
+        DOMElementExt,
+        DOMHTMLFrameElementExt,
+        DOMHTMLIFrameElementExt,
+        DOMNodeExt,
+        DOMNodeListExt,
+    },
     DOMDocument,
-    DOMDocumentExt,
     DOMElement,
-    DOMElementExt,
     DOMHTMLFrameElement,
-    DOMHTMLFrameElementExt,
     DOMHTMLIFrameElement,
-    DOMHTMLIFrameElementExt,
-    DOMNodeExt,
-    DOMNodeListExt,
 };
 
 use dom::{
@@ -120,7 +122,7 @@ fn create_hint(document: &DOMDocument, pos: &Pos, hint_text: &str) -> Option<DOM
     document.create_element("div").ok().and_then(|hint| {
         hint.set_class_name("__titanium_hint");
         hint.set_id(&format!("__titanium_hint_{}", hint_text));
-        let style = wtry_opt!(hint.get_style());
+        let style = wtry_opt!(hint.style());
         check_err_opt!(style.set_property("position", "absolute", "").ok());
         check_err_opt!(style.set_property("left", &format!("{}px", pos.x), "").ok());
         check_err_opt!(style.set_property("top", &format!("{}px", pos.y), "").ok());
@@ -136,7 +138,7 @@ fn create_hint(document: &DOMDocument, pos: &Pos, hint_text: &str) -> Option<DOM
 pub fn create_hints(document: &DOMDocument, hint_chars: &str) -> Option<(DOMElement, HashMap<String, DOMElement>)> {
     document.create_element("div").ok().and_then(|hints| {
         hints.set_id(HINTS_ID);
-        let style = wtry_opt!(hints.get_style());
+        let style = wtry_opt!(hints.style());
         check_err_opt!(style.set_property("position", "absolute", "").ok());
         check_err_opt!(style.set_property("left", "0", "").ok());
         check_err_opt!(style.set_property("top", "0", "").ok());
@@ -168,7 +170,7 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
     let tag_names = ["a", "button", "select", "textarea"];
     for tag_name in &tag_names {
-        let elements = NodeIter::new(document.get_elements_by_tag_name(tag_name));
+        let elements = NodeIter::new(document.elements_by_tag_name(tag_name));
         for element in elements {
             // Only show the hints for visible elements that are not disabled.
             // TODO: might not need to check if the element is visible anymore because in this
@@ -185,19 +187,19 @@ fn get_hintable_elements(document: &DOMDocument) -> Vec<DOMElement> {
 fn get_hintable_elements_from_frames(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
 
-    let iter = NodeIter::new(document.get_elements_by_tag_name("iframe"));
+    let iter = NodeIter::new(document.elements_by_tag_name("iframe"));
     for frame in iter {
         if let Ok(iframe) = frame.downcast::<DOMHTMLIFrameElement>() {
-            if let Some(iframe_document) = iframe.get_content_document() {
+            if let Some(iframe_document) = iframe.content_document() {
                 elements_to_hint.append(&mut get_elements_to_hint(&iframe_document));
             }
         }
     }
 
-    let iter = NodeIter::new(document.get_elements_by_tag_name("frame"));
+    let iter = NodeIter::new(document.elements_by_tag_name("frame"));
     for frame in iter {
         if let Ok(frame) = frame.downcast::<DOMHTMLFrameElement>() {
-            if let Some(frame_document) = frame.get_content_document() {
+            if let Some(frame_document) = frame.content_document() {
                 elements_to_hint.append(&mut get_elements_to_hint(&frame_document));
             }
         }
@@ -208,11 +210,11 @@ fn get_hintable_elements_from_frames(document: &DOMDocument) -> Vec<DOMElement> 
 /// Get the hintable input elements.
 fn get_input_elements(document: &DOMDocument) -> Vec<DOMElement> {
     let mut elements_to_hint = vec![];
-    let form_elements = NodeIter::new(document.get_elements_by_tag_name("input"));
+    let form_elements = NodeIter::new(document.elements_by_tag_name("input"));
     for element in form_elements {
         if is_visible(document, &element) && is_enabled(&element) &&
             // Do not show hints for hidden form elements.
-            element.get_attribute("type").map(Into::into) != Some("hidden".to_string())
+            element.attribute("type").map(Into::into) != Some("hidden".to_string())
         {
             elements_to_hint.push(element);
         }
@@ -225,13 +227,13 @@ pub fn hide_unrelevant_hints(document: &DOMDocument, hint_keys: &str) -> bool {
     let hints_to_hide = document.query_selector_all(
         &format!(".__titanium_hint:not([id^=\"__titanium_hint_{}\"])", hint_keys))
         .ok();
-    let hints_len = hints_to_hide.as_ref().map(|hints| hints.get_length()).unwrap_or(0);
+    let hints_len = hints_to_hide.as_ref().map(|hints| hints.length()).unwrap_or(0);
     let hints = NodeIter::new(hints_to_hide);
     for hint in hints {
         hide(&hint);
     }
     let all_hints = unwrap_or_ret!(document.query_selector_all(".__titanium_hint"), false);
-    all_hints.get_length() == hints_len
+    all_hints.length() == hints_len
 }
 
 /// Show all hints.

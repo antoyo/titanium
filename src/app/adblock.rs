@@ -68,8 +68,8 @@ impl App {
         for url in &urls {
             if let Some(download) = self.widgets.webview.download_uri(url) {
                 let suggested_filename =
-                    download.get_response()
-                        .and_then(|response| response.get_suggested_filename().map(Into::into))
+                    download.response()
+                        .and_then(|response| response.suggested_filename().map(Into::into))
                         .unwrap_or_else(|| get_filename(url).unwrap_or_default());
                 if let Ok(destination) = find_destination(&self.model.config_dir, &suggested_filename) {
                     download.set_destination(&destination);

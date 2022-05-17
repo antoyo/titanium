@@ -48,13 +48,12 @@ use std::cell::Cell;
 use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 
-use gdk::{EventKey, Rectangle, RGBA};
+use gdk::{EventKey, Rectangle};
 use glib::{Cast, ObjectExt};
 use gtk::{
     self,
     Inhibit,
-    OrientableExt,
-    WidgetExt,
+    traits::{OrientableExt, WidgetExt},
 };
 use gtk::Orientation::Vertical;
 use mg::{
@@ -64,7 +63,6 @@ use mg::{
     Completers,
     CompletionViewChange,
     CustomCommand,
-    DarkTheme,
     DialogResult,
     Error,
     Info,
@@ -80,7 +78,7 @@ use mg::{
     Text,
     Title,
     question,
-    yes_no_question,
+    yes_no_question, ForegroundColor,
 };
 use relm::{Relm, Widget};
 use relm_derive::widget;
@@ -169,8 +167,6 @@ use webview::Msg::{
 
 pub const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
 const INIT_SCROLL_TEXT: &str = "[top]";
-const RED: RGBA = RGBA { red: 1.0, green: 0.3, blue: 0.2, alpha: 1.0 };
-const YELLOW: RGBA = RGBA { red: 1.0, green: 1.0, blue: 0.0, alpha: 1.0 };
 const TAG_COMPLETER: &str = "__tag";
 pub const USER_AGENT_COMPLETER: &str = "select-user-agent";
 
@@ -195,7 +191,7 @@ pub struct Model {
     mode: String,
     open_in_new_window: bool,
     password_manager: PasswordManager,
-    overridden_color: Option<RGBA>,
+    overridden_color: ForegroundColor,
     permission_manager: Option<PermissionManager>,
     popup_manager: Option<PopupManager>,
     previous_opened_urls: BTreeSet<String>,
@@ -254,7 +250,7 @@ impl Widget for App {
     /// Go back to normal mode.
     fn handle_load_changed(&mut self, load_event: LoadEvent) {
         if load_event == Started {
-            self.model.overridden_color = None;
+            self.model.overridden_color = ForegroundColor::None;
             self.model.scroll_text = INIT_SCROLL_TEXT.to_string();
             self.components.webview.emit(EndSearch);
             self.components.webview.emit(AddStylesheets);
@@ -266,10 +262,10 @@ impl Widget for App {
             }
         }
         else {
-            if let Some((_, cert_flags)) = self.widgets.webview.get_tls_info() {
+            if let Some((_, cert_flags)) = self.widgets.webview.tls_info() {
                 // If there's a certificate error, show the URL in red.
                 if !cert_flags.is_empty() {
-                    self.model.overridden_color = Some(RED);
+                    self.model.overridden_color = ForegroundColor::Red;
                 }
             }
         }
@@ -294,8 +290,8 @@ impl Widget for App {
 
     fn insecure_content_detected(&mut self) {
         // Only show the URL in yellow if there's not already a certificate error.
-        if self.model.overridden_color.is_none() {
-            self.model.overridden_color = Some(YELLOW);
+        if self.model.overridden_color == ForegroundColor::None {
+            self.model.overridden_color = ForegroundColor::Yellow;
         }
     }
 
@@ -318,7 +314,7 @@ impl Widget for App {
             mode: "normal".to_string(),
             open_in_new_window: false,
             password_manager: PasswordManager::new(),
-            overridden_color: None,
+            overridden_color: ForegroundColor::None,
             permission_manager,
             popup_manager,
             previous_opened_urls,
@@ -343,7 +339,7 @@ impl Widget for App {
     /// Set the title of the window as the progress and the web page title.
     fn set_title(&mut self) {
         let private = self.private_text();
-        let progress = (self.widgets.webview.get_estimated_load_progress() * 100.0) as i32;
+        let progress = (self.widgets.webview.estimated_load_progress() * 100.0) as i32;
         if progress == 100 {
             self.set_title_without_progress();
         }
@@ -418,7 +414,7 @@ impl Widget for App {
 
     /// Handle the URI changed event.
     fn uri_changed(&mut self) {
-        if let Some(url) = self.widgets.webview.get_uri() {
+        if let Some(url) = self.widgets.webview.uri() {
             let url = url.to_string();
             self.model.relm.stream().emit(ChangeUrl(self.model.current_url.clone(), url.clone()));
             self.model.current_url = url;
@@ -461,9 +457,9 @@ impl Widget for App {
                     insecure_content_detected(_, _) => InsecureContent,
                     load_changed(_, load_event) => LoadChanged(load_event),
                     mouse_target_changed(_, hit_test_result, _) => MouseTargetChanged(hit_test_result.clone()),
-                    property_estimated_load_progress_notify(_) => TitleChanged,
-                    property_title_notify(_) => TitleChanged,
-                    property_uri_notify(_) => UriChanged,
+                    estimated_load_progress_notify(_) => TitleChanged,
+                    title_notify(_) => TitleChanged,
+                    uri_notify(_) => UriChanged,
                     web_process_crashed => (WebProcessCrashed, false),
                 },
             },
@@ -472,7 +468,7 @@ impl Widget for App {
                 Text: self.model.scroll_text.clone(),
             },
             StatusBarItem {
-                Color: self.model.overridden_color.clone(),
+                Color: self.model.overridden_color,
                 Text: self.model.current_url.clone(),
             },
             AppClose => TryClose,
@@ -507,7 +503,7 @@ impl App {
     }
 
     fn close_webview(&self) {
-        let page_id = self.widgets.webview.get_page_id();
+        let page_id = self.widgets.webview.page_id();
         self.model.relm.stream().emit(Remove(page_id, self.model.current_url.clone()));
 
         self.components.mg.emit(CloseWin);
@@ -545,13 +541,13 @@ impl App {
 
     /// Get the size of the webview.
     fn get_webview_allocation(&self) -> Rectangle {
-        self.widgets.webview.get_allocation()
+        self.widgets.webview.allocation()
     }
 
     /// Get the title or the url if there are no title.
     fn get_title(&self) -> String {
         let webview = &self.widgets.webview;
-        let title = webview.get_title()
+        let title = webview.title()
             .and_then(|title|
                 if title.is_empty() {
                     None
@@ -559,7 +555,7 @@ impl App {
                 else {
                     Some(title.to_string())
                 })
-            .or_else(|| webview.get_uri().map(Into::into))
+            .or_else(|| webview.uri().map(Into::into))
             .unwrap_or_default();
         if title.is_empty() {
             String::new()
@@ -570,7 +566,7 @@ impl App {
     }
 
     fn get_webview_context(&self) -> Option<WebContext> {
-        let context = self.widgets.webview.get_context();
+        let context = self.widgets.webview.context();
         if context.is_none() {
             self.error("Cannot retrieve web view context");
         }
@@ -674,9 +670,9 @@ impl App {
 
     /// Handle create window.
     fn handle_create(&mut self, action: NavigationAction) {
-        if let Some(request) = action.get_request() {
-            if let Some(url) = request.get_uri() {
-                if action.get_navigation_type() == Other {
+        if let Some(request) = action.request() {
+            if let Some(url) = request.uri() {
+                if action.navigation_type() == Other {
                     let mut should_handle_popup = false;
                     if let Some(ref mut popup_manager) = self.model.popup_manager {
                         if !popup_manager.is_whitelisted(&url) {
@@ -709,7 +705,7 @@ impl App {
     }
 
     fn handle_permission_request(&mut self, request: &webkit2gtk::PermissionRequest) {
-        if let Some(url) = self.widgets.webview.get_uri() {
+        if let Some(url) = self.widgets.webview.uri() {
             if let Some(ref mut permission_manager) = self.model.permission_manager {
                 if permission_manager.is_blacklisted(&url, request) {
                     request.deny();
@@ -729,7 +725,7 @@ impl App {
                     "This page wants to show desktop notifications."
                 }
                 else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
-                    if media_permission.get_property_is_for_video_device() {
+                    if media_permission.is_for_video_device() {
                         "This page wants to use your webcam."
                     }
                     else {
@@ -747,7 +743,7 @@ impl App {
     }
 
     fn handle_permission_response(&mut self, request: &webkit2gtk::PermissionRequest, choice: Option<String>) {
-        if let Some(url) = self.widgets.webview.get_uri() {
+        if let Some(url) = self.widgets.webview.uri() {
             match choice.as_ref().map(String::as_str) {
                 Some("y") | Some("a") => request.allow(),
                 _ => request.deny(),
@@ -825,7 +821,7 @@ impl App {
     /// Handle the mouse target changed event of the webview to show the hovered URL and save it
     /// for use when using Ctrl-click.
     fn mouse_target_changed(&mut self, hit_test_result: HitTestResult) {
-        let link = hit_test_result.get_link_uri().map(Into::into);
+        let link = hit_test_result.link_uri().map(Into::into);
         {
             let text = link.unwrap_or_else(String::new);
             self.components.mg.emit(Message(text));

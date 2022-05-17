@@ -44,7 +44,6 @@ extern crate relm_derive;
 extern crate send_cell;
 extern crate titanium_common;
 extern crate xdg;
-#[macro_use]
 extern crate webkit2gtk_webextension;
 
 macro_rules! check_err {
@@ -148,7 +147,7 @@ use log::LogLevel::Error;
 use relm::connect_stream;
 use simplelog::{Config, TermLogger};
 use simplelog::LogLevelFilter;
-use webkit2gtk_webextension::{WebExtension, WebExtensionExt};
+use webkit2gtk_webextension::{WebExtension, traits::WebExtensionExt, web_extension_init};
 
 use message_client::MessageClient;
 use message_client::Msg::PageCreated;

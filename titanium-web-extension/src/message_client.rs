@@ -23,10 +23,9 @@ use std::collections::HashMap;
 use std::marker;
 
 use gio::{
-    self,
     prelude::UnixSocketAddressPath,
+    traits::SocketClientExt,
     SocketClient,
-    SocketClientExt,
     SocketConnection,
     UnixSocketAddress,
 };
@@ -43,9 +42,8 @@ use relm::{
 };
 use webkit2gtk_webextension::{
     URIRequest,
-    URIRequestExt,
+    traits::{URIRequestExt, WebPageExt},
     WebPage,
-    WebPageExt,
 };
 
 use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
@@ -129,7 +127,7 @@ impl Update for MessageClient {
                 // TODO: this should be disconnected later somehow.
                 connect!(self.model.relm, page, connect_send_request(_, request, _),
                     return block_request(request));
-                let page_id = page.get_id();
+                let page_id = page.id();
                 trace!("New page created with id {}", page_id);
                 if self.model.extension_id.is_none() {
                     self.model.extension_id = Some(page_id);
@@ -189,7 +187,7 @@ impl MessageClient {
 }
 
 fn block_request(request: &URIRequest) -> bool {
-    if let Some(url) = request.get_uri() {
+    if let Some(url) = request.uri() {
         return ADBLOCKER.with(|adblocker| adblocker.should_block(&url));
     }
     false

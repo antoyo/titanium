@@ -108,13 +108,13 @@ impl App {
     /// Scroll down by one half of page.
     pub fn scroll_down_half_page(&mut self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(allocation.height / 2);
+        self.scroll(allocation.height() / 2);
     }
 
     /// Scroll down by one page.
     pub fn scroll_down_page(&mut self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(allocation.height - SCROLL_LINE_VERTICAL * 2);
+        self.scroll(allocation.height() - SCROLL_LINE_VERTICAL * 2);
     }
 
     /// Scroll towards the left of the page.
@@ -140,13 +140,13 @@ impl App {
     /// Scroll up by one half of page.
     pub fn scroll_up_half_page(&mut self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(-allocation.height / 2);
+        self.scroll(-allocation.height() / 2);
     }
 
     /// Scroll up by one page.
     pub fn scroll_up_page(&mut self) {
         let allocation = self.get_webview_allocation();
-        self.scroll(-(allocation.height - SCROLL_LINE_VERTICAL * 2));
+        self.scroll(-(allocation.height() - SCROLL_LINE_VERTICAL * 2));
     }
 
     /// Set the value of an input[type="file"].
@@ -155,7 +155,7 @@ impl App {
     }
 
     pub fn server_send(&mut self, message: InnerMessage) {
-        let page_id = self.widgets.webview.get_page_id();
+        let page_id = self.widgets.webview.page_id();
         self.model.relm.stream().emit(ServerSend(page_id, message));
     }
 }

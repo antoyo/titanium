@@ -21,14 +21,16 @@
 
 use glib::Cast;
 use webkit2gtk_webextension::{
+    traits::{
+        DOMDocumentExt,
+        DOMElementExt,
+        DOMHTMLFormElementExt,
+        DOMHTMLInputElementExt,
+        DOMNodeExt,
+    },
     DOMDocument,
-    DOMDocumentExt,
-    DOMElementExt,
     DOMHTMLFormElement,
-    DOMHTMLFormElementExt,
     DOMHTMLInputElement,
-    DOMHTMLInputElementExt,
-    DOMNodeExt,
 };
 
 use dom::{
@@ -56,11 +58,11 @@ fn find_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
             let mut form_element = None;
             let mut element = Some(input_element);
             while let Some(el) = element {
-                if el.get_tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
+                if el.tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
                     form_element = Some(el);
                     break;
                 }
-                element = el.get_parent_element();
+                element = el.parent_element();
             }
             if let Some(form) = form_element {
                 if let Ok(form) = form.downcast() {
@@ -81,12 +83,12 @@ pub fn get_credentials(document: &DOMDocument) -> Option<Credential> {
         let username_element = login_form.query_selector("input[type='text']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = username_element {
-            username = element.get_value().map(Into::into).unwrap_or_default();
+            username = element.value().map(Into::into).unwrap_or_default();
         }
         let password_element = login_form.query_selector("input[type='password']").flatten()
             .and_then(|element| element.downcast::<DOMHTMLInputElement>().ok());
         if let Some(element) = password_element {
-            password = element.get_value().map(Into::into).unwrap_or_default();
+            password = element.value().map(Into::into).unwrap_or_default();
         }
     }
     if username.is_empty() || password.is_empty() {
@@ -103,16 +105,16 @@ pub fn get_credentials(document: &DOMDocument) -> Option<Credential> {
 
 /// Get the login form.
 fn get_login_form(document: &DOMDocument) -> Option<DOMHTMLFormElement> {
-    document.get_active_element()
+    document.active_element()
         .and_then(|active_element| {
             let mut form_element = None;
             let mut element = Some(active_element);
             while let Some(el) = element {
-                if el.get_tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
+                if el.tag_name().map(|string| string.to_string()).unwrap_or_default().to_lowercase() == "form" {
                     form_element = Some(el);
                     break;
                 }
-                element = el.get_parent_element();
+                element = el.parent_element();
             }
             if let Some(form) = form_element {
                 return form.downcast().ok();

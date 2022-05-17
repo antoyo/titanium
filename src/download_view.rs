@@ -31,7 +31,7 @@ use std::fs::{remove_file, rename};
 use std::time::SystemTime;
 
 use gtk;
-use gtk::ProgressBarExt;
+use gtk::traits::ProgressBarExt;
 use number_prefix::{Prefixed, Standalone, binary_prefix};
 use relm::{Relm, Widget};
 use relm_derive::widget;
@@ -158,7 +158,7 @@ impl Widget for DownloadView {
 
     /// Update the progress and the text of the progress bar.
     fn update_progress_bar(&mut self) {
-        self.model.progress = self.model.download.get_estimated_progress();
+        self.model.progress = self.model.download.estimated_progress();
         let percent = (self.model.progress * 100.0) as i32;
         let (downloaded_size, total_size) = get_data_sizes(&self.model.download);
         // TODO: show the speed (downloaded data over the last 5 seconds).
@@ -194,10 +194,10 @@ impl Widget for DownloadView {
 /// Return the suggested filename if it does not exist.
 fn get_filename(download: &Download) -> String {
     let suggested_filename =
-        download.get_request()
-            .and_then(|request| request.get_uri())
+        download.request()
+            .and_then(|request| request.uri())
             .and_then(|url| urls::get_filename(&url));
-    download.get_destination()
+    download.destination()
         .and_then(|url| urls::get_filename(&url))
         .unwrap_or_else(|| suggested_filename.clone().unwrap_or_default())
 }
@@ -213,13 +213,13 @@ fn add_byte_suffix(number: f64) -> String {
 
 /// Get the sizes bytes received and total bytes.
 fn get_data_sizes(download: &Download) -> (String, Option<String>) {
-    let progress = download.get_estimated_progress();
+    let progress = download.estimated_progress();
     if progress == 0.0 {
         // TODO: show the downloaded size when the progress is not available (slitaz.org/en/get).
         (add_byte_suffix(progress), None)
     }
     else {
-        let current = download.get_received_data_length() as f64;
+        let current = download.received_data_length() as f64;
         let total = current / progress;
         (add_byte_suffix(current), Some(add_byte_suffix(total)))
     }
@@ -227,12 +227,12 @@ fn get_data_sizes(download: &Download) -> (String, Option<String>) {
 
 /// Get the estimated remaining time.
 fn get_remaining_time(download: &Download) -> Option<String> {
-    let progress = download.get_estimated_progress();
+    let progress = download.estimated_progress();
     if progress == 0.0 {
         None
     }
     else {
-        let elapsed_seconds = download.get_elapsed_time();
+        let elapsed_seconds = download.elapsed_time();
         let total_seconds = elapsed_seconds / progress;
         let seconds = total_seconds - elapsed_seconds;
         let minutes = (seconds / 60.0) as i32;

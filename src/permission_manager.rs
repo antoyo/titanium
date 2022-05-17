@@ -74,7 +74,7 @@ impl PermissionDescription {
             Some(Notification)
         }
         else if let Ok(media_permission) = request.clone().downcast::<UserMediaPermissionRequest>() {
-            if media_permission.get_property_is_for_video_device() {
+            if media_permission.is_for_video_device() {
                 Some(Webcam)
             }
             else {

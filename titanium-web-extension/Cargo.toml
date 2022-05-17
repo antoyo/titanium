@@ -8,16 +8,16 @@ version = "0.1.0"
 
 [dependencies]
 adblock = "0.3.4"
-gio = "^0.9.0"
-glib = "^0.10.0"
+gio = "^0.15.0"
+glib = "^0.15.0"
 log = "^0.3"
 regex = "^0.2.2"
-relm = "0.21"
-relm-derive = "0.21"
+relm = "0.23"
+relm-derive = "0.23"
 send-cell = "^0.1.2"
 simplelog = "^0.4"
 syslog = "^3.2.0"
-webkit2gtk-webextension = "^0.10.0"
+webkit2gtk-webextension = "^0.15.0"
 xdg = "^2.0"
 
 [dependencies.titanium-common]

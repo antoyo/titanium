@@ -21,7 +21,7 @@
 
 macro_rules! get_document {
     ($_self:ident) => {{
-        let document = $_self.model.page.get_dom_document();
+        let document = $_self.model.page.dom_document();
         if let Some(document) = document {
             document
         }
@@ -42,21 +42,23 @@ use glib::{Cast, Closure, ObjectExt};
 use regex::Regex;
 use relm::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
-    DOMDocumentExt,
-    DOMDOMSelectionExt,
-    DOMDOMWindowExt,
+    traits::{
+        DOMDocumentExt,
+        DOMDOMSelectionExt,
+        DOMDOMWindowExt,
+        DOMElementExt,
+        DOMEventTargetExt,
+        DOMHTMLElementExt,
+        DOMHTMLInputElementExt,
+        DOMNodeExt,
+        WebPageExt,
+    },
     DOMElement,
-    DOMElementExt,
-    DOMEventTargetExt,
     DOMHTMLElement,
-    DOMHTMLElementExt,
     DOMHTMLInputElement,
-    DOMHTMLInputElementExt,
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
-    DOMNodeExt,
     WebPage,
-    WebPageExt,
 };
 
 use titanium_common::{FollowMode, InnerMessage, PageId};
@@ -145,7 +147,7 @@ impl Update for Executor {
                 });
 
                 if self.model.scroll_element == get_body(&self.model.page).map(|el| el.upcast()) {
-                    let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+                    let document = wtry_opt_no_ret!(self.model.page.dom_document());
                     document.add_event_listener_with_closure("scroll", &handler, false);
                 }
                 else {
@@ -219,11 +221,11 @@ impl Executor {
     // Click on the link of the selected text.
     fn activate_selection(&self) {
         // TODO: switch to using some macros to simplify this code.
-        let result = self.model.page.get_dom_document()
-            .and_then(|document| document.get_default_view())
-            .and_then(|window| window.get_selection())
-            .and_then(|selection| selection.get_anchor_node())
-            .and_then(|anchor_node| anchor_node.get_parent_element())
+        let result = self.model.page.dom_document()
+            .and_then(|document| document.default_view())
+            .and_then(|window| window.selection())
+            .and_then(|selection| selection.anchor_node())
+            .and_then(|anchor_node| anchor_node.parent_element())
             .and_then(|parent| parent.downcast::<DOMHTMLElement>().ok());
         if let Some(parent) = result {
             parent.click();
@@ -232,7 +234,7 @@ impl Executor {
 
     fn click(&mut self, element: DOMHTMLElement, ctrl_key: bool) -> Action {
         if let Ok(input_element) = element.clone().downcast::<DOMHTMLInputElement>() {
-            let input_type = input_element.get_input_type().map(|string| string.to_string()).unwrap_or_default();
+            let input_type = input_element.input_type().map(|string| string.to_string()).unwrap_or_default();
             match input_type.as_ref() {
                 "button" | "checkbox" | "image" | "radio" | "reset" | "submit" => {
                     click(&element.upcast(), ctrl_key);
@@ -255,7 +257,7 @@ impl Executor {
             GoInInsertMode
         }
         else if element.is::<DOMHTMLSelectElement>() {
-            if element.get_attribute("multiple").is_some() {
+            if element.attribute("multiple").is_some() {
                 element.focus();
                 GoInInsertMode
             }
@@ -321,7 +323,7 @@ impl Executor {
             self.send(ClickHintElement());
         }
         else {
-            let document = self.model.page.get_dom_document();
+            let document = self.model.page.dom_document();
             if let Some(document) = document {
                 let all_hidden = hide_unrelevant_hints(&document, &self.model.hint_keys);
                 if all_hidden {
@@ -334,7 +336,7 @@ impl Executor {
 
     // Focus the first input element.
     fn focus_input(&mut self) {
-        let document = self.model.page.get_dom_document();
+        let document = self.model.page.dom_document();
         if let Some(document) = document {
             let tag_names = ["input", "textarea"];
             let mut element_to_focus = None;
@@ -342,7 +344,7 @@ impl Executor {
             for tag_name in &tag_names {
                 let iter = get_elements_by_tag_name_in_all_frames(&document, tag_name);
                 for (document, element) in iter {
-                    let tabindex = element.get_attribute("tabindex").map(Into::into);
+                    let tabindex = element.attribute("tabindex").map(Into::into);
                     if !is_hidden(&document, &element) && is_enabled(&element) && is_text_input(&element)
                         && tabindex != Some("-1".to_string())
                     {
@@ -368,8 +370,8 @@ impl Executor {
     // Hide all the hints.
     fn hide_hints(&self) {
         let elements =
-            self.model.page.get_dom_document()
-            .and_then(|document| document.get_element_by_id(HINTS_ID))
+            self.model.page.dom_document()
+            .and_then(|document| document.element_by_id(HINTS_ID))
             .and_then(|hints| get_hints_container(&self.model.page).map(|container| (hints, container)));
         if let Some((hints, container)) = elements {
             check_err!(container.remove_child(&hints));
@@ -387,7 +389,7 @@ impl Executor {
 
     fn insert_text(&self, text: &str) {
         let document = get_document!(self);
-        let active_element = wtry_opt_no_ret!(document.get_active_element());
+        let active_element = wtry_opt_no_ret!(document.active_element());
         let element = wtry_no_show!(active_element.downcast::<DOMHTMLInputElement>());
         element.set_value(text);
     }
@@ -408,7 +410,7 @@ impl Executor {
     }
 
     fn send(&self, message: InnerMessage) {
-        self.model.relm.stream().emit(ServerSend(self.model.page.get_id(), message));
+        self.model.relm.stream().emit(ServerSend(self.model.page.id(), message));
     }
 
     // Get the username and password from the login form.
@@ -416,7 +418,7 @@ impl Executor {
         let mut username = String::new();
         let mut password = String::new();
         let credential =
-            self.model.page.get_dom_document()
+            self.model.page.dom_document()
             .and_then(|document| get_credentials(&document));
         if let Some(credential) = credential {
             username = credential.username;
@@ -437,7 +439,7 @@ impl Executor {
     fn show_hints(&mut self, hint_chars: &str) {
         self.model.hint_keys.clear();
         let container = wtry_opt_no_ret!(get_hints_container(&self.model.page));
-        let document = wtry_opt_no_ret!(self.model.page.get_dom_document());
+        let document = wtry_opt_no_ret!(self.model.page.dom_document());
         let (hints, hint_map) = wtry_opt_no_ret!(create_hints(&document, hint_chars));
         self.model.hint_map = hint_map;
         check_err!(container.append_child(&hints));

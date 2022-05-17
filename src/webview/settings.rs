@@ -85,8 +85,8 @@ use webkit2gtk::{
 impl WebView {
     /// Set the cookie accept policy.
     fn set_cookie_accept(&self, cookie_accept: &CookieAcceptPolicy) {
-        let cookie_manager = self.widgets.view.get_context()
-            .and_then(|context| context.get_cookie_manager());
+        let cookie_manager = self.widgets.view.context()
+            .and_then(|context| context.cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.set_accept_policy(cookie_accept.to_webkit());
         }
@@ -94,7 +94,7 @@ impl WebView {
 
     /// Adjust the webkit settings.
     pub fn setting_changed(&self, setting: AppSettingsVariant) {
-        if let Some(settings) = self.widgets.view.get_settings() {
+        if let Some(settings) = self.widgets.view.settings() {
             match setting {
                 CookieAccept(ref value) => self.set_cookie_accept(value),
                 HintChars(_) | HomePage(_) => (),

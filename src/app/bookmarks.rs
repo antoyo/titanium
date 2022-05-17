@@ -36,8 +36,8 @@ use app::Msg::TagEdit;
 impl App {
     /// Add the current page to the bookmarks.
     pub fn bookmark(&self) {
-        if let Some(url) = self.widgets.webview.get_uri() {
-            let title = self.widgets.webview.get_title();
+        if let Some(url) = self.widgets.webview.uri() {
+            let title = self.widgets.webview.title();
             let message = format!("Added bookmark: {}", url);
             match self.model.bookmark_manager.add(url.into(), title.map(Into::into)) {
                 Ok(true) => self.components.mg.emit(Info(message)),
@@ -49,7 +49,7 @@ impl App {
 
     /// Delete the current page from the bookmarks.
     pub fn delete_bookmark(&self) {
-        if let Some(url) = self.widgets.webview.get_uri() {
+        if let Some(url) = self.widgets.webview.uri() {
             match self.model.bookmark_manager.delete(&url) {
                 Ok(true) => self.components.mg.emit(Info(format!("Deleted bookmark: {}", url))),
                 Ok(false) => self.info_page_not_in_bookmarks(),

@@ -25,11 +25,13 @@ use glib::{Cast, IsA};
 use gtk::{
     self,
     Container,
-    ContainerExt,
     FlowBox,
-    FlowBoxExt,
     SelectionMode,
-    WidgetExt,
+    traits::{
+        ContainerExt,
+        FlowBoxExt,
+        WidgetExt,
+    },
 };
 use relm::{
     Component,
@@ -127,7 +129,7 @@ impl DownloadListView {
         connect!(self.model.relm, download, connect_finished(download), DownloadFinished(download.clone()));
 
         let download_view = self.widgets.view.add_widget::<DownloadView>(download.clone());
-        if let Some(flow_child) = self.widgets.view.get_children().last() {
+        if let Some(flow_child) = self.widgets.view.children().last() {
             flow_child.set_can_focus(false);
         }
         let down = download.clone();
@@ -201,7 +203,7 @@ impl DownloadListView {
 
 /// Remove the progress bar from its `FlowBox` parent.
 fn remove_from_flow_box<W: IsA<gtk::Widget> + WidgetExt>(flow_box: &FlowBox, widget: &W) {
-    let child: Option<Container> = widget.get_parent()
+    let child: Option<Container> = widget.parent()
         .and_then(|parent| parent.downcast().ok());
     // FlowBox children are wrapped inside FlowBoxChild, so we need to destroy this
     // FlowBoxChild (which is the parent of the widget) in order to remove it from

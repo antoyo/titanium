@@ -37,7 +37,7 @@ use std::rc::Rc;
 
 use cairo::{Context, Format, ImageSurface};
 use glib::Cast;
-use gtk::{WidgetExt, Window};
+use gtk::{traits::WidgetExt, Window};
 use relm::{Relm, Widget};
 use relm_derive::widget;
 use webkit2gtk::{
@@ -129,9 +129,9 @@ impl Widget for WebView {
     fn init_view(&mut self) {
         // Send the page id later when the event connection in the app is made.
         self.model.relm.stream().emit(SendPageId);
-        trace!("New web view with page id {}", self.widgets.view.get_page_id());
+        trace!("New web view with page id {}", self.widgets.view.page_id());
 
-        if let Some(inspector) = self.widgets.view.get_inspector() {
+        if let Some(inspector) = self.widgets.view.inspector() {
             let inspector_shown = self.model.inspector_shown.clone();
             connect!(self.model.relm, inspector, connect_attach(inspector),
                 return WebView::handle_inspector_attach(&inspector_shown, inspector));
@@ -209,7 +209,7 @@ impl Widget for WebView {
 impl WebView {
     /// Add the user scripts.
     fn add_scripts(&self) -> Result<()> {
-        if let Some(content_manager) = self.widgets.view.get_user_content_manager() {
+        if let Some(content_manager) = self.widgets.view.user_content_manager() {
             content_manager.remove_all_scripts();
             let script_path = self.model.config_dir.config_file("scripts")?;
             for filename in read_dir(script_path)? {
@@ -226,7 +226,7 @@ impl WebView {
 
     /// Add the user stylesheets.
     pub fn add_stylesheets(&self) -> Result<()> {
-        if let Some(content_manager) = self.widgets.view.get_user_content_manager() {
+        if let Some(content_manager) = self.widgets.view.user_content_manager() {
             content_manager.remove_all_style_sheets();
             let stylesheets_path = self.model.config_dir.config_file("stylesheets")?;
             for filename in read_dir(stylesheets_path)? {
@@ -258,7 +258,7 @@ impl WebView {
 
     /// Get the find controller.
     fn find_controller(&self) -> Result<FindController> {
-        self.widgets.view.get_find_controller()
+        self.widgets.view.find_controller()
             .ok_or_else(|| "cannot get find controller".into())
     }
 
@@ -292,10 +292,10 @@ impl WebView {
              * when setting ctrlkey to true for the click JS event, this handle_navigation_action()
              * method is called, while it is not called when it is false.
              */
-            let navigation_type = policy_decision.get_navigation_type();
+            let navigation_type = policy_decision.navigation_type();
             if open_in_new_window.get() && (navigation_type == LinkClicked || navigation_type == Other) {
-                let url = policy_decision.get_request()
-                    .and_then(|request| request.get_uri());
+                let url = policy_decision.request()
+                    .and_then(|request| request.uri());
                 if let Some(url) = url {
                     policy_decision.ignore();
                     open_in_new_window.set(false);
@@ -325,11 +325,11 @@ impl WebView {
         let private_context = WebContext::new_ephemeral();
         setup_context(&private_context);
 
-        let context = WebContext::get_default().unwrap();
+        let context = WebContext::default().unwrap();
         setup_context(&context);
 
         if let Ok(cookie_path) = config_dir.data_file("cookies") {
-            let cookie_manager = context.get_cookie_manager().unwrap();
+            let cookie_manager = context.cookie_manager().unwrap();
             // TODO: remove unwrap().
             cookie_manager.set_persistent_storage(cookie_path.to_str().unwrap(), CookiePersistentStorage::Sqlite);
         }
@@ -349,16 +349,16 @@ impl WebView {
     /// Print the current page.
     fn print(&self) {
         let print_operation = PrintOperation::new(&self.widgets.view);
-        let window = self.widgets.view.get_toplevel()
+        let window = self.widgets.view.toplevel()
             .and_then(|toplevel| toplevel.downcast::<Window>().ok());
         print_operation.run_dialog(window.as_ref());
     }
 
     /// Save a screenshot of the web view.
     fn screenshot(&self, path: String) {
-        let allocation = self.widgets.view.get_allocation();
-        let surface = ImageSurface::create(Format::ARgb32, allocation.width, allocation.height).unwrap();
-        let context = Context::new(&surface);
+        let allocation = self.widgets.view.allocation();
+        let surface = ImageSurface::create(Format::ARgb32, allocation.width(), allocation.height()).unwrap();
+        let context = Context::new(&surface).expect("cairo context");
         self.widgets.view.draw(&context);
         let mut file = File::create(path).unwrap();
         surface.write_to_png(&mut file).unwrap();
@@ -404,7 +404,7 @@ impl WebView {
 
     /// Send the page ID to the application.
     fn send_page_id(&self) {
-        self.model.relm.stream().emit(WebPageId(self.widgets.view.get_page_id()));
+        self.model.relm.stream().emit(WebPageId(self.widgets.view.page_id()));
     }
 
     /// Set open in new window boolean to true to indicate that the next follow link will open a
@@ -415,7 +415,7 @@ impl WebView {
 
     /// Show the web inspector.
     fn show_inspector(&self) {
-        if let Some(inspector) = self.widgets.view.get_inspector() {
+        if let Some(inspector) = self.widgets.view.inspector() {
             inspector.show();
         }
     }
@@ -426,9 +426,9 @@ impl WebView {
 
     /// Zoom in.
     fn zoom_in(&self) -> i32 {
-        let level = self.widgets.view.get_zoom_level();
+        let level = self.widgets.view.zoom_level();
         self.widgets.view.set_zoom_level(level + 0.1);
-        (self.widgets.view.get_zoom_level() * 100.0) as i32
+        (self.widgets.view.zoom_level() * 100.0) as i32
     }
 
     /// Zoom back to 100%.
@@ -439,9 +439,9 @@ impl WebView {
 
     /// Zoom out.
     fn zoom_out(&self) -> i32 {
-        let level = self.widgets.view.get_zoom_level();
+        let level = self.widgets.view.zoom_level();
         self.widgets.view.set_zoom_level(level - 0.1);
-        (self.widgets.view.get_zoom_level() * 100.0) as i32
+        (self.widgets.view.zoom_level() * 100.0) as i32
     }
 }
 

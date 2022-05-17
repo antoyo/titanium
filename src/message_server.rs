@@ -30,17 +30,19 @@ use std::process;
 
 use gio::{
     prelude::UnixSocketAddressPath,
+    traits::{
+        IOStreamExt,
+        SocketClientExt,
+        SocketExt,
+        SocketListenerExt,
+    },
     Cancellable,
     IOErrorEnum,
-    IOStreamExt,
     Socket,
     SocketClient,
-    SocketClientExt,
     SocketConnection,
-    SocketExt,
     SocketFamily,
     SocketListener,
-    SocketListenerExt,
     SocketProtocol,
     SocketType,
     UnixSocketAddress,
@@ -49,8 +51,8 @@ use glib;
 use glib::Cast;
 use gtk::{
     self,
+    traits::DialogExt,
     ButtonsType,
-    DialogExt,
     DialogFlags,
     MessageDialog,
     MessageType,
@@ -441,7 +443,7 @@ fn send_url_to_existing_process(urls: &[String]) -> Result<()> {
     let client = SocketClient::new();
     let address = UnixSocketAddress::with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
     let connection = client.connect(&address, None::<&Cancellable>)?;
-    let writer = connection.get_output_stream().ok_or_else(|| "cannot get output stream")?;
+    let writer = connection.output_stream();
     let urls = urls.iter()
         .map(|url| canonicalize_url(url))
         .collect();

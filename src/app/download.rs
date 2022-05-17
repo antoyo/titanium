@@ -70,7 +70,7 @@ impl App {
         let exists = download_path.exists() &&
             // Check that it is not the path chosen before (because the download is already started
             // at this point).
-            Some(format!("file://{}", download_destination)) != download.get_destination().map(Into::into);
+            Some(format!("file://{}", download_destination)) != download.destination().map(Into::into);
         if exists {
             let message = format!("Do you want to overwrite {}?", download_destination);
             let download_destination = download_destination.to_string();
@@ -99,7 +99,7 @@ impl App {
             let list_stream = self.streams.download_list_view.clone();
             let webview = self.widgets.webview.clone();
             connect!(context, connect_download_started(_, download), self.streams.download_list_view, {
-                if let Some(download_web_view) = download.get_web_view() {
+                if let Some(download_web_view) = download.web_view() {
                     if download_web_view == webview {
                         Self::handle_decide_destination(&stream, &list_stream, download);
                         Some(Add(download.clone()))
@@ -152,7 +152,7 @@ impl App {
         download.connect_decide_destination(move |download, suggested_filename| {
             // If the destination is already set, the download is originating from titanium, so the
             // user must not choose it.
-            if download.get_destination().is_none() {
+            if download.destination().is_none() {
                 // Some suggested file name are actually a path, so only take the last part of it.
                 let path = Path::new(suggested_filename);
                 let new_filename = path.file_name()

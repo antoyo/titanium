@@ -31,8 +31,8 @@ impl App {
     /// Get the URL from the clipboard if there is one.
     /// If there are no URLs in the clipboard, this will show errors.
     pub fn get_url_from_clipboard(&self) -> Option<String> {
-        let clipboard = Display::get_default()
-            .and_then(|display| Clipboard::get_default(&display));
+        let clipboard = Display::default()
+            .and_then(|display| Clipboard::default(&display));
         if let Some(clipboard) = clipboard {
             let mut urls = clipboard.wait_for_uris();
             let url = urls.pop().map(Into::into)

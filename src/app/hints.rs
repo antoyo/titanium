@@ -52,7 +52,7 @@ impl App {
 
     /// In follow mode, send the key to the web process.
     pub fn handle_follow_key_press(&mut self, event_key: EventKey) {
-        if let Some(key_char) = event_key.get_keyval().to_unicode() {
+        if let Some(key_char) = event_key.keyval().to_unicode() {
             if key_char.is_alphanumeric() {
                 if let Some(key_char) = key_char.to_lowercase().next() {
                     self.enter_hint_key(key_char);

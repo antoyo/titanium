@@ -60,7 +60,7 @@ impl App {
     /// Go up one directory in url.
     pub fn go_parent_directory(&self, parent_level: Option<u32>) {
         let parent_level = parent_level.unwrap_or(1);
-        if let Some(ref url) = self.widgets.webview.get_uri() {
+        if let Some(ref url) = self.widgets.webview.uri() {
             if let Ok(mut url) = Url::parse(url) {
                 match url.path_segments_mut() {
                     Ok(mut segments) => {
@@ -78,7 +78,7 @@ impl App {
 
     /// Go to the root directory or url hostname.
     pub fn go_root_directory(&self) {
-        if let Some(ref url) = self.widgets.webview.get_uri() {
+        if let Some(ref url) = self.widgets.webview.uri() {
             if let Ok(base_url) = Url::parse(url) {
                 let root = &base_url[..Position::BeforePath];
 
@@ -97,7 +97,7 @@ impl App {
     }
 
     pub fn url_increment(&self) {
-        if let Some(ref url) = self.widgets.webview.get_uri() {
+        if let Some(ref url) = self.widgets.webview.uri() {
             if let Some(url) = offset(url, 1) {
                 self.open(&url);
             }
@@ -105,7 +105,7 @@ impl App {
     }
 
     pub fn url_decrement(&self) {
-        if let Some(ref url) = self.widgets.webview.get_uri() {
+        if let Some(ref url) = self.widgets.webview.uri() {
             if let Some(url) = offset(url, -1) {
                 self.open(&url);
             }

@@ -37,7 +37,7 @@ impl App {
     pub fn delete_all_cookies(&self) {
         let cookie_manager =
             self.get_webview_context()
-                .and_then(|context| context.get_cookie_manager());
+                .and_then(|context| context.cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_all_cookies();
             self.components.mg.emit(Info("All cookies deleted".to_string()));
@@ -48,7 +48,7 @@ impl App {
     pub fn delete_cookies(&self, domain: &str) {
         let cookie_manager =
             self.get_webview_context()
-                .and_then(|context| context.get_cookie_manager());
+                .and_then(|context| context.cookie_manager());
         if let Some(cookie_manager) = cookie_manager {
             cookie_manager.delete_cookies_for_domain(domain);
             self.components.mg.emit(Info(format!("Cookies deleted for domain {}", domain)));
