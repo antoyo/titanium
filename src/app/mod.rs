@@ -102,7 +102,7 @@ use webkit2gtk::{
 use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
 
-use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
+use titanium_common::{FollowMode, InnerMessage, LAST_MARK};
 use titanium_common::Percentage::{self, All, Percent};
 
 use bookmarks::BookmarkManager;
@@ -229,7 +229,7 @@ pub enum Msg {
     OverwriteDownload(Download, String, bool),
     PermissionResponse(webkit2gtk::PermissionRequest, Option<String>),
     PopupDecision(Option<String>, String),
-    Remove(PageId, String),
+    Remove(String),
     ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
@@ -407,7 +407,7 @@ impl Widget for App {
             WebViewFullscreen(fullscreen) => self.model.is_fullscreen = fullscreen,
 
             // To be listened by the user.
-            ChangeUrl(_, _) | Remove(_, _) => (),
+            ChangeUrl(_, _) | Remove(_) => (),
         }
     }
 
@@ -512,8 +512,7 @@ impl App {
     }
 
     fn close_webview(&self) {
-        let page_id = self.widgets.webview.page_id();
-        self.model.relm.stream().emit(Remove(page_id, self.model.current_url.clone()));
+        self.model.relm.stream().emit(Remove(self.model.current_url.clone()));
 
         self.components.mg.emit(CloseWin);
     }

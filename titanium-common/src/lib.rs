@@ -39,11 +39,6 @@ pub mod protocol;
 /// The mark that goes to the last position after a jump.
 pub const LAST_MARK: u8 = b'\'';
 
-#[doc(hidden)]
-pub type ExtensionId = u64;
-#[doc(hidden)]
-pub type PageId = u64;
-
 /// Action that should be executed from the UI process.
 #[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Action {

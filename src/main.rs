@@ -433,13 +433,13 @@ mod stylesheet;
 mod urls;
 mod webview;
 
-use std::{env::args, collections::BTreeSet};
+use std::env::args;
 
 use gio::{prelude::ApplicationExtManual, File, traits::{ApplicationExt, FileExt}};
-use gtk::{Application, traits::GtkApplicationExt};
+use gtk::Application;
 use gumdrop::Options;
 use log::Level::Error;
-use relm::{EventStream, Relm, Update, UpdateNew, execute, init, Component};
+use relm::{EventStream, Relm, Update, UpdateNew, execute, Component};
 use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
@@ -468,9 +468,10 @@ struct Args {
 }
 
 fn main() {
-    let args: Vec<_> = args().collect();
+    // TODO: switch to the GtkApplication API to handle cli arguments.
+    /*let args: Vec<_> = args().collect();
 
-    /*let args = match Args::parse_args_default(&args[1..]) {
+    let args = match Args::parse_args_default(&args[1..]) {
         Ok(options) => options,
         Err(error) => {
             println!("{}: {}", APP_NAME, error);
@@ -503,7 +504,6 @@ struct RelmApp {
 struct Model {
     application: Application,
     message_server: Option<EventStream<<MessageServer as Update>::Msg>>,
-    wins: Vec<Component<App>>,
 }
 
 #[derive(Msg)]
@@ -521,7 +521,6 @@ impl Update for RelmApp {
         Model {
             application,
             message_server: None,
-            wins: vec![],
         }
     }
 

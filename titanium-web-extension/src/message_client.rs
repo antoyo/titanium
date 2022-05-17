@@ -19,8 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use std::collections::HashMap;
-
 use relm::{
     EventStream,
     Relm,
@@ -37,7 +35,6 @@ use webkit2gtk_webextension::{
     WebPage,
 };
 
-use titanium_common::PageId;
 use titanium_common::protocol::decode;
 
 use adblocker::Adblocker;
@@ -54,7 +51,7 @@ pub struct MessageClient {
 }
 
 pub struct Model {
-    executors: HashMap<PageId, EventStream<<Executor as Update>::Msg>>,
+    executors: Vec<EventStream<<Executor as Update>::Msg>>,
     relm: Relm<MessageClient>,
 }
 
@@ -70,7 +67,7 @@ impl Update for MessageClient {
 
     fn model(relm: &Relm<Self>, (): ()) -> Model {
         Model {
-            executors: HashMap::new(),
+            executors: vec![],
             relm: relm.clone(),
         }
     }
@@ -81,11 +78,11 @@ impl Update for MessageClient {
                 // TODO: this should be disconnected later somehow.
                 connect!(self.model.relm, page, connect_send_request(_, request, _),
                     return block_request(request));
-                let page_id = page.id();
                 let executor = execute::<Executor>(page.clone());
                 connect_stream!(page, connect_document_loaded(_), executor, DocumentLoaded);
                 connect_stream!(return executor, page, connect_user_message_received(_, msg), (message_recv(msg), true));
-                self.model.executors.insert(page_id, executor);
+                self.model.executors.push(executor);
+                // TODO: remove from the executor when the page is destroyed?
             },
         }
     }

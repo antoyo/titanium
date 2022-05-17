@@ -31,7 +31,6 @@ use gio::prelude::ApplicationExt;
 use gtk::Application;
 use gtk::traits::GtkApplicationExt;
 use gtk::{
-    self,
     traits::DialogExt,
     ButtonsType,
     DialogFlags,
@@ -41,9 +40,6 @@ use gtk::{
 };
 use relm::{Component, EventStream, Relm, Update, UpdateNew, execute, init};
 use webkit2gtk::WebContext;
-
-use titanium_common::{InnerMessage, PageId};
-use titanium_common::InnerMessage::Open;
 
 use app::App;
 use app::Msg::{
@@ -85,7 +81,7 @@ pub enum Msg {
     ChangeOpenedPage(String, String),
     NewApp(Option<String>, Privacy),
     ReleaseApp,
-    RemoveApp(PageId, String),
+    RemoveApp(String),
 }
 
 impl Update for MessageServer {
@@ -130,7 +126,7 @@ impl Update for MessageServer {
             // NOTE: we called hold() on the application in order to create the window
             // asynchronously. Now that it is created, we can call release().
             ReleaseApp => self.model.application.release(),
-            RemoveApp(page_id, url) => self.remove_app(page_id, url),
+            RemoveApp(url) => self.remove_app(url),
         }
     }
 }
@@ -168,7 +164,7 @@ impl MessageServer {
         let app = init::<App>((url, self.model.config_dir.clone(), web_context, self.model.previous_opened_urls.clone())).unwrap(); // TODO: remove unwrap().
         self.model.application.add_window(app.widget());
         connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
-        connect!(app@Remove(page_id, ref url), self.model.relm, RemoveApp(page_id, url.clone()));
+        connect!(app@Remove(ref url), self.model.relm, RemoveApp(url.clone()));
         connect!(app@ChangeUrl(ref old, ref new), self.model.relm, ChangeOpenedPage(old.clone(), new.clone()));
         self.model.wins.push(app);
     }
@@ -191,24 +187,7 @@ impl MessageServer {
         }
     }
 
-    fn msg_recv(&mut self, protocol_counter: usize, page_id: PageId, msg: InnerMessage) {
-        trace!("Receive message");
-        if let Open(urls) = msg {
-            if urls.is_empty() {
-                self.add_app(None, Privacy::Normal);
-            }
-            else {
-                for url in urls {
-                    self.add_app(Some(url), Privacy::Normal);
-                }
-            }
-        }
-        else {
-            error!("Cannot find app with page id {}", page_id);
-        }
-    }
-
-    fn remove_app(&mut self, page_id: PageId, url: String) {
+    fn remove_app(&mut self, url: String) {
         self.model.opened_urls.remove(&url);
         self.save_urls();
 
@@ -217,7 +196,6 @@ impl MessageServer {
         if self.model.app_count == 0 {
             self.model.opened_urls.clear();
             self.save_urls();
-            //gtk::main_quit(); // FIXME: can't call main_quit() with gtk::Application.
         }
     }
 
