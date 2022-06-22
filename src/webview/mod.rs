@@ -468,6 +468,5 @@ fn setup_context(context: &WebContext) {
     set_context_ext_dir(&context);
 
     context.set_process_model(MultipleSecondaryProcesses);
-    context.set_web_process_count_limit(4);
     context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
 }

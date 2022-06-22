@@ -20,6 +20,10 @@
  */
 
 /*
+ * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
+ * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069)
+ * (that probably requires a MutationObserver: https://github.com/brave/adblock-rust/issues/152#issuecomment-771046487)
+ *
  * FIXME: the adblocker seems to block good URL like https://blog.mozilla.org/security/2021/01/26/supercookie-protections/
  * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
  * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069
@@ -433,15 +437,20 @@ mod stylesheet;
 mod urls;
 mod webview;
 
-use std::env::args;
+use std::{env::args, collections::BTreeSet};
 
+use gio::{prelude::ApplicationExtManual, File, traits::{ApplicationExt, FileExt}};
+use gtk::{Application, traits::GtkApplicationExt};
 use gumdrop::Options;
 use log::Level::Error;
+use relm::{EventStream, Relm, Update, UpdateNew, execute, init, Component};
 use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
-use app::APP_NAME;
-use message_server::create_message_server;
+use app::{App, APP_NAME};
+use config_dir::ConfigDir;
+use message_server::{create_message_server, MessageServer, Msg::NewApp, Privacy};
+use webview::WebView;
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
@@ -458,11 +467,9 @@ struct Args {
 }
 
 fn main() {
-    gtk::init().unwrap(); // TODO: this is called twice. Remove?
-
     let args: Vec<_> = args().collect();
 
-    let args = match Args::parse_args_default(&args[1..]) {
+    /*let args = match Args::parse_args_default(&args[1..]) {
         Ok(options) => options,
         Err(error) => {
             println!("{}: {}", APP_NAME, error);
@@ -477,11 +484,93 @@ fn main() {
         println!();
         println!("{}", Args::usage());
     }
-    else {
-        init_logging(args.log);
+    else {*/
+        //init_logging(args.log);
 
-        let _message_server = create_message_server(args.url, args.config);
-        gtk::main();
+        let application = Application::new(Some("com.titanium-browser"), gio::ApplicationFlags::HANDLES_OPEN);
+
+        let _app = execute::<RelmApp>(application.clone());
+
+        application.run(/*&args*/);
+        //let _message_server = create_message_server(args.url, args.config);
+    //}
+}
+
+struct RelmApp {
+    model: Model,
+}
+
+struct Model {
+    application: gtk::Application,
+    message_server: Option<EventStream<<MessageServer as Update>::Msg>>,
+    wins: Vec<Component<App>>,
+}
+
+#[derive(Msg)]
+enum Msg {
+    Activate,
+    Open(Vec<File>),
+}
+
+impl Update for RelmApp {
+    type Model = Model;
+    type ModelParam = gtk::Application;
+    type Msg = Msg;
+
+    fn model(_: &Relm<Self>, application: Self::ModelParam) -> Model {
+        Model {
+            application,
+            message_server: None,
+            wins: vec![],
+        }
+    }
+
+    fn subscriptions(&mut self, relm: &Relm<Self>) {
+        connect!(self.model.application, connect_activate(app), relm, {
+            // NOTE: we need to increase the refcount of app because we create the window
+            // asynchronously.
+            // TODO: perhaps it won't be needed anymore when we remove the client/server
+            // architecture.
+            // TODO: that probably requires calling release() later.
+            app.hold();
+            Msg::Activate
+        });
+        connect!(self.model.application, connect_open(_, files, _), relm, Msg::Open(files.to_vec()));
+    }
+
+    fn update(&mut self, event: Msg) {
+        match event {
+            Msg::Activate => {
+                self.model.message_server = Some(create_message_server(vec![], None));
+
+                let config_dir = ConfigDir::new(&None).unwrap();
+                let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
+                let previous_opened_urls = BTreeSet::new();
+                let app = init::<App>((None, config_dir, web_context, previous_opened_urls)).unwrap(); // TODO: remove unwrap().
+                self.model.application.add_window(app.widget());
+                self.model.wins.push(app);
+                /*
+                connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
+                connect!(app@Remove(page_id, ref url), self.model.relm, RemoveApp(page_id, url.clone()));
+                connect!(app@ChangeUrl(ref old, ref new), self.model.relm, ChangeOpenedPage(old.clone(), new.clone()));*/
+            },
+            Msg::Open(files) => {
+                for file in files {
+                    println!("URI: {}", file.uri());
+                    if let Some(ref message_server) = self.model.message_server {
+                        message_server.stream().emit(NewApp(Some(file.uri().to_string()), Privacy::Normal));
+                    }
+                }
+            },
+        }
+    }
+}
+
+impl UpdateNew for RelmApp {
+    fn new(_relm: &Relm<Self>, model: Self::Model) -> Self {
+        RelmApp {
+            model,
+        }
     }
 }
 

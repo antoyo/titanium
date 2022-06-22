@@ -338,7 +338,7 @@ impl MessageServer {
             }
         }
         else if let Open(urls) = msg {
-            //self.model.protocols.remove(&protocol_counter);
+            self.model.protocols.remove(&protocol_counter);
             if urls.is_empty() {
                 self.add_app(None, Privacy::Normal);
             }
