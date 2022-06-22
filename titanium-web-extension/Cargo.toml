@@ -18,6 +18,7 @@ send-cell = "^0.1.2"
 simplelog = "^0.4"
 syslog = "^3.2.0"
 webkit2gtk-webextension = "^0.15.2"
+webkit2gtk-webextension-sys = "^0.15.0"
 xdg = "^2.0"
 
 [dependencies.titanium-common]

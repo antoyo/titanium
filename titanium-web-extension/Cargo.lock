@@ -1556,6 +1556,7 @@ dependencies = [
  "syslog",
  "titanium-common",
  "webkit2gtk-webextension",
+ "webkit2gtk-webextension-sys",
  "xdg",
 ]
 
