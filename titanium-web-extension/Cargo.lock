@@ -1709,9 +1709,9 @@ checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "webkit2gtk-webextension"
-version = "0.15.0"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f05be3bf7ad563cf691354609810a34e1eaf0898199f673da4aed835ef116770"
+checksum = "8b94633c25a63a4c4e61479e44e2e72edbe1708f80ccbfc941c88362fc620c27"
 dependencies = [
  "gio",
  "glib",

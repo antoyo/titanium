@@ -82,6 +82,7 @@ use mg::{
 };
 use relm::{Relm, Widget};
 use relm_derive::widget;
+use titanium_common::protocol::decode;
 use webkit2gtk::{
     self,
     Download,
@@ -94,8 +95,9 @@ use webkit2gtk::{
     URIRequestExt,
     UserMediaPermissionRequest,
     UserMediaPermissionRequestExt,
+    UserMessage,
     WebContext,
-    WebViewExt,
+    WebViewExt, UserMessageExt,
 };
 use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
@@ -160,7 +162,6 @@ use webview::Msg::{
     SearchBackward,
     SetOpenInNewWindow,
     ShowInspector,
-    WebPageId,
     WebViewSettingChanged,
     ZoomChange,
 };
@@ -226,11 +227,9 @@ pub enum Msg {
     MessageRecv(InnerMessage),
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
-    SetPageId(PageId),
     PermissionResponse(webkit2gtk::PermissionRequest, Option<String>),
     PopupDecision(Option<String>, String),
     Remove(PageId, String),
-    ServerSend(PageId, InnerMessage),
     ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
@@ -408,7 +407,7 @@ impl Widget for App {
             WebViewFullscreen(fullscreen) => self.model.is_fullscreen = fullscreen,
 
             // To be listened by the user.
-            ChangeUrl(_, _) | Remove(_, _) | ServerSend(_, _) | SetPageId(_) => (),
+            ChangeUrl(_, _) | Remove(_, _) => (),
         }
     }
 
@@ -451,7 +450,6 @@ impl Widget for App {
                     LeaveFullScreen => WebViewFullscreen(false),
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     PermissionRequest(ref request) => AskPermission(request.clone()),
-                    WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
                     create(_, action) => (Create(action.clone()), None),
                     insecure_content_detected(_, _) => InsecureContent,
@@ -460,6 +458,7 @@ impl Widget for App {
                     estimated_load_progress_notify(_) => TitleChanged,
                     title_notify(_) => TitleChanged,
                     uri_notify(_) => UriChanged,
+                    user_message_received(_, msg) => (message_recv(msg), true),
                     web_process_crashed => (WebProcessCrashed, false),
                 },
             },
@@ -480,6 +479,16 @@ impl Widget for App {
             key_press_event(_, event_key) with (in_follow_mode) =>
                 (KeyPress(event_key.clone()), App::inhibit_key_press(&in_follow_mode)),
         }
+    }
+}
+
+fn message_recv(msg: &UserMessage) -> Option<Msg> {
+    match decode(&msg.parameters()) {
+        Ok(msg) => Some(MessageRecv(msg)),
+        Err(error) => {
+            error!("{}", error);
+            None
+        },
     }
 }
 

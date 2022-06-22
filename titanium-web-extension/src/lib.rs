@@ -22,6 +22,7 @@
 //! Web extension for the titanium web browser.
 //! It provides an ad blocker, scrolling support, hints, navigation and login credentials load/save.
 
+#![allow(deprecated)]
 #![warn(
     missing_docs,
     trivial_casts,

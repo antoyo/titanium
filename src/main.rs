@@ -370,6 +370,7 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
+#![allow(deprecated)]
 #![warn(
     missing_docs,
     trivial_casts,
@@ -411,10 +412,6 @@ extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
 extern crate zip;
-// TODO: remove when https://github.com/gtk-rs/gio/issues/99 is fixed.
-extern crate gio_sys;
-extern crate glib_sys;
-extern crate gobject_sys;
 
 mod app;
 mod bookmarks;
@@ -427,7 +424,6 @@ mod download_view;
 mod download_list_view;
 mod errors;
 mod file;
-mod gio_ext;
 mod message_server;
 mod pass_manager;
 mod permission_manager;
@@ -453,6 +449,13 @@ use message_server::{create_message_server, MessageServer, Msg::NewApp, Privacy}
 use webview::WebView;
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
+
+/// The GTK app name.
+#[cfg(not(debug_assertions))]
+pub const GTK_APP_NAME: &str = "com.titanium-browser";
+/// A different GTK app name is used in debug mode for easier debugging.
+#[cfg(debug_assertions)]
+pub const GTK_APP_NAME: &str = "com.titanium-browser.debug";
 
 #[derive(Debug, Default, Options)]
 struct Args {
@@ -487,7 +490,7 @@ fn main() {
     else {*/
         //init_logging(args.log);
 
-        let application = Application::new(Some("com.titanium-browser"), gio::ApplicationFlags::HANDLES_OPEN);
+        let application = Application::new(Some(GTK_APP_NAME), gio::ApplicationFlags::HANDLES_OPEN);
 
         let _app = execute::<RelmApp>(application.clone());
 
@@ -501,7 +504,7 @@ struct RelmApp {
 }
 
 struct Model {
-    application: gtk::Application,
+    application: Application,
     message_server: Option<EventStream<<MessageServer as Update>::Msg>>,
     wins: Vec<Component<App>>,
 }
@@ -514,7 +517,7 @@ enum Msg {
 
 impl Update for RelmApp {
     type Model = Model;
-    type ModelParam = gtk::Application;
+    type ModelParam = Application;
     type Msg = Msg;
 
     fn model(_: &Relm<Self>, application: Self::ModelParam) -> Model {
@@ -542,17 +545,6 @@ impl Update for RelmApp {
         match event {
             Msg::Activate => {
                 self.model.message_server = Some(create_message_server(vec![], None));
-
-                let config_dir = ConfigDir::new(&None).unwrap();
-                let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
-                let previous_opened_urls = BTreeSet::new();
-                let app = init::<App>((None, config_dir, web_context, previous_opened_urls)).unwrap(); // TODO: remove unwrap().
-                self.model.application.add_window(app.widget());
-                self.model.wins.push(app);
-                /*
-                connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
-                connect!(app@Remove(page_id, ref url), self.model.relm, RemoveApp(page_id, url.clone()));
-                connect!(app@ChangeUrl(ref old, ref new), self.model.relm, ChangeOpenedPage(old.clone(), new.clone()));*/
             },
             Msg::Open(files) => {
                 for file in files {

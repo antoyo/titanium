@@ -50,5 +50,5 @@ libxdo = "0.6"
 default = [
     "cairo-rs/png",
     "log-panics/with-backtrace",
-    "webkit2gtk/v2_24",
+    "webkit2gtk/v2_28",
 ]

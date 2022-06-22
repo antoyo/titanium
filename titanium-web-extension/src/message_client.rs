@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Boucher, Antoni <bouanto@zoho.com>
+ * Copyright (c) 2017-2022 Boucher, Antoni <bouanto@zoho.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,41 +20,29 @@
  */
 
 use std::collections::HashMap;
-use std::marker;
 
-use gio::{
-    prelude::UnixSocketAddressPath,
-    traits::SocketClientExt,
-    SocketClient,
-    SocketConnection,
-    UnixSocketAddress,
-};
-use glib::Cast;
 use relm::{
     EventStream,
     Relm,
     Update,
     UpdateNew,
     connect,
-    connect_async_full,
     connect_stream,
     execute,
 };
 use webkit2gtk_webextension::{
+    traits::{URIRequestExt, UserMessageExt, WebPageExt},
     URIRequest,
-    traits::{URIRequestExt, WebPageExt},
+    UserMessage,
     WebPage,
 };
 
-use titanium_common::{ExtensionId, Message, PageId, SOCKET_NAME};
-use titanium_common::InnerMessage;
-use titanium_common::InnerMessage::*;
-use titanium_common::protocol::{self, PluginProtocol};
-use titanium_common::protocol::Msg::{IOError, MsgRead, WriteMsg};
+use titanium_common::PageId;
+use titanium_common::protocol::decode;
 
 use adblocker::Adblocker;
-use executor::Executor;
-use executor::Msg::{DocumentLoaded, MessageRecv, ServerSend};
+use executor::{self, Executor};
+use executor::Msg::{DocumentLoaded, MessageRecv};
 use self::Msg::*;
 
 thread_local! {
@@ -67,24 +55,13 @@ pub struct MessageClient {
 
 pub struct Model {
     executors: HashMap<PageId, EventStream<<Executor as Update>::Msg>>,
-    extension_id: Option<ExtensionId>,
-    page_id_to_send: Option<u64>,
-    protocol: Option<EventStream<protocol::Msg>>,
     relm: Relm<MessageClient>,
 }
 
 #[derive(Msg)]
 pub enum Msg {
-    ConnectErr(glib::Error),
-    Connection(SocketConnection),
-    MsgRecv(Message),
-    MsgError(glib::Error),
     PageCreated(WebPage),
-    Send(PageId, InnerMessage),
 }
-
-// NOTE: safe because the main loop is ran on the main thread.
-unsafe impl marker::Send for Msg {}
 
 impl Update for MessageClient {
     type Model = Model;
@@ -92,64 +69,35 @@ impl Update for MessageClient {
     type Msg = Msg;
 
     fn model(relm: &Relm<Self>, (): ()) -> Model {
-        let client = SocketClient::new();
-        let address = UnixSocketAddress::with_type(UnixSocketAddressPath::Abstract(SOCKET_NAME));
-        connect_async_full!(client, connect_async(&address), relm, Connection, ConnectErr);
         Model {
             executors: HashMap::new(),
-            extension_id: None,
-            page_id_to_send: None,
-            protocol: None,
             relm: relm.clone(),
         }
     }
 
     fn update(&mut self, event: Msg) {
         match event {
-            ConnectErr(error) => error!("ConnectErr: {}", error),
-            Connection(stream) => {
-                let protocol = execute::<PluginProtocol>(stream.upcast());
-                connect_stream!(protocol@MsgRead(ref msg), self.model.relm.stream(), MsgRecv(msg.clone()));
-                connect_stream!(protocol@IOError(ref error), self.model.relm.stream(), MsgError(error.clone()));
-                self.model.protocol = Some(protocol);
-                self.send_page_id();
-            },
-            MsgError(error) => error!("MsgError: {}", error),
-            MsgRecv(Message(page_id, msg)) => {
-                if let Some(executor) = self.model.executors.get(&page_id) {
-                    executor.emit(MessageRecv(msg));
-                }
-                else {
-                    error!("Cannot find executor with page ID {}", page_id);
-                }
-            },
             PageCreated(page) => {
                 // TODO: this should be disconnected later somehow.
                 connect!(self.model.relm, page, connect_send_request(_, request, _),
                     return block_request(request));
                 let page_id = page.id();
-                trace!("New page created with id {}", page_id);
-                if self.model.extension_id.is_none() {
-                    self.model.extension_id = Some(page_id);
-                    self.send_page_id();
-                }
                 let executor = execute::<Executor>(page.clone());
                 connect_stream!(page, connect_document_loaded(_), executor, DocumentLoaded);
-                connect_stream!(executor@ServerSend(page_id, ref msg),
-                    self.model.relm.stream(), Send(page_id, msg.clone()));
+                connect_stream!(return executor, page, connect_user_message_received(_, msg), (message_recv(msg), true));
                 self.model.executors.insert(page_id, executor);
-
-                let extension_id = self.model.extension_id.unwrap();
-                if self.model.protocol.is_some() {
-                    trace!("Send page id {}", page_id);
-                    self.send(page_id, Id(extension_id, page_id));
-                }
-                else {
-                    self.model.page_id_to_send = Some(page_id);
-                }
             },
-            Send(page_id, msg) => self.send(page_id, msg),
         }
+    }
+}
+
+fn message_recv(msg: &UserMessage) -> Option<executor::Msg> {
+    match decode(&msg.parameters()) {
+        Ok(msg) => Some(MessageRecv(msg)),
+        Err(error) => {
+            error!("{}", error);
+            None
+        },
     }
 }
 
@@ -164,25 +112,6 @@ impl UpdateNew for MessageClient {
 impl MessageClient {
     pub fn new() -> EventStream<<Self as Update>::Msg> {
         execute::<MessageClient>(())
-    }
-
-    // Send a message to the server.
-    fn send(&mut self, page_id: PageId, msg: InnerMessage) {
-        if let Some(ref mut protocol) = self.model.protocol {
-            protocol.emit(WriteMsg(Message(page_id, msg)));
-        }
-        else {
-            error!("No protocol");
-        }
-    }
-
-    fn send_page_id(&mut self) {
-        if let Some(extension_id) = self.model.extension_id {
-            if let Some(page_id) = self.model.page_id_to_send {
-                trace!("Send page id {}", page_id);
-                self.send(page_id, Id(extension_id, page_id));
-            }
-        }
     }
 }
 
