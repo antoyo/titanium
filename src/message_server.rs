@@ -27,6 +27,9 @@ use std::io::{BufRead, BufReader};
 use std::io::{self, Write};
 use std::process;
 
+use gio::prelude::ApplicationExt;
+use gtk::Application;
+use gtk::traits::GtkApplicationExt;
 use gtk::{
     self,
     traits::DialogExt,
@@ -65,6 +68,7 @@ pub struct MessageServer {
 
 pub struct Model {
     app_count: usize,
+    application: Application,
     config_dir: ConfigDir,
     /// This listener is used to prevent two instances of Titanium to run at the same time.
     private_web_context: WebContext,
@@ -80,27 +84,31 @@ pub struct Model {
 pub enum Msg {
     ChangeOpenedPage(String, String),
     NewApp(Option<String>, Privacy),
+    ReleaseApp,
     RemoveApp(PageId, String),
 }
 
 impl Update for MessageServer {
     type Model = Model;
-    type ModelParam = (Vec<String>, Option<String>);
+    type ModelParam = (Application, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (urls, config): (Vec<String>, Option<String>)) -> Model {
+    fn model(relm: &Relm<Self>, (application, urls, config): (Application, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
             relm.stream().emit(NewApp(None, Privacy::Normal));
+            relm.stream().emit(ReleaseApp);
         }
         else {
             for url in urls {
                 relm.stream().emit(NewApp(Some(url), Privacy::Normal));
             }
+            relm.stream().emit(ReleaseApp);
         }
         Model {
             app_count: 0,
+            application,
             config_dir,
             opened_urls: BTreeSet::new(),
             previous_opened_urls: BTreeSet::new(),
@@ -119,6 +127,9 @@ impl Update for MessageServer {
                 self.save_urls();
             },
             NewApp(url, privacy) => self.add_app(url, privacy),
+            // NOTE: we called hold() on the application in order to create the window
+            // asynchronously. Now that it is created, we can call release().
+            ReleaseApp => self.model.application.release(),
             RemoveApp(page_id, url) => self.remove_app(page_id, url),
         }
     }
@@ -133,8 +144,8 @@ impl UpdateNew for MessageServer {
 }
 
 impl MessageServer {
-    pub fn new(url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
-        Ok(execute::<MessageServer>((url, config_dir)))
+    pub fn new(application: Application, url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
+        Ok(execute::<MessageServer>((application, url, config_dir)))
     }
 
     fn add_app(&mut self, url: Option<String>, privacy: Privacy) {
@@ -155,6 +166,7 @@ impl MessageServer {
         }
 
         let app = init::<App>((url, self.model.config_dir.clone(), web_context, self.model.previous_opened_urls.clone())).unwrap(); // TODO: remove unwrap().
+        self.model.application.add_window(app.widget());
         connect!(app@CreateWindow(ref url, ref privacy), self.model.relm, NewApp(Some(url.clone()), *privacy));
         connect!(app@Remove(page_id, ref url), self.model.relm, RemoveApp(page_id, url.clone()));
         connect!(app@ChangeUrl(ref old, ref new), self.model.relm, ChangeOpenedPage(old.clone(), new.clone()));
@@ -205,7 +217,7 @@ impl MessageServer {
         if self.model.app_count == 0 {
             self.model.opened_urls.clear();
             self.save_urls();
-            gtk::main_quit(); // FIXME: can't call main_quit() with gtk::Application.
+            //gtk::main_quit(); // FIXME: can't call main_quit() with gtk::Application.
         }
     }
 
@@ -228,8 +240,8 @@ impl MessageServer {
 
 /// Create a new message server.
 /// If it is not possible to create one, show the error and exit.
-pub fn create_message_server(urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
-    match MessageServer::new(urls, config_dir) {
+pub fn create_message_server(application: Application, urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
+    match MessageServer::new(application, urls, config_dir) {
         Ok(message_server) => message_server,
         Err(error) => {
             let message = format!("cannot create the message server used to communicate with the web processes: {}",

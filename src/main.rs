@@ -444,9 +444,7 @@ use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
 use app::{App, APP_NAME};
-use config_dir::ConfigDir;
-use message_server::{create_message_server, MessageServer, Msg::NewApp, Privacy};
-use webview::WebView;
+use message_server::{create_message_server, MessageServer, Msg::{NewApp, ReleaseApp}, Privacy};
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
 
@@ -495,7 +493,6 @@ fn main() {
         let _app = execute::<RelmApp>(application.clone());
 
         application.run(/*&args*/);
-        //let _message_server = create_message_server(args.url, args.config);
     //}
 }
 
@@ -532,26 +529,50 @@ impl Update for RelmApp {
         connect!(self.model.application, connect_activate(app), relm, {
             // NOTE: we need to increase the refcount of app because we create the window
             // asynchronously.
-            // TODO: perhaps it won't be needed anymore when we remove the client/server
-            // architecture.
-            // TODO: that probably requires calling release() later.
             app.hold();
             Msg::Activate
         });
-        connect!(self.model.application, connect_open(_, files, _), relm, Msg::Open(files.to_vec()));
+        connect!(self.model.application, connect_open(app, files, _), relm, {
+            // NOTE: we need to increase the refcount of app because we create the window
+            // asynchronously.
+            app.hold();
+            Msg::Open(files.to_vec())
+        });
     }
 
     fn update(&mut self, event: Msg) {
         match event {
             Msg::Activate => {
-                self.model.message_server = Some(create_message_server(vec![], None));
+                match self.model.message_server {
+                    Some(ref message_server) => {
+                        message_server.stream().emit(NewApp(None, Privacy::Normal));
+                        message_server.stream().emit(ReleaseApp);
+                    },
+                    None => {
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), vec![], None));
+                    },
+                }
             },
             Msg::Open(files) => {
-                for file in files {
-                    println!("URI: {}", file.uri());
-                    if let Some(ref message_server) = self.model.message_server {
-                        message_server.stream().emit(NewApp(Some(file.uri().to_string()), Privacy::Normal));
-                    }
+                match self.model.message_server {
+                    Some(ref message_server) => {
+                        if files.is_empty() {
+                            message_server.stream().emit(NewApp(None, Privacy::Normal));
+                            message_server.stream().emit(ReleaseApp);
+                        }
+                        else {
+                            for url in files {
+                                message_server.stream().emit(NewApp(Some(url.uri().to_string()), Privacy::Normal));
+                            }
+                            message_server.stream().emit(ReleaseApp);
+                        }
+                    },
+                    None => {
+                        let files = files.iter()
+                            .map(|file| file.uri().to_string())
+                            .collect();
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), files, None));
+                    },
                 }
             },
         }
