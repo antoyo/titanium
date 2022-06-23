@@ -89,7 +89,7 @@ impl BookmarkManager {
             if connection.is_none() {
                 let db = Connection::open(filename)?;
                 // Activate foreign key contraints in SQLite.
-                db.execute::<&[i32; 0]>("PRAGMA foreign_keys = ON", &[])?;
+                db.execute("PRAGMA foreign_keys = ON", [])?;
                 *connection = Some(db);
             }
             Ok(())
@@ -100,28 +100,28 @@ impl BookmarkManager {
     pub fn create_tables(&self) -> Result<()> {
         CONNECTION.with(|connection| {
             if let Some(ref connection) = *connection.borrow() {
-                connection.execute::<&[i32; 0]>("
+                connection.execute("
                 CREATE TABLE IF NOT EXISTS bookmarks
                 ( id INTEGER PRIMARY KEY
                 , title TEXT NOT NULL
                 , url TEXT NOT NULL UNIQUE
                 , visit_count INTEGER NOT NULL DEFAULT 0
-                )", &[])?;
+                )", [])?;
 
-                connection.execute::<&[i32; 0]>("
+                connection.execute("
                 CREATE TABLE IF NOT EXISTS tags
                 ( id INTEGER PRIMARY KEY
                 , name TEXT NOT NULL UNIQUE
-                )", &[])?;
+                )", [])?;
 
-                connection.execute::<&[i32; 0]>("
+                connection.execute("
                 CREATE TABLE IF NOT EXISTS bookmarks_tags
                 ( bookmark_id INTEGER NOT NULL
                 , tag_id INTEGER NOT NULL
                 , PRIMARY KEY (bookmark_id, tag_id)
                 , FOREIGN KEY(bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
                 , FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
-                )", &[])?;
+                )", [])?;
             }
             Ok(())
         })
@@ -275,7 +275,7 @@ impl BookmarkManager {
                             {}
                         ", where_clause, having_clause))
                 {
-                    if let Ok(rows) = statement.query_map(&params, |row| {
+                    if let Ok(rows) = statement.query_map(&*params, |row| {
                         if let (Ok(title), Ok(url), Ok(tags)) = (row.get(1), row.get(0), row.get(2)) {
                             Ok(Some(Bookmark::new(title, url, tags)))
                         }
