@@ -97,7 +97,7 @@ use webkit2gtk::{
     UserMediaPermissionRequestExt,
     UserMessage,
     WebContext,
-    WebViewExt, UserMessageExt,
+    WebViewExt, UserMessageExt, WebContextExt,
 };
 use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
@@ -638,6 +638,7 @@ impl App {
             PasswordSave => self.save_password(),
             PasswordSubmit => handle_error!(self.submit_login_form()),
             PasteUrl => self.paste_url(),
+            PreferredLanguage(ref language) => self.model.web_context.set_preferred_languages(&[&language]),
             Print => self.components.webview.emit(PagePrint),
             PrivateWinOpen(ref url) => self.open_in_new_window(url, Privacy::Private),
             Quit => self.try_quit(),
