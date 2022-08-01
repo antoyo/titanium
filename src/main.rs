@@ -20,6 +20,10 @@
  */
 
 /*
+ * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
+ * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069)
+ * (that probably requires a MutationObserver: https://github.com/brave/adblock-rust/issues/152#issuecomment-771046487)
+ *
  * FIXME: the adblocker seems to block good URL like https://blog.mozilla.org/security/2021/01/26/supercookie-protections/
  * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
  * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069
@@ -366,6 +370,7 @@
 
 //! Titanium is a webkit2 keyboard-driven web browser.
 
+#![allow(deprecated)]
 #![warn(
     missing_docs,
     trivial_casts,
@@ -407,10 +412,6 @@ extern crate url;
 extern crate webkit2gtk;
 extern crate xdg;
 extern crate zip;
-// TODO: remove when https://github.com/gtk-rs/gio/issues/99 is fixed.
-extern crate gio_sys;
-extern crate glib_sys;
-extern crate gobject_sys;
 
 mod app;
 mod bookmarks;
@@ -423,7 +424,6 @@ mod download_view;
 mod download_list_view;
 mod errors;
 mod file;
-mod gio_ext;
 mod message_server;
 mod pass_manager;
 mod permission_manager;
@@ -435,15 +435,25 @@ mod webview;
 
 use std::env::args;
 
+use gio::{prelude::ApplicationExtManual, File, traits::{ApplicationExt, FileExt}};
+use gtk::Application;
 use gumdrop::Options;
 use log::Level::Error;
+use relm::{EventStream, Relm, Update, UpdateNew, execute, Component};
 use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
-use app::APP_NAME;
-use message_server::create_message_server;
+use app::{App, APP_NAME};
+use message_server::{create_message_server, MessageServer, Msg::{NewApp, ReleaseApp}, Privacy};
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
+
+/// The GTK app name.
+#[cfg(not(debug_assertions))]
+pub const GTK_APP_NAME: &str = "com.titanium-browser";
+/// A different GTK app name is used in debug mode for easier debugging.
+#[cfg(debug_assertions)]
+pub const GTK_APP_NAME: &str = "com.titanium-browser.debug";
 
 #[derive(Debug, Default, Options)]
 struct Args {
@@ -458,9 +468,8 @@ struct Args {
 }
 
 fn main() {
-    gtk::init().unwrap(); // TODO: this is called twice. Remove?
-
-    let args: Vec<_> = args().collect();
+    // TODO: switch to the GtkApplication API to handle cli arguments.
+    /*let args: Vec<_> = args().collect();
 
     let args = match Args::parse_args_default(&args[1..]) {
         Ok(options) => options,
@@ -477,11 +486,103 @@ fn main() {
         println!();
         println!("{}", Args::usage());
     }
-    else {
-        init_logging(args.log);
+    else {*/
+        //init_logging(args.log);
 
-        let _message_server = create_message_server(args.url, args.config);
-        gtk::main();
+        let application = Application::new(Some(GTK_APP_NAME), gio::ApplicationFlags::HANDLES_OPEN);
+
+        let _app = execute::<RelmApp>(application.clone());
+
+        application.run(/*&args*/);
+    //}
+}
+
+struct RelmApp {
+    model: Model,
+}
+
+struct Model {
+    application: Application,
+    message_server: Option<EventStream<<MessageServer as Update>::Msg>>,
+}
+
+#[derive(Msg)]
+enum Msg {
+    Activate,
+    Open(Vec<File>),
+}
+
+impl Update for RelmApp {
+    type Model = Model;
+    type ModelParam = Application;
+    type Msg = Msg;
+
+    fn model(_: &Relm<Self>, application: Self::ModelParam) -> Model {
+        Model {
+            application,
+            message_server: None,
+        }
+    }
+
+    fn subscriptions(&mut self, relm: &Relm<Self>) {
+        connect!(self.model.application, connect_activate(app), relm, {
+            // NOTE: we need to increase the refcount of app because we create the window
+            // asynchronously.
+            app.hold();
+            Msg::Activate
+        });
+        connect!(self.model.application, connect_open(app, files, _), relm, {
+            // NOTE: we need to increase the refcount of app because we create the window
+            // asynchronously.
+            app.hold();
+            Msg::Open(files.to_vec())
+        });
+    }
+
+    fn update(&mut self, event: Msg) {
+        match event {
+            Msg::Activate => {
+                match self.model.message_server {
+                    Some(ref message_server) => {
+                        message_server.stream().emit(NewApp(None, Privacy::Normal));
+                        message_server.stream().emit(ReleaseApp);
+                    },
+                    None => {
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), vec![], None));
+                    },
+                }
+            },
+            Msg::Open(files) => {
+                match self.model.message_server {
+                    Some(ref message_server) => {
+                        if files.is_empty() {
+                            message_server.stream().emit(NewApp(None, Privacy::Normal));
+                            message_server.stream().emit(ReleaseApp);
+                        }
+                        else {
+                            for url in files {
+                                message_server.stream().emit(NewApp(Some(url.uri().to_string()), Privacy::Normal));
+                            }
+                            message_server.stream().emit(ReleaseApp);
+                        }
+                    },
+                    None => {
+                        let files = files.iter()
+                            .map(|file| file.uri().to_string())
+                            .collect();
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), files, None));
+                    },
+                }
+            },
+        }
+    }
+}
+
+impl UpdateNew for RelmApp {
+    fn new(_relm: &Relm<Self>, model: Self::Model) -> Self {
+        RelmApp {
+            model,
+        }
     }
 }
 

@@ -75,8 +75,6 @@ use webkit2gtk::UserContentInjectedFrames::AllFrames;
 use webkit2gtk::UserScriptInjectionTime::End;
 use webkit2gtk::UserStyleLevel::User;
 
-use titanium_common::PageId;
-
 use config_dir::ConfigDir;
 use errors::Result;
 use file;
@@ -116,10 +114,8 @@ pub enum Msg {
     PageZoomOut,
     PermissionRequest(PermissionRequest),
     SearchBackward(bool),
-    SendPageId,
     SetOpenInNewWindow(bool),
     ShowInspector,
-    WebPageId(PageId),
     WebViewSettingChanged(AppSettingsVariant),
     ZoomChange(i32),
 }
@@ -127,10 +123,6 @@ pub enum Msg {
 #[widget]
 impl Widget for WebView {
     fn init_view(&mut self) {
-        // Send the page id later when the event connection in the app is made.
-        self.model.relm.stream().emit(SendPageId);
-        trace!("New web view with page id {}", self.widgets.view.page_id());
-
         if let Some(inspector) = self.widgets.view.inspector() {
             let inspector_shown = self.model.inspector_shown.clone();
             connect!(self.model.relm, inspector, connect_attach(inspector),
@@ -178,11 +170,8 @@ impl Widget for WebView {
             // To be listened by the user.
             PermissionRequest(_) => (),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
-            SendPageId => self.send_page_id(),
             SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
             ShowInspector => self.show_inspector(),
-            // To be listened by the user.
-            WebPageId(_) => (),
             WebViewSettingChanged(setting) => self.setting_changed(setting),
             // To be listened by the user.
             ZoomChange(_) => (),
@@ -402,11 +391,6 @@ impl WebView {
         Ok(())
     }
 
-    /// Send the page ID to the application.
-    fn send_page_id(&self) {
-        self.model.relm.stream().emit(WebPageId(self.widgets.view.page_id()));
-    }
-
     /// Set open in new window boolean to true to indicate that the next follow link will open a
     /// new window.
     fn set_open_in_new_window(&mut self, in_new_window: bool) {
@@ -468,6 +452,5 @@ fn setup_context(context: &WebContext) {
     set_context_ext_dir(&context);
 
     context.set_process_model(MultipleSecondaryProcesses);
-    context.set_web_process_count_limit(4);
     context.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
 }

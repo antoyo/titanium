@@ -38,7 +38,8 @@ use std::collections::HashMap;
 use std::f32;
 use std::sync::Mutex;
 
-use glib::{Cast, Closure, ObjectExt};
+use gio::Cancellable;
+use glib::{Cast, Closure, ObjectExt, ToVariant};
 use regex::Regex;
 use relm::{Relm, Update, UpdateNew};
 use webkit2gtk_webextension::{
@@ -58,10 +59,11 @@ use webkit2gtk_webextension::{
     DOMHTMLInputElement,
     DOMHTMLSelectElement,
     DOMHTMLTextAreaElement,
+    UserMessage,
     WebPage,
 };
 
-use titanium_common::{FollowMode, InnerMessage, PageId};
+use titanium_common::{FollowMode, InnerMessage, protocol::encode};
 use titanium_common::Action::{
     self,
     CopyLink,
@@ -111,7 +113,6 @@ pub enum Msg {
     DocumentLoaded,
     MessageRecv(InnerMessage),
     Scroll,
-    ServerSend(PageId, InnerMessage),
 }
 
 impl Update for Executor {
@@ -181,8 +182,6 @@ impl Update for Executor {
                     _ => warn!("Unexpected message received: {:?}", msg),
                 },
             Scroll => self.send_scroll_percentage(),
-            // To be listened by the user.
-            ServerSend(_, _) => (),
         }
     }
 }
@@ -410,7 +409,16 @@ impl Executor {
     }
 
     fn send(&self, message: InnerMessage) {
-        self.model.relm.stream().emit(ServerSend(self.model.page.id(), message));
+        let bytes =
+            match encode(message) {
+                Ok(message) => message,
+                Err(error) => {
+                    error!("{}", error);
+                    return;
+                },
+            };
+        let message = UserMessage::new("", Some(&bytes.to_variant()));
+        self.model.page.send_message_to_view(&message, None::<&Cancellable>, |_| {});
     }
 
     // Get the username and password from the login form.

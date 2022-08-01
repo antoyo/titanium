@@ -19,13 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use webkit2gtk::WebViewExt;
+use gio::Cancellable;
+use glib::ToVariant;
+use titanium_common::protocol::encode;
+use webkit2gtk::{WebViewExt, UserMessage};
 
 use titanium_common::InnerMessage;
 use titanium_common::InnerMessage::*;
 
 use super::App;
-use super::Msg::ServerSend;
 
 const SCROLL_LINE_HORIZONTAL: i64 = 40;
 const SCROLL_LINE_VERTICAL: i32 = 40;
@@ -155,7 +157,15 @@ impl App {
     }
 
     pub fn server_send(&mut self, message: InnerMessage) {
-        let page_id = self.widgets.webview.page_id();
-        self.model.relm.stream().emit(ServerSend(page_id, message));
+        let bytes =
+            match encode(message) {
+                Ok(message) => message,
+                Err(error) => {
+                    error!("{}", error);
+                    return;
+                },
+            };
+        let message = UserMessage::new("", Some(&bytes.to_variant()));
+        self.widgets.webview.send_message_to_page(&message, None::<&Cancellable>, |_| {});
     }
 }

@@ -98,6 +98,8 @@ pub enum AppCommand {
     PasswordSubmit,
     #[completion(hidden)]
     PasteUrl,
+    #[help(text="Set the preferred language for the web pages")]
+    PreferredLanguage(String),
     #[help(text="Print the current page")]
     Print,
     #[help(text="Open an URL in a new private window")]

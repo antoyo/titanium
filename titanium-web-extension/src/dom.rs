@@ -19,7 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-use glib::{Cast, ObjectExt};
+use glib::{Cast, ObjectExt, object::IsA};
+use glib::translate::{from_glib_full, ToGlibPtr};
 use regex::Regex;
 
 use webkit2gtk_webextension::{
@@ -31,7 +32,6 @@ use webkit2gtk_webextension::{
         DOMDOMWindowExt,
         DOMElementExt,
         DOMEventExt,
-        DOMEventTargetExt,
         DOMHTMLAnchorElementExt,
         DOMHTMLButtonElementExt,
         DOMHTMLCollectionExt,
@@ -47,6 +47,7 @@ use webkit2gtk_webextension::{
     },
     DOMDocument,
     DOMElement,
+    DOMEvent,
     DOMEventTarget,
     DOMHTMLAnchorElement,
     DOMHTMLButtonElement,
@@ -354,6 +355,22 @@ pub fn change_event(element: &DOMElement) {
     event.init_event("change", false, true);
     let element: DOMEventTarget = element.clone().upcast();
     wtry!(element.dispatch_event(&event));
+}
+
+trait DOMEventTargetExtManual {
+    fn dispatch_event(&self, event: &impl IsA<DOMEvent>) -> Result<(), glib::Error>;
+}
+
+// NOTE: the original implementation assert on is_ok which happens to fail in some cases.
+// Don't assert to workaround this issue.
+impl<O: IsA<DOMEventTarget>> DOMEventTargetExtManual for O {
+    fn dispatch_event(&self, event: &impl IsA<DOMEvent>) -> Result<(), glib::Error> {
+        unsafe {
+            let mut error = std::ptr::null_mut();
+            let _is_ok = webkit2gtk_webextension_sys::webkit_dom_event_target_dispatch_event(self.as_ref().to_glib_none().0, event.as_ref().to_glib_none().0, &mut error);
+            if error.is_null() { Ok(()) } else { Err(from_glib_full(error)) }
+        }
+    }
 }
 
 /// Trigger a mouse event on the element.

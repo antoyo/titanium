@@ -82,6 +82,7 @@ use mg::{
 };
 use relm::{Relm, Widget};
 use relm_derive::widget;
+use titanium_common::protocol::decode;
 use webkit2gtk::{
     self,
     Download,
@@ -94,13 +95,14 @@ use webkit2gtk::{
     URIRequestExt,
     UserMediaPermissionRequest,
     UserMediaPermissionRequestExt,
+    UserMessage,
     WebContext,
-    WebViewExt,
+    WebViewExt, UserMessageExt, WebContextExt,
 };
 use webkit2gtk::LoadEvent::{self, Started};
 use webkit2gtk::NavigationType::Other;
 
-use titanium_common::{FollowMode, InnerMessage, PageId, LAST_MARK};
+use titanium_common::{FollowMode, InnerMessage, LAST_MARK};
 use titanium_common::Percentage::{self, All, Percent};
 
 use bookmarks::BookmarkManager;
@@ -160,7 +162,6 @@ use webview::Msg::{
     SearchBackward,
     SetOpenInNewWindow,
     ShowInspector,
-    WebPageId,
     WebViewSettingChanged,
     ZoomChange,
 };
@@ -226,11 +227,9 @@ pub enum Msg {
     MessageRecv(InnerMessage),
     MouseTargetChanged(HitTestResult),
     OverwriteDownload(Download, String, bool),
-    SetPageId(PageId),
     PermissionResponse(webkit2gtk::PermissionRequest, Option<String>),
     PopupDecision(Option<String>, String),
-    Remove(PageId, String),
-    ServerSend(PageId, InnerMessage),
+    Remove(String),
     ShowError(String),
     ShowZoom(i32),
     TagEdit(Option<String>),
@@ -408,7 +407,7 @@ impl Widget for App {
             WebViewFullscreen(fullscreen) => self.model.is_fullscreen = fullscreen,
 
             // To be listened by the user.
-            ChangeUrl(_, _) | Remove(_, _) | ServerSend(_, _) | SetPageId(_) => (),
+            ChangeUrl(_, _) | Remove(_) => (),
         }
     }
 
@@ -451,7 +450,6 @@ impl Widget for App {
                     LeaveFullScreen => WebViewFullscreen(false),
                     NewWindow(ref url) => Command(WinOpen(url.clone())),
                     PermissionRequest(ref request) => AskPermission(request.clone()),
-                    WebPageId(page_id) => SetPageId(page_id),
                     ZoomChange(level) => ShowZoom(level),
                     create(_, action) => (Create(action.clone()), None),
                     insecure_content_detected(_, _) => InsecureContent,
@@ -460,6 +458,7 @@ impl Widget for App {
                     estimated_load_progress_notify(_) => TitleChanged,
                     title_notify(_) => TitleChanged,
                     uri_notify(_) => UriChanged,
+                    user_message_received(_, msg) => (message_recv(msg), true),
                     web_process_crashed => (WebProcessCrashed, false),
                 },
             },
@@ -483,6 +482,16 @@ impl Widget for App {
     }
 }
 
+fn message_recv(msg: &UserMessage) -> Option<Msg> {
+    match decode(&msg.parameters()) {
+        Ok(msg) => Some(MessageRecv(msg)),
+        Err(error) => {
+            error!("{}", error);
+            None
+        },
+    }
+}
+
 impl App {
     fn add_mark(&mut self, mark: &str) {
         let mark = mark_from_str(mark);
@@ -503,8 +512,7 @@ impl App {
     }
 
     fn close_webview(&self) {
-        let page_id = self.widgets.webview.page_id();
-        self.model.relm.stream().emit(Remove(page_id, self.model.current_url.clone()));
+        self.model.relm.stream().emit(Remove(self.model.current_url.clone()));
 
         self.components.mg.emit(CloseWin);
     }
@@ -630,6 +638,7 @@ impl App {
             PasswordSave => self.save_password(),
             PasswordSubmit => handle_error!(self.submit_login_form()),
             PasteUrl => self.paste_url(),
+            PreferredLanguage(ref language) => self.model.web_context.set_preferred_languages(&[&language]),
             Print => self.components.webview.emit(PagePrint),
             PrivateWinOpen(ref url) => self.open_in_new_window(url, Privacy::Private),
             Quit => self.try_quit(),

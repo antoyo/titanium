@@ -21,6 +21,7 @@
 
 //! Message used to communicate between the UI and the web processes.
 
+#![allow(deprecated)]
 #![warn(
     missing_docs,
     trivial_casts,
@@ -30,13 +31,6 @@
     unused_qualifications,
 )]
 
-extern crate gio;
-extern crate glib;
-#[macro_use]
-extern crate log;
-extern crate relm;
-#[macro_use]
-extern crate relm_derive;
 extern crate rmp_serialize;
 extern crate rustc_serialize;
 
@@ -44,18 +38,6 @@ pub mod protocol;
 
 /// The mark that goes to the last position after a jump.
 pub const LAST_MARK: u8 = b'\'';
-
-/// The abstract name to the unix domain socket.
-#[cfg(not(debug_assertions))]
-pub const SOCKET_NAME: &[u8] = b"titanium-server";
-/// A different name is used in debug mode for easier debugging.
-#[cfg(debug_assertions)]
-pub const SOCKET_NAME: &[u8] = b"titanium-server-debug";
-
-#[doc(hidden)]
-pub type ExtensionId = u64;
-#[doc(hidden)]
-pub type PageId = u64;
 
 /// Action that should be executed from the UI process.
 #[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
@@ -86,9 +68,10 @@ pub enum FollowMode {
     Hover,
 }
 
-/// Message with the associated window/page id.
+/// The decoder fails with "variant type overflow" when directly using InnerMessage, so wrap it in
+/// a tuple-struct as a workaround.
 #[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
-pub struct Message(pub PageId, pub InnerMessage);
+pub struct Message(pub InnerMessage);
 
 /// Message representing actions to to in the web page.
 // Switch to SimpleMsg to avoid these empty ().
@@ -120,9 +103,6 @@ pub enum InnerMessage {
     GoToMark(u8),
     /// Hide the hints.
     HideHints(),
-    /// Send the page ID to the application to connect the web extension with the right window.
-    /// Answer to GetId.
-    Id(ExtensionId, PageId),
     /// Insert some text in the currently focused text field.
     InsertText(String),
     /// Write the username and password in the login form.
