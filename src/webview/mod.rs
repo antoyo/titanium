@@ -66,7 +66,7 @@ use webkit2gtk::{
     WebContextExt,
     WebInspector,
     WebInspectorExt,
-    WebViewExt,
+    WebViewExt, WebsitePolicies, AutoplayPolicy,
 };
 use webkit2gtk::NavigationType::{LinkClicked, Other};
 use webkit2gtk::PolicyDecisionType::{self, NavigationAction, Response};
@@ -182,7 +182,8 @@ impl Widget for WebView {
         #[name="view"]
         webkit2gtk::WebView({
             user_content_manager: UserContentManager::new(), // FIXME: seems to be deallocated.
-            web_context: self.model.context
+            web_context: self.model.context,
+            website_policies: WebsitePolicies::builder().autoplay(AutoplayPolicy::Deny).build(),
         }) {
             close => Close,
             vexpand: true,

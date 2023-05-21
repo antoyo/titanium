@@ -20,6 +20,12 @@
  */
 
 /*
+ * FIXME: search not working (e.g. results not focused into view) in
+ * https://gitlab.gnome.org/GNOME/gimp/-/merge_requests/791/diffs?view=parallel (search for
+ * babl_format).
+ * Could it be due to using an old webkit2gtk?
+ * It is not due to my web extension.
+ *
  * TODO: add cosmetic filter support in adblocker: https://github.com/dudik/blockit
  * (doc: https://github.com/brave/adblock-rust/issues/152#issuecomment-771259069)
  * (that probably requires a MutationObserver: https://github.com/brave/adblock-rust/issues/152#issuecomment-771046487)
@@ -435,15 +441,15 @@ mod webview;
 
 use std::env::args;
 
-use gio::{prelude::ApplicationExtManual, File, traits::{ApplicationExt, FileExt}};
+use gio::{prelude::ApplicationExtManual, File, traits::{ApplicationExt, FileExt}, ApplicationHoldGuard};
 use gtk::Application;
 use gumdrop::Options;
 use log::Level::Error;
-use relm::{EventStream, Relm, Update, UpdateNew, execute, Component};
+use relm::{EventStream, Relm, Update, UpdateNew, execute};
 use simplelog::{Config, LevelFilter, TermLogger};
 use syslog::Facility;
 
-use app::{App, APP_NAME};
+use app::APP_NAME;
 use message_server::{create_message_server, MessageServer, Msg::{NewApp, ReleaseApp}, Privacy};
 
 const INVALID_UTF8_ERROR: &str = "invalid utf-8 string";
@@ -503,12 +509,14 @@ struct RelmApp {
 
 struct Model {
     application: Application,
+    app_hold_guard: Option<ApplicationHoldGuard>,
     message_server: Option<EventStream<<MessageServer as Update>::Msg>>,
 }
 
 #[derive(Msg)]
 enum Msg {
     Activate,
+    AppHoldGuard(ApplicationHoldGuard),
     Open(Vec<File>),
 }
 
@@ -520,21 +528,24 @@ impl Update for RelmApp {
     fn model(_: &Relm<Self>, application: Self::ModelParam) -> Model {
         Model {
             application,
+            app_hold_guard: None,
             message_server: None,
         }
     }
 
     fn subscriptions(&mut self, relm: &Relm<Self>) {
+        let stream = relm.stream().clone();
         connect!(self.model.application, connect_activate(app), relm, {
             // NOTE: we need to increase the refcount of app because we create the window
             // asynchronously.
-            app.hold();
+            stream.emit(Msg::AppHoldGuard(app.hold()));
             Msg::Activate
         });
+        let stream = relm.stream().clone();
         connect!(self.model.application, connect_open(app, files, _), relm, {
             // NOTE: we need to increase the refcount of app because we create the window
             // asynchronously.
-            app.hold();
+            stream.emit(Msg::AppHoldGuard(app.hold()));
             Msg::Open(files.to_vec())
         });
     }
@@ -548,9 +559,12 @@ impl Update for RelmApp {
                         message_server.stream().emit(ReleaseApp);
                     },
                     None => {
-                        self.model.message_server = Some(create_message_server(self.model.application.clone(), vec![], None));
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), self.model.app_hold_guard.take(), vec![], None));
                     },
                 }
+            },
+            Msg::AppHoldGuard(app_hold_guard) => {
+                self.model.app_hold_guard = Some(app_hold_guard);
             },
             Msg::Open(files) => {
                 match self.model.message_server {
@@ -570,7 +584,7 @@ impl Update for RelmApp {
                         let files = files.iter()
                             .map(|file| file.uri().to_string())
                             .collect();
-                        self.model.message_server = Some(create_message_server(self.model.application.clone(), files, None));
+                        self.model.message_server = Some(create_message_server(self.model.application.clone(), self.model.app_hold_guard.take(), files, None));
                     },
                 }
             },

@@ -27,7 +27,7 @@ use std::io::{BufRead, BufReader};
 use std::io::{self, Write};
 use std::process;
 
-use gio::prelude::ApplicationExt;
+use gio::ApplicationHoldGuard;
 use gtk::Application;
 use gtk::traits::GtkApplicationExt;
 use gtk::{
@@ -65,6 +65,7 @@ pub struct MessageServer {
 pub struct Model {
     app_count: usize,
     application: Application,
+    app_hold_guard: Option<ApplicationHoldGuard>,
     config_dir: ConfigDir,
     /// This listener is used to prevent two instances of Titanium to run at the same time.
     private_web_context: WebContext,
@@ -86,10 +87,10 @@ pub enum Msg {
 
 impl Update for MessageServer {
     type Model = Model;
-    type ModelParam = (Application, Vec<String>, Option<String>);
+    type ModelParam = (Application, Option<ApplicationHoldGuard>, Vec<String>, Option<String>);
     type Msg = Msg;
 
-    fn model(relm: &Relm<Self>, (application, urls, config): (Application, Vec<String>, Option<String>)) -> Model {
+    fn model(relm: &Relm<Self>, (application, app_hold_guard, urls, config): (Application, Option<ApplicationHoldGuard>, Vec<String>, Option<String>)) -> Model {
         let config_dir = ConfigDir::new(&config).unwrap(); // TODO: remove unwrap().
         let (web_context, private_web_context) = WebView::initialize_web_extension(&config_dir);
         if urls.is_empty() {
@@ -105,6 +106,7 @@ impl Update for MessageServer {
         Model {
             app_count: 0,
             application,
+            app_hold_guard,
             config_dir,
             opened_urls: BTreeSet::new(),
             previous_opened_urls: BTreeSet::new(),
@@ -125,7 +127,7 @@ impl Update for MessageServer {
             NewApp(url, privacy) => self.add_app(url, privacy),
             // NOTE: we called hold() on the application in order to create the window
             // asynchronously. Now that it is created, we can call release().
-            ReleaseApp => self.model.application.release(),
+            ReleaseApp => { self.model.app_hold_guard.take(); },
             RemoveApp(url) => self.remove_app(url),
         }
     }
@@ -140,8 +142,8 @@ impl UpdateNew for MessageServer {
 }
 
 impl MessageServer {
-    pub fn new(application: Application, url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
-        Ok(execute::<MessageServer>((application, url, config_dir)))
+    pub fn new(application: Application, app_hold_guard: Option<ApplicationHoldGuard>, url: Vec<String>, config_dir: Option<String>) -> Result<EventStream<<Self as Update>::Msg>> {
+        Ok(execute::<MessageServer>((application, app_hold_guard, url, config_dir)))
     }
 
     fn add_app(&mut self, url: Option<String>, privacy: Privacy) {
@@ -218,8 +220,8 @@ impl MessageServer {
 
 /// Create a new message server.
 /// If it is not possible to create one, show the error and exit.
-pub fn create_message_server(application: Application, urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
-    match MessageServer::new(application, urls, config_dir) {
+pub fn create_message_server(application: Application, app_hold_guard: Option<ApplicationHoldGuard>, urls: Vec<String>, config_dir: Option<String>) -> EventStream<<MessageServer as Update>::Msg> {
+    match MessageServer::new(application, app_hold_guard, urls, config_dir) {
         Ok(message_server) => message_server,
         Err(error) => {
             let message = format!("cannot create the message server used to communicate with the web processes: {}",

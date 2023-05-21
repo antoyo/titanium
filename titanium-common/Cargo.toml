@@ -7,10 +7,8 @@ repository = "https://github.com/antoyo/titanium"
 version = "0.1.0"
 
 [dependencies]
-gio = "^0.15.0"
-glib = "^0.15.0"
+gio = "^0.16.0"
+glib = "^0.16.0"
 log = "^0.4.1"
-relm = "0.23"
-relm-derive = "0.23"
 rmp-serialize = "^0.8.0"
 rustc-serialize = "^0.3.24"
