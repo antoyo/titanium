@@ -317,17 +317,19 @@ impl Executor {
         let element = self.model.hint_map.get(&self.model.hint_keys)
             .and_then(|element| element.clone().downcast::<DOMHTMLElement>().ok());
         // If no element is found, hide the unrelevant hints.
-        if element.is_some() {
-            // TODO: perhaps it'd involve less message if we remove the ActivateHint message.
-            self.send(ClickHintElement());
-        }
-        else {
-            let document = self.model.page.dom_document();
-            if let Some(document) = document {
-                let all_hidden = hide_unrelevant_hints(&document, &self.model.hint_keys);
-                if all_hidden {
-                    self.model.hint_keys.clear();
-                    show_all_hints(&document);
+        match element {
+            Some(element) => {
+                // TODO: perhaps it'd involve less message if we remove the ActivateHint message.
+                self.send(ClickHintElement(get_href(&element)));
+            },
+            _ => {
+                let document = self.model.page.dom_document();
+                if let Some(document) = document {
+                    let all_hidden = hide_unrelevant_hints(&document, &self.model.hint_keys);
+                    if all_hidden {
+                        self.model.hint_keys.clear();
+                        show_all_hints(&document);
+                    }
                 }
             }
         }

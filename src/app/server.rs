@@ -82,7 +82,7 @@ impl App {
     pub fn message_recv(&mut self, message: InnerMessage) {
         match message {
             ActivateAction(action) => self.activate_action(action),
-            ClickHintElement() => self.click_hint_element(),
+            ClickHintElement(link) => self.click_hint_element(link),
             Credentials(ref username, ref password) => handle_error!(self.save_username_password(&username, &password)),
             EnterInsertMode() => self.go_in_insert_mode(),
             ScrollPercentage(percentage) => self.show_scroll(percentage),

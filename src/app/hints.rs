@@ -24,6 +24,7 @@
 use gdk::EventKey;
 
 use super::App;
+use webview::Msg::SetClickedURL;
 
 use titanium_common::Action::{
     self,
@@ -45,7 +46,8 @@ impl App {
         }
     }
 
-    pub fn click_hint_element(&mut self) {
+    pub fn click_hint_element(&mut self, link: Option<String>) {
+        self.components.webview.emit(SetClickedURL(link));
         self.activate_hint();
         self.hide_hints();
     }

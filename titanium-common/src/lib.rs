@@ -84,7 +84,8 @@ pub enum InnerMessage {
     /// Click on the link in the selection.
     ActivateSelection(),
     /// Response to EnterHintKey.
-    ClickHintElement(),
+    /// Contains the link (href) if it is a anchor element.
+    ClickHintElement(Option<String>),
     /// Regex lookup next page link to click
     ClickNextPage(),
     /// Regex lookup prev page link to click

@@ -30,7 +30,7 @@ macro_rules! handle_app_error {
 
 mod settings;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::fs::{File, read_dir};
 use std::io::Read;
 use std::rc::Rc;
@@ -83,6 +83,7 @@ use settings::AppSettingsVariant;
 use stylesheet::get_stylesheet_and_whitelist;
 
 pub struct Model {
+    clicked_url: Rc<RefCell<Option<String>>>,
     config_dir: ConfigDir,
     context: WebContext,
     inspector_shown: Rc<Cell<bool>>,
@@ -115,6 +116,7 @@ pub enum Msg {
     PermissionRequest(PermissionRequest),
     SearchBackward(bool),
     SetOpenInNewWindow(bool),
+    SetClickedURL(Option<String>),
     ShowInspector,
     WebViewSettingChanged(AppSettingsVariant),
     ZoomChange(i32),
@@ -133,6 +135,7 @@ impl Widget for WebView {
 
     fn model(relm: &Relm<Self>, (config_dir, context): (ConfigDir, WebContext)) -> Model {
         Model {
+            clicked_url: Rc::new(RefCell::new(None)),
             config_dir,
             context,
             inspector_shown: Rc::new(Cell::new(false)),
@@ -171,6 +174,7 @@ impl Widget for WebView {
             PermissionRequest(_) => (),
             SearchBackward(search_backwards) => self.model.search_backwards = search_backwards,
             SetOpenInNewWindow(open_in_new_window) => self.set_open_in_new_window(open_in_new_window),
+            SetClickedURL(url) => *self.model.clicked_url.borrow_mut() = url,
             ShowInspector => self.show_inspector(),
             WebViewSettingChanged(setting) => self.setting_changed(setting),
             // To be listened by the user.
@@ -187,8 +191,8 @@ impl Widget for WebView {
         }) {
             close => Close,
             vexpand: true,
-            decide_policy(_, policy_decision, policy_decision_type) with (open_in_new_window, relm) =>
-                return WebView::decide_policy(&policy_decision, &policy_decision_type, &open_in_new_window, &relm),
+            decide_policy(_, policy_decision, policy_decision_type) with (clicked_url, open_in_new_window, relm) =>
+                return WebView::decide_policy(&policy_decision, &policy_decision_type, &clicked_url, &open_in_new_window, &relm),
             enter_fullscreen => (EnterFullScreen, false),
             leave_fullscreen => (LeaveFullScreen, false),
             permission_request(_, request) => (PermissionRequest(request.clone()), true),
@@ -233,10 +237,10 @@ impl WebView {
     }
 
     fn decide_policy(policy_decision: &PolicyDecision, policy_decision_type: &PolicyDecisionType,
-        open_in_new_window: &Rc<Cell<bool>>, relm: &Relm<WebView>) -> bool
+        clicked_url: &Rc<RefCell<Option<String>>>, open_in_new_window: &Rc<Cell<bool>>, relm: &Relm<WebView>) -> bool
     {
         if *policy_decision_type == NavigationAction {
-            Self::handle_navigation_action(policy_decision, open_in_new_window, relm)
+            Self::handle_navigation_action(policy_decision, clicked_url, open_in_new_window, relm)
         }
         else if *policy_decision_type == Response {
             Self::handle_response(policy_decision)
@@ -272,7 +276,7 @@ impl WebView {
     }
 
     /// Handle follow link in new window.
-    fn handle_navigation_action(policy_decision: &PolicyDecision, open_in_new_window: &Rc<Cell<bool>>,
+    fn handle_navigation_action(policy_decision: &PolicyDecision, clicked_url: &Rc<RefCell<Option<String>>>, open_in_new_window: &Rc<Cell<bool>>,
         relm: &Relm<WebView>) -> bool
     {
         let policy_decision = policy_decision.clone();
@@ -287,10 +291,14 @@ impl WebView {
                 let url = policy_decision.request()
                     .and_then(|request| request.uri());
                 if let Some(url) = url {
-                    policy_decision.ignore();
-                    open_in_new_window.set(false);
-                    relm.stream().emit(NewWindow(url.to_string()));
-                    return true;
+                    // NOTE: only open the URL in a new window if it matches the hint URL that was
+                    // selected by the user.
+                    if Some(url.as_str()) == clicked_url.borrow().as_deref() {
+                        policy_decision.ignore();
+                        open_in_new_window.set(false);
+                        relm.stream().emit(NewWindow(url.to_string()));
+                        return true;
+                    }
                 }
             }
         }
