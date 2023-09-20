@@ -20,6 +20,11 @@
  */
 
 /*
+ * TODO: also check if it is the current URL asked to be opened by the user?
+ * Test link: https://buyersguide.org/castor-oil-ca/t/best?Country=CA&nis=8
+ * (for this link, we get the input instead of the anchor (a), so there's not href that we could
+ * compare with the link that we think it's a popup).
+ *
  * FIXME: search not working (e.g. results not focused into view) in
  * https://gitlab.gnome.org/GNOME/gimp/-/merge_requests/791/diffs?view=parallel (search for
  * babl_format).
