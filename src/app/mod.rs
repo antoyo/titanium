@@ -435,6 +435,8 @@ impl Widget for App {
             },
             //DarkTheme: true, // TODO: reenable when the webkit2gtk issue with dark theme is fixed.
             Title: self.model.title.clone(),
+            height_request: 400,
+            width_request: 600,
             gtk::Box {
                 orientation: Vertical,
                 #[name="download_list_view"]
