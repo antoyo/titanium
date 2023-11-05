@@ -20,7 +20,10 @@
  */
 
 /*
- * TODO: also check if it is the current URL asked to be opened by the user?
+ * TODO: also check if it is the current URL asked to be opened by the user (in the popup blocker,
+ * that is triggered when using F)?
+ * Test link: https://github.com/search?q=repo%3Acrosstool-ng%2Fcrosstool-ng+conflicting+types+for+built-in+function&type=issues (click on Pull requests)
+ * Test link: https://www.google.ca/maps/search/biron+clinique+du+sommeil/@46.8979863,-71.3503319,12z/data=!3m1!4b1?entry=ttu (Site web des résultats)
  * Test link: https://buyersguide.org/castor-oil-ca/t/best?Country=CA&nis=8
  * (for this link, we get the input instead of the anchor (a), so there's not href that we could
  * compare with the link that we think it's a popup).
